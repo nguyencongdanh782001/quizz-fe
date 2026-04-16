@@ -5,7 +5,7 @@ import { ExamCard } from '@/components/features/exam/exam-card';
 import { ClassCard } from '@/components/features/class/class-card';
 import { mockExams } from '@/data/mock/mock-exams';
 import { mockClasses } from '@/data/mock/mock-classes';
-import { BookOpen, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 export default function HomePage() {
@@ -31,7 +31,7 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {featuredExams.map(exam => (
+          {featuredExams.map((exam) => (
             <ExamCard key={exam.id} exam={exam} />
           ))}
         </div>
@@ -52,7 +52,7 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {recentClasses.map(cls => (
+          {recentClasses.map((cls) => (
             <ClassCard key={cls.id} cls={cls} />
           ))}
         </div>
