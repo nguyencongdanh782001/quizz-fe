@@ -1,0 +1,208 @@
+import { Question } from '@/types/exam.types';
+
+export const mockQuestions: Question[] = [
+  // exam-001: Toán học lớp 10
+  {
+    id: 'q-001-01',
+    examId: 'exam-001',
+    text: 'Phương trình bậc hai ax² + bx + c = 0 có nghiệm kép khi nào?',
+    type: 'single',
+    points: 5,
+    options: [
+      { id: 'a', text: 'Δ > 0', isCorrect: false },
+      { id: 'b', text: 'Δ = 0', isCorrect: true },
+      { id: 'c', text: 'Δ < 0', isCorrect: false },
+      { id: 'd', text: 'a = 0', isCorrect: false },
+    ],
+    explanation: 'Phương trình bậc hai có nghiệm kép khi và chỉ khi Δ = 0.',
+  },
+  {
+    id: 'q-001-02',
+    examId: 'exam-001',
+    text: 'Hàm số y = 2x + 3 có đồ thị là gì?',
+    type: 'single',
+    points: 5,
+    options: [
+      { id: 'a', text: 'Parabol', isCorrect: false },
+      { id: 'b', text: 'Đường thẳng', isCorrect: true },
+      { id: 'c', text: 'Đường tròn', isCorrect: false },
+      { id: 'd', text: 'Elip', isCorrect: false },
+    ],
+    explanation: 'Hàm số bậc nhất y = ax + b có đồ thị là một đường thẳng.',
+  },
+  {
+    id: 'q-001-03',
+    examId: 'exam-001',
+    text: 'Công thức tính diện tích tam giác ABC với hai cạnh a, b và góc C xen giữa là gì?',
+    type: 'single',
+    points: 5,
+    options: [
+      { id: 'a', text: 'S = a × b', isCorrect: false },
+      { id: 'b', text: 'S = ½ × a × b × sin C', isCorrect: true },
+      { id: 'c', text: 'S = ½ × a × b', isCorrect: false },
+      { id: 'd', text: 'S = a² × b²', isCorrect: false },
+    ],
+    explanation: 'Diện tích tam giác = ½ × a × b × sin(góc xen giữa hai cạnh).',
+  },
+  {
+    id: 'q-001-04',
+    examId: 'exam-001',
+    text: 'Tập nghiệm của bất phương trình x² − 4 < 0 là?',
+    type: 'single',
+    points: 5,
+    options: [
+      { id: 'a', text: 'x < −2 hoặc x > 2', isCorrect: false },
+      { id: 'b', text: '−2 < x < 2', isCorrect: true },
+      { id: 'c', text: 'x < 2', isCorrect: false },
+      { id: 'd', text: 'x > −2', isCorrect: false },
+    ],
+    explanation: 'x² − 4 < 0 ⟺ (x − 2)(x + 2) < 0 ⟺ −2 < x < 2.',
+  },
+  {
+    id: 'q-001-05',
+    examId: 'exam-001',
+    text: 'Cho đường tròn tâm O bán kính R. Khoảng cách từ tâm đến một điểm M nằm trên đường tròn là?',
+    type: 'single',
+    points: 5,
+    options: [
+      { id: 'a', text: 'OM > R', isCorrect: false },
+      { id: 'b', text: 'OM < R', isCorrect: false },
+      { id: 'c', text: 'OM = R', isCorrect: true },
+      { id: 'd', text: 'OM = 0', isCorrect: false },
+    ],
+    explanation: 'Theo định nghĩa, mọi điểm trên đường tròn cách tâm một khoảng bằng R.',
+  },
+  // exam-003: Tiếng Anh
+  {
+    id: 'q-003-01',
+    examId: 'exam-003',
+    text: '"Melody" trong Tiếng Anh nghĩa là gì?',
+    type: 'single',
+    points: 4,
+    options: [
+      { id: 'a', text: 'Giai điệu', isCorrect: true },
+      { id: 'b', text: 'Nhịp điệu', isCorrect: false },
+      { id: 'c', text: 'Hòa âm', isCorrect: false },
+      { id: 'd', text: 'Bài hát', isCorrect: false },
+    ],
+    explanation: '"Melody" = giai điệu, giai điệu của một bài hát.',
+  },
+  {
+    id: 'q-003-02',
+    examId: 'exam-003',
+    text: 'Chọn từ đúng để hoàn thành câu: "She ___ to music every morning."',
+    type: 'single',
+    points: 4,
+    options: [
+      { id: 'a', text: 'listen', isCorrect: false },
+      { id: 'b', text: 'listens', isCorrect: true },
+      { id: 'c', text: 'listening', isCorrect: false },
+      { id: 'd', text: 'listened', isCorrect: false },
+    ],
+    explanation: 'Chủ ngữ số ít "She" đi với động từ thêm s/es ở hiện tại đơn.',
+  },
+  {
+    id: 'q-003-03',
+    examId: 'exam-003',
+    text: 'Which of the following is a musical instrument? (Chọn tất cả đáp án đúng)',
+    type: 'multiple',
+    points: 6,
+    options: [
+      { id: 'a', text: 'Piano', isCorrect: true },
+      { id: 'b', text: 'Guitar', isCorrect: true },
+      { id: 'c', text: 'Table', isCorrect: false },
+      { id: 'd', text: 'Violin', isCorrect: true },
+    ],
+    explanation: 'Piano, Guitar và Violin đều là nhạc cụ.',
+  },
+  {
+    id: 'q-003-04',
+    examId: 'exam-003',
+    text: '"Rhythm" nghĩa là gì?',
+    type: 'single',
+    points: 4,
+    options: [
+      { id: 'a', text: 'Giai điệu', isCorrect: false },
+      { id: 'b', text: 'Nhịp điệu', isCorrect: true },
+      { id: 'c', text: 'Âm thanh', isCorrect: false },
+      { id: 'd', text: 'Tiếng hát', isCorrect: false },
+    ],
+    explanation: '"Rhythm" = nhịp điệu, nhịp điệu trong âm nhạc.',
+  },
+  {
+    id: 'q-003-05',
+    examId: 'exam-003',
+    text: 'Complete: "I have been learning English ___ three years."',
+    type: 'single',
+    points: 4,
+    options: [
+      { id: 'a', text: 'for', isCorrect: true },
+      { id: 'b', text: 'since', isCorrect: false },
+      { id: 'c', text: 'on', isCorrect: false },
+      { id: 'd', text: 'at', isCorrect: false },
+    ],
+    explanation: '"For + khoảng thời gian" dùng với thì hoàn thành.',
+  },
+  // exam-004: Vật lý
+  {
+    id: 'q-004-01',
+    examId: 'exam-004',
+    text: 'Một vật chuyển động thẳng đều với vận tốc 10 m/s. Quãng đường vật đi được trong 5 giây là bao nhiêu?',
+    type: 'single',
+    points: 5,
+    options: [
+      { id: 'a', text: '10 m', isCorrect: false },
+      { id: 'b', text: '25 m', isCorrect: false },
+      { id: 'c', text: '50 m', isCorrect: true },
+      { id: 'd', text: '15 m', isCorrect: false },
+    ],
+    explanation: 's = v × t = 10 × 5 = 50 m.',
+  },
+  {
+    id: 'q-004-02',
+    examId: 'exam-004',
+    text: 'Công thức tính gia tốc trong chuyển động thẳng biến đổi đều là?',
+    type: 'single',
+    points: 5,
+    options: [
+      { id: 'a', text: 'a = (v − v₀) / t', isCorrect: true },
+      { id: 'b', text: 'a = v / t', isCorrect: false },
+      { id: 'c', text: 'a = s / t', isCorrect: false },
+      { id: 'd', text: 'a = v × t', isCorrect: false },
+    ],
+    explanation: 'Gia tốc = (vận tốc cuối − vận tốc đầu) / thời gian.',
+  },
+  // exam-002: Ngữ văn
+  {
+    id: 'q-002-01',
+    examId: 'exam-002',
+    text: 'Nghị luận xã hội thường yêu cầu trình bày những nội dung nào? (Chọn tất cả đúng)',
+    type: 'multiple',
+    points: 8,
+    options: [
+      { id: 'a', text: 'Giải thích hiện tượng / vấn đề', isCorrect: true },
+      { id: 'b', text: 'Bình luận, đánh giá hiện tượng', isCorrect: true },
+      { id: 'c', text: 'Đề xuất giải pháp', isCorrect: true },
+      { id: 'd', text: 'Kể lại một câu chuyện chi tiết', isCorrect: false },
+    ],
+    explanation: 'Nghị luận xã hội gồm: giải thích → bình luận → đề xuất.',
+  },
+  {
+    id: 'q-002-02',
+    examId: 'exam-002',
+    text: 'Thao tác lập luận "so sánh" trong nghị luận dùng để làm gì?',
+    type: 'single',
+    points: 5,
+    options: [
+      { id: 'a', text: 'Liệt kê các ý', isCorrect: false },
+      { id: 'b', text: 'Đối chiếu để làm rõ đặc điểm', isCorrect: true },
+      { id: 'c', text: 'Chứng minh bằng số liệu', isCorrect: false },
+      { id: 'd', text: 'Kết luận chung', isCorrect: false },
+    ],
+    explanation: 'So sánh giúp đối chiếu để thấy rõ sự khác biệt và đặc điểm.',
+  },
+];
+
+export function getQuestionsByExamId(examId: string): Question[] {
+  return mockQuestions.filter(q => q.examId === examId);
+}
