@@ -9,13 +9,13 @@ export default function SettingsPage() {
   const router = useRouter();
   const {
     duration, passingScore, attemptLimit,
-    shuffleQuestions, shuffleOptions, showResults,
+    shuffleQuestions, shuffleOptions,
     updateSettings
   } = useExamWizardStore();
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const toggle = (key: 'shuffleQuestions' | 'shuffleOptions' | 'showResults') => {
+  const toggle = (key: 'shuffleQuestions' | 'shuffleOptions') => {
     const state = useExamWizardStore.getState();
     updateSettings({ [key]: !(state as any)[key] });
   };
@@ -71,11 +71,10 @@ export default function SettingsPage() {
         </div>
 
         <div className="space-y-3 pt-2">
-          {[
-            { key: 'shuffleQuestions' as const, label: 'Xáo trộn câu hỏi' },
-            { key: 'shuffleOptions' as const, label: 'Xáo trộn đáp án' },
-            { key: 'showResults' as const, label: 'Hiển thị kết quả sau khi nộp' },
-          ].map(({ key, label }) => {
+          {([
+            { key: 'shuffleQuestions', label: 'Xáo trộn câu hỏi' },
+            { key: 'shuffleOptions', label: 'Xáo trộn đáp án' },
+          ] as const).map(({ key, label }) => {
             const state = useExamWizardStore.getState();
             const val = (state as any)[key];
             return (
