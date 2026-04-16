@@ -81,6 +81,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         set({ user: null, role: null, isAuthenticated: false });
         clearSessionCookie();
+        window.location.href = '/';
       },
     }),
     {

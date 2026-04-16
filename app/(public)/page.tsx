@@ -16,7 +16,7 @@ export default async function LandingPage() {
 
   // Authenticated → redirect to authenticated dashboard
   if (session) {
-    redirect('/home');
+    redirect(session.role === 'teacher' ? '/teacher' : '/student');
   }
 
   return (

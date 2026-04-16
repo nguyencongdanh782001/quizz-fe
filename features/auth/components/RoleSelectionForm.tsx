@@ -15,7 +15,7 @@ export function RoleSelectionForm() {
     if (selectedRole === 'teacher') {
       router.push('/teacher');
     } else {
-      router.push('/');
+      router.push('/student');
     }
   };
 

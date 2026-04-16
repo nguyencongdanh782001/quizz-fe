@@ -29,7 +29,7 @@ export function RegisterForm() {
   ) => {
     try {
       await register(values);
-      router.push('/auth/role');
+      router.push(values.role === 'teacher' ? '/teacher' : '/student');
     } catch {
       helpers.setSubmitting(false);
     }
@@ -131,7 +131,7 @@ export function RegisterForm() {
 
           <p className="text-center text-sm text-on-surface-variant">
             Đã có tài khoản?{' '}
-            <Link href="/auth/login" className="text-primary hover:underline font-medium">
+            <Link href="/login" className="text-primary hover:underline font-medium">
               Đăng nhập
             </Link>
           </p>

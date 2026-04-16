@@ -26,7 +26,8 @@ export function LoginForm() {
   ) => {
     try {
       await login(values.email, values.password);
-      router.push('/auth/role');
+      const role = values.email.includes('teacher') ? 'teacher' : 'student';
+      router.push(role === 'teacher' ? '/teacher' : '/student');
     } catch {
       helpers.setSubmitting(false);
     }
@@ -93,7 +94,7 @@ export function LoginForm() {
 
           <p className="text-center text-sm text-on-surface-variant">
             Chưa có tài khoản?{' '}
-            <Link href="/auth/register" className="text-primary hover:underline font-medium">
+            <Link href="/register" className="text-primary hover:underline font-medium">
               Đăng ký ngay
             </Link>
           </p>

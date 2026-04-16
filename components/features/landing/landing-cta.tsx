@@ -1,6 +1,6 @@
-import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function LandingCTA() {
   return (
@@ -10,18 +10,24 @@ export function LandingCTA() {
           Sẵn sàng bắt đầu?
         </h2>
         <p className="text-muted-foreground text-base md:text-lg mb-8 max-w-xl mx-auto">
-          Đăng ký miễn phí trong 30 giây. Không cần thẻ tín dụng, không có phí ẩn.
+          Đăng ký miễn phí trong 30 giây. Không cần thẻ tín dụng, không có phí
+          ẩn.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Button size="lg" className="h-12 px-8 font-semibold" asChild>
-            <Link href="/auth/register">
+            <Link href="/register">
               Đăng ký miễn phí
               <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
           </Button>
-          <Button variant="outline" size="lg" className="h-12 px-8 font-medium" asChild>
-            <Link href="/auth/login">Tôi đã có tài khoản</Link>
+          <Button
+            variant="outline"
+            size="lg"
+            className="h-12 px-8 font-medium"
+            asChild
+          >
+            <Link href="/login">Tôi đã có tài khoản</Link>
           </Button>
         </div>
 

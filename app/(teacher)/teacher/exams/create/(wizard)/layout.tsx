@@ -18,7 +18,6 @@ export default function WizardLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="space-y-6">
-      {/* Progress indicator */}
       <div>
         <h1 className="font-display font-bold text-2xl text-on-surface mb-4">
           Tạo bài thi mới
@@ -52,12 +51,10 @@ export default function WizardLayout({ children }: { children: React.ReactNode }
                   </span>
                 </div>
                 {i < STEPS.length - 1 && (
-                  <div
-                    className={cn(
-                      'h-0.5 mx-4 min-w-8 flex-1',
-                      isDone ? 'bg-primary' : 'bg-surface-container'
-                    )}
-                  />
+                  <div className={cn(
+                    'h-0.5 mx-4 min-w-8 flex-1',
+                    isDone ? 'bg-primary' : 'bg-surface-container'
+                  )} />
                 )}
               </div>
             );
