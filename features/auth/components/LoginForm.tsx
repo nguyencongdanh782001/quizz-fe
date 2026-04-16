@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { Formik, Form, FormikHelpers } from 'formik';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { loginSchema } from '../schemas/login.schema';
-import { useAuth } from '@/hooks/useAuth';
-import { SoftInput } from '@/components/common/SoftInput';
-import { cn } from '@/lib/utils';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { Formik, Form, FormikHelpers } from "formik";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { loginSchema } from "../schemas/login.schema";
+import { useAuth } from "@/hooks/useAuth";
+import { InputField } from "@/components/common/form/input-field";
+import { cn } from "@/lib/utils";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useState } from "react";
 
 interface LoginFormValues {
   email: string;
@@ -22,12 +22,12 @@ export function LoginForm() {
 
   const handleSubmit = async (
     values: LoginFormValues,
-    helpers: FormikHelpers<LoginFormValues>
+    helpers: FormikHelpers<LoginFormValues>,
   ) => {
     try {
       await login(values.email, values.password);
-      const role = values.email.includes('teacher') ? 'teacher' : 'student';
-      router.push(role === 'teacher' ? '/teacher' : '/student');
+      const role = values.email.includes("teacher") ? "teacher" : "student";
+      router.push(role === "teacher" ? "/teacher" : "/student");
     } catch {
       helpers.setSubmitting(false);
     }
@@ -35,7 +35,7 @@ export function LoginForm() {
 
   return (
     <Formik
-      initialValues={{ email: '', password: '' }}
+      initialValues={{ email: "", password: "" }}
       validationSchema={loginSchema}
       onSubmit={handleSubmit}
     >
@@ -45,33 +45,40 @@ export function LoginForm() {
             Đăng nhập
           </h2>
 
-          <SoftInput
+          <InputField
             label="Email"
             type="email"
             placeholder="nguyen.van.minh@email.com"
             error={touched.email ? errors.email : undefined}
-            {...getFieldProps('email')}
+            {...getFieldProps("email")}
           />
 
           <div className="relative">
-            <SoftInput
+            <InputField
               label="Mật khẩu"
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               placeholder="••••••••"
               error={touched.password ? errors.password : undefined}
-              {...getFieldProps('password')}
+              {...getFieldProps("password")}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-9 text-on-surface-variant hover:text-on-surface"
+              className="cursor-pointer absolute right-3 top-9 text-on-surface-variant hover:text-on-surface"
             >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {showPassword ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
             </button>
           </div>
 
           <div className="text-right">
-            <Link href="/auth/forgot" className="text-sm text-primary hover:underline">
+            <Link
+              href="/forgot"
+              className="text-sm text-primary hover:underline"
+            >
               Quên mật khẩu?
             </Link>
           </div>
@@ -80,12 +87,12 @@ export function LoginForm() {
             type="submit"
             disabled={isSubmitting}
             className={cn(
-              'w-full py-3 rounded-xl font-semibold text-base',
-              'bg-primary text-white',
-              'hover:bg-primary-container hover:text-on-primary-container',
-              'transition-all duration-200',
-              'disabled:opacity-60 disabled:cursor-not-allowed',
-              'flex items-center justify-center gap-2'
+              "cursor-pointer w-full py-3 rounded-xl font-semibold text-base",
+              "bg-primary text-white",
+              "hover:bg-primary/90",
+              "transition-all duration-200",
+              "disabled:opacity-60 disabled:cursor-not-allowed",
+              "flex items-center justify-center gap-2",
             )}
           >
             {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -93,8 +100,11 @@ export function LoginForm() {
           </button>
 
           <p className="text-center text-sm text-on-surface-variant">
-            Chưa có tài khoản?{' '}
-            <Link href="/register" className="text-primary hover:underline font-medium">
+            Chưa có tài khoản?{" "}
+            <Link
+              href="/register"
+              className="text-primary hover:underline font-medium"
+            >
               Đăng ký ngay
             </Link>
           </p>

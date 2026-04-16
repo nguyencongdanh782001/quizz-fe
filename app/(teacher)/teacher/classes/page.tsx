@@ -1,9 +1,16 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { Plus, Users, FileCheck, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-import { mockClasses } from '@/data/mock/mock-classes';
-import { cn } from '@/lib/utils';
+import Link from "next/link";
+import {
+  Plus,
+  Users,
+  FileCheck,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+} from "lucide-react";
+import { mockClasses } from "@/data/mock/mock-classes";
+import { cn } from "@/lib/utils";
 
 export default function TeacherClassesPage() {
   return (
@@ -30,8 +37,18 @@ export default function TeacherClassesPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-outline/10">
-              {['Lớp học', 'Khối', 'Học sinh', 'Bài thi', 'Mã lớp', 'Hành động'].map(h => (
-                <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              {[
+                "Lớp học",
+                "Khối",
+                "Học sinh",
+                "Bài thi",
+                "Mã lớp",
+                "Hành động",
+              ].map((h) => (
+                <th
+                  key={h}
+                  className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                >
                   {h}
                 </th>
               ))}
@@ -42,8 +59,8 @@ export default function TeacherClassesPage() {
               <tr
                 key={cls.id}
                 className={cn(
-                  'border-b border-outline/10 last:border-0',
-                  'hover:bg-surface-container-low transition-colors'
+                  "border-b border-outline/10 last:border-0",
+                  "hover:bg-surface-container-low transition-colors",
                 )}
               >
                 <td className="px-5 py-4">
@@ -55,13 +72,19 @@ export default function TeacherClassesPage() {
                       {cls.name.charAt(0)}
                     </div>
                     <div>
-                      <p className="font-medium text-on-surface text-sm">{cls.name}</p>
-                      <p className="text-xs text-muted-foreground truncate max-w-xs">{cls.description}</p>
+                      <p className="font-medium text-on-surface text-sm">
+                        {cls.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate max-w-xs">
+                        {cls.description}
+                      </p>
                     </div>
                   </div>
                 </td>
                 <td className="px-5 py-4">
-                  <span className="text-sm text-muted-foreground">Lớp {cls.grade}</span>
+                  <span className="text-sm text-muted-foreground">
+                    Lớp {cls.grade}
+                  </span>
                 </td>
                 <td className="px-5 py-4">
                   <span className="flex items-center gap-1.5 text-sm text-on-surface">
@@ -82,10 +105,10 @@ export default function TeacherClassesPage() {
                 </td>
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-1">
-                    <button className="p-2 rounded-lg hover:bg-surface-container transition-colors text-muted-foreground hover:text-on-surface">
+                    <button className="cursor-pointer p-2 rounded-lg hover:bg-surface-container transition-colors text-muted-foreground hover:text-on-surface">
                       <Pencil className="w-4 h-4" />
                     </button>
-                    <button className="p-2 rounded-lg hover:bg-surface-container transition-colors text-muted-foreground hover:text-destructive">
+                    <button className="cursor-pointer p-2 rounded-lg hover:bg-surface-container transition-colors text-muted-foreground hover:text-destructive">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>

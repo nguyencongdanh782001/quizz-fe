@@ -47,7 +47,7 @@ function computeScore(questions: Question[], answers: Record<string, string[]>):
     const selected = answers[q.id] ?? [];
     const correctIds = q.options.filter(o => o.isCorrect).map(o => o.id);
 
-    if (q.type === 'single') {
+    if (q.type === 'single' || q.type === 'multiple_choice' || q.type === 'true_false') {
       if (selected.length === 1 && correctIds.includes(selected[0])) {
         score += q.points;
       }

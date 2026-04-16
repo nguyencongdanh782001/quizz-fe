@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { Check } from 'lucide-react';
-import { AnswerOption as AnswerOptionType } from '@/types/exam.types';
-import { cn } from '@/lib/utils';
+import { Check } from "lucide-react";
+import { AnswerOption as AnswerOptionType } from "@/types/exam.types";
+import { cn } from "@/lib/utils";
 
-const optionLetters = ['A', 'B', 'C', 'D', 'E', 'F'];
+const optionLetters = ["A", "B", "C", "D", "E", "F"];
 
 interface AnswerOptionProps {
   option: AnswerOptionType;
@@ -26,21 +26,21 @@ export function AnswerOption({
       type="button"
       onClick={() => onSelect(option.id)}
       className={cn(
-        'flex items-start gap-3 w-full p-4 rounded-xl text-left',
-        'border transition-all duration-150',
-        'focus:outline-none focus:ring-2 focus:ring-primary/40',
+        "cursor-pointer flex items-start gap-3 w-full p-4 rounded-xl text-left",
+        "border transition-all duration-150",
+        "focus:outline-none focus:ring-2 focus:ring-primary/40",
         isSelected
-          ? 'bg-primary/8 border-primary text-on-surface'
-          : 'bg-surface-container-lowest border-outline/20 text-on-surface hover:bg-surface-container-low hover:border-outline/40'
+          ? "bg-primary/8 border-primary text-on-surface"
+          : "bg-surface-container-lowest border-outline/20 text-on-surface hover:bg-surface-container-low hover:border-outline/40",
       )}
     >
       <div
         className={cn(
-          'w-7 h-7 rounded-lg flex items-center justify-center text-sm font-semibold shrink-0 mt-0.5',
-          'border transition-colors duration-150',
+          "w-7 h-7 rounded-lg flex items-center justify-center text-sm font-semibold shrink-0 mt-0.5",
+          "border transition-colors duration-150",
           isSelected
-            ? 'bg-primary text-white border-primary'
-            : 'bg-surface-container text-muted-foreground border-outline/30'
+            ? "bg-primary text-white border-primary"
+            : "bg-surface-container text-muted-foreground border-outline/30",
         )}
       >
         {isMultiple && isSelected ? (
@@ -49,7 +49,9 @@ export function AnswerOption({
           optionLetters[index]
         )}
       </div>
-      <span className="text-sm leading-relaxed flex-1 pt-0.5">{option.text}</span>
+      <span className="text-sm leading-relaxed flex-1 pt-0.5">
+        {option.text}
+      </span>
     </button>
   );
 }

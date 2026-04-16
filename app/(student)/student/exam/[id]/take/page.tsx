@@ -1,23 +1,27 @@
-'use client';
+"use client";
 
-import { use, useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { AlertTriangle, X } from 'lucide-react';
-import { mockExams } from '@/data/mock/mock-exams';
-import { getQuestionsByExamId } from '@/data/mock/mock-questions';
-import { useExamSessionStore } from '@/stores/exam-session-store';
-import { useExamTimer } from '@/hooks/use-exam-timer';
-import { ExamTimer } from '@/components/features/exam/exam-timer';
-import { ProgressOrbs } from '@/components/features/exam/progress-orbs';
-import { QuestionCard } from '@/components/features/exam/question-card';
-import { ExamNavigation } from '@/components/features/exam/exam-navigation';
-import { cn } from '@/lib/utils';
+import { ExamNavigation } from "@/components/features/exam/exam-navigation";
+import { ExamTimer } from "@/components/features/exam/exam-timer";
+import { ProgressOrbs } from "@/components/features/exam/progress-orbs";
+import { QuestionCard } from "@/components/features/exam/question-card";
+import { mockExams } from "@/data/mock/mock-exams";
+import { getQuestionsByExamId } from "@/data/mock/mock-questions";
+import { useExamTimer } from "@/hooks/use-exam-timer";
+import { cn } from "@/lib/utils";
+import { useExamSessionStore } from "@/stores/exam-session-store";
+import { AlertTriangle, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { use, useCallback, useEffect, useState } from "react";
 
-export default function ExamTakePage({ params }: { params: Promise<{ id: string }> }) {
+export default function ExamTakePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = use(params);
   const router = useRouter();
 
-  const exam = mockExams.find(e => e.id === id);
+  const exam = mockExams.find((e) => e.id === id);
   const questions = getQuestionsByExamId(id);
 
   const {
@@ -51,7 +55,7 @@ export default function ExamTakePage({ params }: { params: Promise<{ id: string 
       }
     }
 
-    if (phase === 'not-started') {
+    if (phase === "not-started") {
       startExam(exam, questions);
     }
   }, [exam, questions, phase, startExam, resetSession, router, id]);
@@ -59,26 +63,21 @@ export default function ExamTakePage({ params }: { params: Promise<{ id: string 
   // Redirect if no exam
   useEffect(() => {
     if (!exam || questions.length === 0) {
-      router.replace('/exams');
+      router.replace("/exams");
     }
   }, [exam, questions, router]);
 
   // Drift-free timer
-  const { timeLeft, isExpired } = useExamTimer(
-    exam?.duration ? exam.duration * 60 : 0,
-    useCallback(() => {
-      if (phase === 'in-progress') {
-        handleSubmit();
-      }
-    }, [phase])
-  );
 
   const handleSubmit = useCallback(async () => {
     setIsSubmitting(true);
     try {
       const attempt = submitExam();
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem(`attempt-${attempt.id}`, JSON.stringify(attempt));
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(
+          `attempt-${attempt.id}`,
+          JSON.stringify(attempt),
+        );
       }
       router.push(`/exam/${id}/result?attemptId=${attempt.id}`);
     } catch {
@@ -86,19 +85,33 @@ export default function ExamTakePage({ params }: { params: Promise<{ id: string 
     }
   }, [submitExam, router, id]);
 
+  const { timeLeft, isExpired } = useExamTimer(
+    exam?.duration ? exam.duration * 60 : 0,
+    useCallback(() => {
+      if (phase === "in-progress") {
+        handleSubmit();
+      }
+    }, [handleSubmit, phase]),
+  );
+
   // Time expired auto-submit
   useEffect(() => {
-    if (isExpired && phase === 'in-progress') {
-      handleSubmit();
-    }
+    const submit = async () => {
+      if (isExpired && phase === "in-progress") {
+        await handleSubmit();
+      }
+    };
+    submit();
   }, [isExpired, phase, handleSubmit]);
 
   if (!exam || questions.length === 0) return null;
 
   const currentQuestion = questions[currentIndex];
-  const answeredIds = new Set(Object.keys(answers).filter(k => answers[k].length > 0));
+  const answeredIds = new Set(
+    Object.keys(answers).filter((k) => answers[k].length > 0),
+  );
   const answeredCount = answeredIds.size;
-  const hasCurrentAnswer = (answers[currentQuestion?.id] ?? []).length > 0;
+  // const hasCurrentAnswer = (answers[currentQuestion?.id] ?? []).length > 0;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -125,7 +138,7 @@ export default function ExamTakePage({ params }: { params: Promise<{ id: string 
             total={questions.length}
             currentIndex={currentIndex}
             answeredIds={answeredIds}
-            questionIds={questions.map(q => q.id)}
+            questionIds={questions.map((q) => q.id)}
             onJumpTo={goToQuestion}
           />
         </div>
@@ -170,7 +183,7 @@ export default function ExamTakePage({ params }: { params: Promise<{ id: string 
           <div className="relative bg-surface-container-lowest rounded-2xl p-6 max-w-sm w-full shadow-2xl">
             <button
               onClick={() => setShowSubmitConfirm(false)}
-              className="absolute top-4 right-4 text-muted-foreground hover:text-on-surface transition-colors"
+              className="cursor-pointer absolute top-4 right-4 text-muted-foreground hover:text-on-surface transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -188,7 +201,8 @@ export default function ExamTakePage({ params }: { params: Promise<{ id: string 
               <div className="mb-4 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800/30">
                 <p className="text-sm text-yellow-700 dark:text-yellow-400">
                   Bạn đã trả lời {answeredCount}/{questions.length} câu.
-                  {questions.length - answeredCount} câu chưa trả lời sẽ bị tính là sai.
+                  {questions.length - answeredCount} câu chưa trả lời sẽ bị tính
+                  là sai.
                 </p>
               </div>
             )}
@@ -201,9 +215,9 @@ export default function ExamTakePage({ params }: { params: Promise<{ id: string 
               <button
                 onClick={() => setShowSubmitConfirm(false)}
                 className={cn(
-                  'flex-1 py-2.5 rounded-xl text-sm font-medium border',
-                  'border-outline/20 text-on-surface hover:bg-surface-container-low',
-                  'transition-colors'
+                  "cursor-pointer flex-1 py-2.5 rounded-xl text-sm font-medium border",
+                  "border-outline/20 text-on-surface hover:bg-surface-container-low",
+                  "transition-colors",
                 )}
               >
                 Quay lại
@@ -212,12 +226,12 @@ export default function ExamTakePage({ params }: { params: Promise<{ id: string 
                 onClick={handleSubmit}
                 disabled={isSubmitting}
                 className={cn(
-                  'flex-1 py-2.5 rounded-xl text-sm font-semibold',
-                  'bg-secondary text-white hover:bg-secondary/90',
-                  'transition-colors disabled:opacity-50'
+                  "cursor-pointer flex-1 py-2.5 rounded-xl text-sm font-semibold",
+                  "bg-secondary text-white hover:bg-secondary/90",
+                  "transition-colors disabled:opacity-50",
                 )}
               >
-                {isSubmitting ? 'Đang nộp...' : 'Nộp bài'}
+                {isSubmitting ? "Đang nộp..." : "Nộp bài"}
               </button>
             </div>
           </div>

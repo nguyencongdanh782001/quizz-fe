@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
 
-export type OrbState = 'unanswered' | 'answered' | 'current' | 'flagged';
+export type OrbState = "unanswered" | "answered" | "current" | "flagged";
 
 interface ProgressOrbsProps {
   total: number;
@@ -31,15 +31,15 @@ export function ProgressOrbs({
             key={i}
             onClick={() => onJumpTo(i)}
             className={cn(
-              'w-3 h-3 rounded-full transition-all duration-200',
-              'hover:scale-125 focus:outline-none focus:ring-2 focus:ring-primary/50',
+              "cursor-pointer w-3 h-3 rounded-full transition-all duration-200",
+              "hover:scale-125 focus:outline-none focus:ring-2 focus:ring-primary/50",
               isCurrent
-                ? 'bg-secondary scale-125 shadow-[0_0_8px_var(--secondary)]'
+                ? "bg-secondary scale-125 shadow-[0_0_8px_var(--secondary)]"
                 : isAnswered
-                ? 'bg-primary'
-                : 'bg-outline-variant',
+                  ? "bg-primary"
+                  : "bg-outline-variant",
             )}
-            aria-label={`Câu hỏi ${i + 1}${isAnswered ? ' (đã trả lời)' : ''}${isCurrent ? ' (hiện tại)' : ''}`}
+            aria-label={`Câu hỏi ${i + 1}${isAnswered ? " (đã trả lời)" : ""}${isCurrent ? " (hiện tại)" : ""}`}
           />
         );
       })}

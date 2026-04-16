@@ -1,14 +1,23 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { Plus, BookOpen, Clock, Users, Pencil, Trash2, Copy } from 'lucide-react';
-import { mockExams } from '@/data/mock/mock-exams';
-import { cn } from '@/lib/utils';
+import Link from "next/link";
+import {
+  Plus,
+  BookOpen,
+  Clock,
+  Users,
+  Pencil,
+  Trash2,
+  Copy,
+} from "lucide-react";
+import { mockExams } from "@/data/mock/mock-exams";
+import { cn } from "@/lib/utils";
 
 const difficultyColor = {
-  easy: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  medium: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  hard: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  easy: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  medium:
+    "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+  hard: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
 export default function TeacherExamsPage() {
@@ -38,8 +47,19 @@ export default function TeacherExamsPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-outline/10">
-              {['Bài thi', 'Môn', 'Khối', 'Câu hỏi', 'Thời gian', 'Trạng thái', 'Hành động'].map(h => (
-                <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              {[
+                "Bài thi",
+                "Môn",
+                "Khối",
+                "Câu hỏi",
+                "Thời gian",
+                "Trạng thái",
+                "Hành động",
+              ].map((h) => (
+                <th
+                  key={h}
+                  className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                >
                   {h}
                 </th>
               ))}
@@ -50,24 +70,36 @@ export default function TeacherExamsPage() {
               <tr
                 key={exam.id}
                 className={cn(
-                  'border-b border-outline/10 last:border-0',
-                  'hover:bg-surface-container-low transition-colors'
+                  "border-b border-outline/10 last:border-0",
+                  "hover:bg-surface-container-low transition-colors",
                 )}
               >
                 <td className="px-5 py-4 max-w-xs">
-                  <p className="font-medium text-on-surface text-sm line-clamp-1">{exam.title}</p>
-                  <span className={cn(
-                    'inline-block mt-0.5 px-1.5 py-0.5 rounded text-xs font-medium',
-                    difficultyColor[exam.difficulty]
-                  )}>
-                    {exam.difficulty === 'easy' ? 'Dễ' : exam.difficulty === 'medium' ? 'Trung bình' : 'Khó'}
+                  <p className="font-medium text-on-surface text-sm line-clamp-1">
+                    {exam.title}
+                  </p>
+                  <span
+                    className={cn(
+                      "inline-block mt-0.5 px-1.5 py-0.5 rounded text-xs font-medium",
+                      difficultyColor[exam.difficulty],
+                    )}
+                  >
+                    {exam.difficulty === "easy"
+                      ? "Dễ"
+                      : exam.difficulty === "medium"
+                        ? "Trung bình"
+                        : "Khó"}
                   </span>
                 </td>
                 <td className="px-5 py-4">
-                  <span className="text-sm text-muted-foreground">{exam.subject}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {exam.subject}
+                  </span>
                 </td>
                 <td className="px-5 py-4">
-                  <span className="text-sm text-muted-foreground">{exam.grade}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {exam.grade}
+                  </span>
                 </td>
                 <td className="px-5 py-4">
                   <span className="flex items-center gap-1.5 text-sm text-on-surface">
@@ -82,13 +114,15 @@ export default function TeacherExamsPage() {
                   </span>
                 </td>
                 <td className="px-5 py-4">
-                  <span className={cn(
-                    'px-2 py-0.5 rounded-full text-xs font-medium',
-                    exam.status === 'published'
-                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                      : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                  )}>
-                    {exam.status === 'published' ? 'Đã xuất bản' : 'Nháp'}
+                  <span
+                    className={cn(
+                      "px-2 py-0.5 rounded-full text-xs font-medium",
+                      exam.status === "published"
+                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+                    )}
+                  >
+                    {exam.status === "published" ? "Đã xuất bản" : "Nháp"}
                   </span>
                 </td>
                 <td className="px-5 py-4">
@@ -99,10 +133,10 @@ export default function TeacherExamsPage() {
                     >
                       <Pencil className="w-4 h-4" />
                     </Link>
-                    <button className="p-2 rounded-lg hover:bg-surface-container transition-colors text-muted-foreground hover:text-primary">
+                    <button className="cursor-pointer p-2 rounded-lg hover:bg-surface-container transition-colors text-muted-foreground hover:text-primary">
                       <Copy className="w-4 h-4" />
                     </button>
-                    <button className="p-2 rounded-lg hover:bg-surface-container transition-colors text-muted-foreground hover:text-destructive">
+                    <button className="cursor-pointer p-2 rounded-lg hover:bg-surface-container transition-colors text-muted-foreground hover:text-destructive">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>

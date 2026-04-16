@@ -1,16 +1,20 @@
-'use client';
+"use client";
 
-import { use, useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
+import { use, useSyncExternalStore, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
-  CheckCircle, XCircle, Clock, Star, ArrowRight,
-  RotateCcw, Home, BookOpen
-} from 'lucide-react';
-import { mockExams } from '@/data/mock/mock-exams';
-import { getQuestionsByExamId } from '@/data/mock/mock-questions';
-import { ExamAttempt } from '@/types/exam.types';
-import { cn } from '@/lib/utils';
+  CheckCircle,
+  XCircle,
+  Clock,
+  Star,
+  Home,
+  BookOpen,
+} from "lucide-react";
+import { mockExams } from "@/data/mock/mock-exams";
+import { getQuestionsByExamId } from "@/data/mock/mock-questions";
+import { ExamAttempt } from "@/types/exam.types";
+import { cn } from "@/lib/utils";
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -20,20 +24,18 @@ function formatDuration(seconds: number): string {
 
 function ResultPageContent({ id }: { id: string }) {
   const searchParams = useSearchParams();
-  const attemptId = searchParams.get('attemptId');
-
-  const [attempt, setAttempt] = useState<ExamAttempt | null>(null);
-  const exam = mockExams.find(e => e.id === id);
+  const attemptId = searchParams.get("attemptId");
+  const exam = mockExams.find((e) => e.id === id);
   const questions = getQuestionsByExamId(id);
-
-  useEffect(() => {
-    if (attemptId && typeof window !== 'undefined') {
+  const attempt = useSyncExternalStore(
+    () => () => {},
+    () => {
+      if (!attemptId) return null;
       const stored = sessionStorage.getItem(`attempt-${attemptId}`);
-      if (stored) {
-        setAttempt(JSON.parse(stored));
-      }
-    }
-  }, [attemptId]);
+      return stored ? (JSON.parse(stored) as ExamAttempt) : null;
+    },
+    () => null,
+  );
 
   if (!exam) {
     return (
@@ -48,9 +50,9 @@ function ResultPageContent({ id }: { id: string }) {
 
   // Mock attempt if none found
   const result = attempt ?? {
-    id: 'mock',
+    id: "mock",
     examId: exam.id,
-    userId: 'user',
+    userId: "user",
     answers: {},
     score: Math.floor(questions.length * 0.7),
     totalPoints: questions.length,
@@ -61,13 +63,14 @@ function ResultPageContent({ id }: { id: string }) {
     timeSpent: exam.duration * 45,
   };
 
-  const scorePercent = result.totalPoints > 0
-    ? Math.round((result.score / result.totalPoints) * 100)
-    : 0;
+  const scorePercent =
+    result.totalPoints > 0
+      ? Math.round((result.score / result.totalPoints) * 100)
+      : 0;
   const isPassed = scorePercent >= exam.passingScore;
 
   return (
-    <div className="space-y-8 max-w-3xl mx-auto">
+    <div className="space-y-8 w-full mx-auto">
       {/* Back */}
       <Link
         href="/exams"
@@ -79,29 +82,38 @@ function ResultPageContent({ id }: { id: string }) {
       {/* Score card */}
       <div
         className={cn(
-          'rounded-2xl p-8 text-center',
+          "rounded-2xl p-8 text-center",
           isPassed
-            ? 'bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-200 dark:border-green-800/30'
-            : 'bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 border border-red-200 dark:border-red-800/30'
+            ? "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-200 dark:border-green-800/30"
+            : "bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 border border-red-200 dark:border-red-800/30",
         )}
       >
-        <div className={cn(
-          'inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold mb-4',
-          isPassed
-            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-        )}>
+        <div
+          className={cn(
+            "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold mb-4",
+            isPassed
+              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+              : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+          )}
+        >
           {isPassed ? (
-            <><CheckCircle className="w-4 h-4" /> Đạt</>
+            <>
+              <CheckCircle className="w-4 h-4" /> Đạt
+            </>
           ) : (
-            <><XCircle className="w-4 h-4" /> Chưa đạt</>
+            <>
+              <XCircle className="w-4 h-4" /> Chưa đạt
+            </>
           )}
         </div>
 
         <div className="mb-4">
-          <div className="font-display font-bold text-6xl mb-1" style={{
-            color: isPassed ? '#059669' : '#dc2626'
-          }}>
+          <div
+            className="font-display font-bold text-6xl mb-1"
+            style={{
+              color: isPassed ? "#059669" : "#dc2626",
+            }}
+          >
             {scorePercent}%
           </div>
           <p className="text-muted-foreground text-sm">
@@ -152,21 +164,26 @@ function ResultPageContent({ id }: { id: string }) {
           <div className="space-y-3">
             {questions.map((q, i) => {
               const selected = result.answers[q.id] ?? [];
-              const correctIds = q.options.filter(o => o.isCorrect).map(o => o.id);
-              const isCorrect =
-                q.type === 'single'
-                  ? selected.length === 1 && correctIds.includes(selected[0])
-                  : selected.length === correctIds.length &&
-                    selected.every(id => correctIds.includes(id));
+              const correctIds = q.options
+                .filter((o) => o.isCorrect)
+                .map((o) => o.id);
+              const isSingleSelect =
+                q.type === "single" ||
+                q.type === "multiple_choice" ||
+                q.type === "true_false";
+              const isCorrect = isSingleSelect
+                ? selected.length === 1 && correctIds.includes(selected[0])
+                : selected.length === correctIds.length &&
+                  selected.every((id) => correctIds.includes(id));
 
               return (
                 <div
                   key={q.id}
                   className={cn(
-                    'rounded-xl p-4 border',
+                    "rounded-xl p-4 border",
                     isCorrect
-                      ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800/30'
-                      : 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800/30'
+                      ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800/30"
+                      : "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800/30",
                   )}
                 >
                   <div className="flex items-start gap-3">
@@ -185,10 +202,14 @@ function ResultPageContent({ id }: { id: string }) {
                         </p>
                       )}
                     </div>
-                    <span className={cn(
-                      'text-xs font-medium shrink-0',
-                      isCorrect ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                    )}>
+                    <span
+                      className={cn(
+                        "text-xs font-medium shrink-0",
+                        isCorrect
+                          ? "text-green-600 dark:text-green-400"
+                          : "text-red-600 dark:text-red-400",
+                      )}
+                    >
                       {q.points}đ
                     </span>
                   </div>
@@ -202,10 +223,20 @@ function ResultPageContent({ id }: { id: string }) {
   );
 }
 
-export default function ExamResultPage({ params }: { params: Promise<{ id: string }> }) {
+export default function ExamResultPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = use(params);
   return (
-    <Suspense fallback={<div className="text-center py-20 text-muted-foreground">Đang tải kết quả...</div>}>
+    <Suspense
+      fallback={
+        <div className="text-center py-20 text-muted-foreground">
+          Đang tải kết quả...
+        </div>
+      }
+    >
       <ResultPageContent id={id} />
     </Suspense>
   );

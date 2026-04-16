@@ -4,8 +4,17 @@ import { useState } from 'react';
 import { Search } from 'lucide-react';
 import { ClassCard } from '@/components/features/class/class-card';
 import { mockClasses } from '@/data/mock/mock-classes';
-import { cn } from '@/lib/utils';
 import { GRADES } from '@/data/mock/mock-exams';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+const ALL_GRADES = '__all_grades__';
 
 export default function ClassesPage() {
   const [search, setSearch] = useState('');
@@ -31,31 +40,30 @@ export default function ClassesPage() {
       <div className="flex gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
+          <Input
             type="text"
             placeholder="Tìm kiếm lớp học..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className={cn(
-              'w-full pl-10 pr-4 py-2.5 rounded-xl text-sm',
-              'bg-surface-container-lowest text-on-surface',
-              'border border-outline/20 focus:border-primary focus:ring-1 focus:ring-primary/30',
-              'outline-none transition-colors placeholder:text-muted-foreground'
-            )}
+            className="h-12 rounded-2xl border-outline/15 bg-surface-container-lowest pl-10 pr-4 shadow-none"
           />
         </div>
-        <select
-          value={grade}
-          onChange={e => setGrade(e.target.value === '' ? '' : Number(e.target.value))}
-          className={cn(
-            'px-3 py-2.5 rounded-xl text-sm shrink-0',
-            'bg-surface-container-lowest text-on-surface border border-outline/20 outline-none',
-            'focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors'
-          )}
+        <Select
+          value={grade === '' ? ALL_GRADES : String(grade)}
+          onValueChange={value => setGrade(value === ALL_GRADES ? '' : Number(value))}
         >
-          <option value="">Tất cả khối</option>
-          {GRADES.map(g => <option key={g} value={g}>Lớp {g}</option>)}
-        </select>
+          <SelectTrigger className="h-12 w-[180px] rounded-2xl border-outline/15 bg-surface-container-lowest shadow-none">
+            <SelectValue placeholder="Tất cả khối" />
+          </SelectTrigger>
+          <SelectContent position="popper">
+            <SelectItem value={ALL_GRADES}>Tất cả khối</SelectItem>
+            {GRADES.map(g => (
+              <SelectItem key={g} value={String(g)}>
+                Lớp {g}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {filtered.length === 0 ? (

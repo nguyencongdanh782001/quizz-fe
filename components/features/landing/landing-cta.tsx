@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 export function LandingCTA() {
   return (
-    <section className="py-20 bg-gradient-to-br from-primary/5 via-surface to-secondary/5">
+    <section className="py-20 bg-linear-to-br from-primary/5 via-surface to-secondary/5">
       <div className="max-w-3xl mx-auto px-6 text-center">
         <h2 className="font-display font-bold text-3xl md:text-4xl text-on-surface mb-4">
           Sẵn sàng bắt đầu?

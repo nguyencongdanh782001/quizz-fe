@@ -21,8 +21,13 @@ export function QuestionCard({
   onSelect,
   isFlagged = false,
 }: QuestionCardProps) {
+  const isSingleSelect =
+    question.type === 'single' ||
+    question.type === 'multiple_choice' ||
+    question.type === 'true_false';
+
   const handleSelect = (optionId: string) => {
-    if (question.type === 'single') {
+    if (isSingleSelect) {
       onSelect(question.id, [optionId]);
     } else {
       // Multiple: toggle
@@ -50,6 +55,11 @@ export function QuestionCard({
           {question.type === 'multiple' && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-surface-container text-muted-foreground font-medium">
               Chọn nhiều
+            </span>
+          )}
+          {question.type === 'true_false' && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-surface-container text-muted-foreground font-medium">
+              Đúng / Sai
             </span>
           )}
           {isFlagged && (

@@ -1,6 +1,8 @@
 'use client';
 
 import * as React from 'react';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 interface OTPInputProps {
   value: string;       // always 4 chars
@@ -59,24 +61,24 @@ export function OTPInput({ value, onChange, error }: OTPInputProps) {
     <div className="space-y-1.5">
       <div className="flex gap-2" aria-label="OTP input">
         {chars.map((ch, i) => (
-          <input
+          <Input
             key={i}
             ref={el => { inputRefs.current[i] = el; }}
             type="text"
             inputMode="text"
             maxLength={4}
             value={ch}
+            aria-invalid={!!error}
             onChange={e => setChar(i, e.target.value)}
             onKeyDown={e => handleKeyDown(i, e)}
             onFocus={() => setFocusedIdx(i)}
-            className={
-              'w-12 h-12 text-center text-xl font-bold rounded-xl border text-on-surface ' +
-              'outline-none transition-all ' +
-              (focusedIdx === i
-                ? 'border-primary ring-2 ring-primary/30 bg-surface'
-                : 'border-outline/30 bg-surface hover:border-outline/50') +
-              (error ? ' border-destructive' : '')
-            }
+            className={cn(
+              'h-14 w-14 rounded-2xl px-0 text-center text-xl font-bold tracking-[0.08em] shadow-none',
+              focusedIdx === i
+                ? 'border-primary bg-surface ring-4 ring-primary/12'
+                : 'border-outline/20 bg-surface-container-lowest hover:border-primary/35 hover:bg-surface',
+              error && 'border-destructive ring-4 ring-destructive/15'
+            )}
           />
         ))}
       </div>

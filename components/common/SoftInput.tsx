@@ -1,6 +1,8 @@
 'use client';
 
 import { forwardRef } from 'react';
+import { Input as InputBase } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
 interface SoftInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -11,23 +13,18 @@ interface SoftInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 export const SoftInput = forwardRef<HTMLInputElement, SoftInputProps>(
   ({ label, error, className, ...props }, ref) => {
     return (
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         {label && (
-          <label className="block text-sm font-medium text-on-surface">
+          <Label className="block text-sm font-medium text-on-surface">
             {label}
-          </label>
+          </Label>
         )}
-        <input
+        <InputBase
           ref={ref}
+          aria-invalid={!!error}
           className={cn(
-            'w-full px-4 py-2.5 rounded-lg',
-            'bg-surface-container-highest',
-            'text-on-surface text-base font-body',
-            'placeholder:text-on-surface-variant/60',
-            'outline-none',
-            'focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/20',
-            'transition-all duration-200',
-            error && 'ring-2 ring-destructive',
+            'bg-surface-container-highest hover:bg-surface-container-lowest focus-visible:bg-surface-container-lowest',
+            error && 'border-destructive focus-visible:ring-destructive/20',
             className
           )}
           {...props}

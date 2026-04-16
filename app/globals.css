@@ -193,6 +193,12 @@
   html {
     font-family: var(--font-public-sans), system-ui, sans-serif;
   }
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
 }
 
 /* Custom gradient utility */

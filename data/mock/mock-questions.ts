@@ -172,6 +172,18 @@ export const mockQuestions: Question[] = [
     ],
     explanation: 'Gia tốc = (vận tốc cuối − vận tốc đầu) / thời gian.',
   },
+  {
+    id: 'q-004-03',
+    examId: 'exam-004',
+    text: 'Trong chuyển động thẳng đều, vận tốc của vật không thay đổi theo thời gian.',
+    type: 'true_false',
+    points: 5,
+    options: [
+      { id: 'true', text: 'Đúng', isCorrect: true },
+      { id: 'false', text: 'Sai', isCorrect: false },
+    ],
+    explanation: 'Chuyển động thẳng đều có vận tốc không đổi theo thời gian.',
+  },
   // exam-002: Ngữ văn
   {
     id: 'q-002-01',
