@@ -17,7 +17,14 @@ export default function ExamReviewPage() {
 
   const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
   const hasQuestions = questions.length > 0;
-  const hasCorrectAnswers = questions.every(q => q.options.some(o => o.isCorrect));
+  const hasCorrectAnswers = questions.every(q => {
+    if (['single', 'multiple', 'multiple_choice'].includes(q.type)) {
+      return q.options.some(o => o.isCorrect);
+    }
+    if (q.type === 'true_false') return !!q.answer;
+    if (q.type === 'text') return q.answer?.length === 4;
+    return false;
+  });
 
   const handlePublish = async () => {
     if (!hasQuestions) return;
@@ -25,6 +32,21 @@ export default function ExamReviewPage() {
     await new Promise(r => setTimeout(r, 1200));
     resetWizard();
     router.push('/teacher/exams');
+  };
+
+  const TYPE_BG: Record<string, string> = {
+    single: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    multiple: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    multiple_choice: 'bg-primary/10 text-primary',
+    true_false: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+    text: 'bg-secondary/10 text-secondary',
+  };
+  const TYPE_LABEL: Record<string, string> = {
+    single: '1 đáp án',
+    multiple: 'Nhiều đáp án',
+    multiple_choice: 'Trắc nghiệm',
+    true_false: 'Đúng / Sai',
+    text: 'Tự luận ngắn',
   };
 
   return (
@@ -82,11 +104,9 @@ export default function ExamReviewPage() {
                       <div className="flex items-center gap-2 mt-1">
                         <span className={cn(
                           'text-xs px-1.5 py-0.5 rounded-full',
-                          q.type === 'multiple'
-                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                          TYPE_BG[q.type] ?? 'bg-blue-100 text-blue-700'
                         )}>
-                          {q.type === 'single' ? '1 đáp án' : 'Nhiều đáp án'}
+                          {TYPE_LABEL[q.type] ?? q.type}
                         </span>
                         <span className="text-xs text-muted-foreground">{q.points} điểm</span>
                       </div>

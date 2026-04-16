@@ -1,14 +1,15 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { ExamDifficulty } from '@/types/exam.types';
+import { ExamDifficulty, QuestionType } from '@/types/exam.types';
 
 export interface WizardQuestion {
   id: string;
   text: string;
-  type: 'single' | 'multiple';
+  type: QuestionType;
   options: { id: string; text: string; isCorrect: boolean }[];
-  points: number;
+  answer?: string;      // for 'text' type — 4-char OTP answer
   explanation: string;
+  points: number;
 }
 
 export interface ExamWizardState {

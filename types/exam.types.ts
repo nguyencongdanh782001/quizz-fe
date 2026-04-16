@@ -1,4 +1,4 @@
-export type QuestionType = 'single' | 'multiple';
+export type QuestionType = 'single' | 'multiple' | 'multiple_choice' | 'true_false' | 'text';
 export type ExamDifficulty = 'easy' | 'medium' | 'hard';
 export type ExamStatus = 'draft' | 'published' | 'archived';
 
