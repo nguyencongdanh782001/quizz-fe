@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 export default function ReviewPage() {
   const router = useRouter();
   const state = useExamWizardStore();
-  const { title, description, subject, grade, difficulty, questions, duration, passingScore, attemptLimit, shuffleQuestions, shuffleOptions, showResults } = state;
+  const { title, description, subject, grade, difficulty, questions, duration, passingScore, attemptLimit, shuffleQuestions, shuffleOptions } = state;
 
   const handlePublish = async () => {
     // TODO: submit exam to backend
@@ -104,14 +104,6 @@ export default function ReviewPage() {
             <div className="bg-surface rounded-xl p-3">
               <span className="text-muted-foreground">Số lần làm</span>
               <p className="font-medium text-on-surface mt-0.5">{attemptLimit}</p>
-            </div>
-            <div className="bg-surface rounded-xl p-3">
-              <span className="text-muted-foreground">Hiển thị kết quả</span>
-              <p className="font-medium text-on-surface mt-0.5">{showResults ? 'Có' : 'Không'}</p>
-            </div>
-            <div className="bg-surface rounded-xl p-3">
-              <span className="text-muted-foreground">Xáo trộn câu hỏi</span>
-              <p className="font-medium text-on-surface mt-0.5">{shuffleQuestions ? 'Có' : 'Không'}</p>
             </div>
             <div className="bg-surface rounded-xl p-3">
               <span className="text-muted-foreground">Xáo trộn đáp án</span>
