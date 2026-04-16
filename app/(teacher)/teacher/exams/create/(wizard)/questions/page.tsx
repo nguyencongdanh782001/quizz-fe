@@ -1,3 +1,5 @@
+'use client';
+
 import { useRouter } from 'next/navigation';
 import { useExamWizardStore } from '@/stores/exam-wizard-store';
 import { useState } from 'react';
