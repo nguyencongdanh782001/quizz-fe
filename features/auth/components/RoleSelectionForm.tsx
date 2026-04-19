@@ -1,22 +1,23 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { SurfaceCard } from '@/components/common/SurfaceCard';
-import { GraduationCap, Users } from 'lucide-react';
+import { GraduationCap, Users, Loader2 } from 'lucide-react';
 
 export function RoleSelectionForm() {
-  const { role, selectRole } = useAuth();
+  const { selectRole } = useAuth();
   const router = useRouter();
+  const [selected, setSelected] = useState<'student' | 'teacher' | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSelect = (selectedRole: 'student' | 'teacher') => {
-    selectRole(selectedRole);
-    if (selectedRole === 'teacher') {
-      router.push('/teacher');
-    } else {
-      router.push('/student');
-    }
+  const handleConfirm = () => {
+    if (!selected) return;
+    setIsSubmitting(true);
+    selectRole(selected);
+    router.push(selected === 'teacher' ? '/teacher' : '/student');
   };
 
   return (
@@ -33,13 +34,13 @@ export function RoleSelectionForm() {
       <div className="grid grid-cols-1 gap-4">
         <SurfaceCard
           as="button"
-          onClick={() => handleSelect('student')}
+          onClick={() => setSelected('student')}
           className={cn(
             'p-6 text-left w-full cursor-pointer',
             'hover:ring-2 hover:ring-primary/20',
             'transition-all duration-200',
             'group',
-            role === 'student' && 'ring-2 ring-primary'
+            selected === 'student' && 'ring-2 ring-primary'
           )}
         >
           <div className="flex items-center gap-4">
@@ -54,7 +55,7 @@ export function RoleSelectionForm() {
                 Làm bài thi, xem kết quả, tham gia lớp học
               </p>
             </div>
-            {role === 'student' && (
+            {selected === 'student' && (
               <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
                 <span className="text-white text-xs">&#10003;</span>
               </div>
@@ -64,13 +65,13 @@ export function RoleSelectionForm() {
 
         <SurfaceCard
           as="button"
-          onClick={() => handleSelect('teacher')}
+          onClick={() => setSelected('teacher')}
           className={cn(
             'p-6 text-left w-full cursor-pointer',
             'hover:ring-2 hover:ring-primary/20',
             'transition-all duration-200',
             'group',
-            role === 'teacher' && 'ring-2 ring-primary'
+            selected === 'teacher' && 'ring-2 ring-primary'
           )}
         >
           <div className="flex items-center gap-4">
@@ -85,7 +86,7 @@ export function RoleSelectionForm() {
                 Tạo bài thi, quản lý lớp học, theo dõi tiến độ
               </p>
             </div>
-            {role === 'teacher' && (
+            {selected === 'teacher' && (
               <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center">
                 <span className="text-white text-xs">&#10003;</span>
               </div>
@@ -93,6 +94,23 @@ export function RoleSelectionForm() {
           </div>
         </SurfaceCard>
       </div>
+
+      <button
+        type="button"
+        onClick={handleConfirm}
+        disabled={!selected || isSubmitting}
+        className={cn(
+          'cursor-pointer w-full py-3 rounded-xl font-semibold text-base',
+          'bg-primary text-white',
+          'hover:bg-primary/90',
+          'transition-all duration-200',
+          'disabled:opacity-40 disabled:cursor-not-allowed',
+          'flex items-center justify-center gap-2',
+        )}
+      >
+        {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+        Xác nhận
+      </button>
     </div>
   );
 }
