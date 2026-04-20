@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 
 export interface TimerState {
   timeLeft: number; // seconds remaining
@@ -16,13 +16,9 @@ export function useExamTimer(
   const [timeLeft, setTimeLeft] = useState(initialSeconds);
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const onExpireRef = useRef(onExpire);
-  onExpireRef.current = onExpire;
-
-  // Keep onExpire callback ref up to date without re-rendering the effect
-  useEffect(() => {
-    onExpireRef.current = onExpire;
-  }, [onExpire]);
+  const handleExpire = useEffectEvent(() => {
+    onExpire?.();
+  });
 
   useEffect(() => {
     if (!isRunning) {
@@ -42,7 +38,7 @@ export function useExamTimer(
         setIsRunning(false);
         clearInterval(intervalRef.current!);
         intervalRef.current = null;
-        onExpireRef.current?.();
+        handleExpire();
       }
     };
 
@@ -55,7 +51,7 @@ export function useExamTimer(
         intervalRef.current = null;
       }
     };
-  }, [isRunning, endTime]);
+  }, [endTime, handleExpire, isRunning]);
 
   return {
     timeLeft,

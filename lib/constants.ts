@@ -11,7 +11,7 @@ export const ROUTES = {
   AUTH: {
     LOGIN: "/login",
     REGISTER: "/register",
-    ROLE: "/auth/role",
+    ROLE: "/role",
   },
   TEACHER: {
     HOME: "/teacher",

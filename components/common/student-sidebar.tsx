@@ -74,11 +74,11 @@ export function StudentSidebar() {
         <div className="flex items-center gap-2.5 px-3 mb-2">
           <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
             <span className="text-white font-display font-bold text-sm">
-              {user?.name?.charAt(0) ?? "U"}
+              {user?.full_name?.charAt(0) ?? "U"}
             </span>
           </div>
           <span className="text-sm font-medium text-on-surface">
-            {user?.name ?? "User"}
+            {user?.full_name ?? "User"}
           </span>
         </div>
         <button

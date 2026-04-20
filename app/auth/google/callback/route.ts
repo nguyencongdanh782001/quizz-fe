@@ -1,21 +1,17 @@
 import { NextResponse } from 'next/server';
 
 export function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const isNewUser = searchParams.get('is_new_user') === 'true';
-  const role = searchParams.get('role');
-  const error = searchParams.get('error');
+  const incoming = new URL(request.url);
+  const target = new URL('/auth/callback', incoming.origin);
 
-  if (error) {
-    return NextResponse.redirect(new URL('/login?error=oauth_failed', request.url));
-  }
+  incoming.searchParams.forEach((value, key) => {
+    if (key === 'is_new_user' && value === 'true') {
+      target.searchParams.set('needs_onboarding', 'true');
+      return;
+    }
 
-  if (isNewUser === true || !role) {
-    return NextResponse.redirect(new URL('/role', request.url));
-  }
+    target.searchParams.append(key, value);
+  });
 
-  if (role === 'teacher') return NextResponse.redirect(new URL('/teacher', request.url));
-  if (role === 'student') return NextResponse.redirect(new URL('/student', request.url));
-
-  return NextResponse.redirect(new URL('/', request.url));
+  return NextResponse.redirect(target);
 }

@@ -7,16 +7,15 @@ import { LandingFeatures } from '@/components/features/landing/landing-features'
 import { LandingCTA } from '@/components/features/landing/landing-cta';
 import { LandingFooter } from '@/components/features/landing/landing-footer';
 
-/**
- * Root page — public landing page for unauthenticated users,
- * or redirect to /home for authenticated users.
- */
 export default async function LandingPage() {
   const session = await getServerSession();
 
-  // Authenticated → redirect to authenticated dashboard
   if (session) {
-    redirect(session.role === 'teacher' ? '/teacher' : '/student');
+    if (session.needs_onboarding || !session.role_name) {
+      redirect('/role');
+    }
+
+    redirect(session.role_name === 'teacher' ? '/teacher' : '/student');
   }
 
   return (

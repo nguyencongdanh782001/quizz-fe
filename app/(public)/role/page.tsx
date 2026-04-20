@@ -1,14 +1,22 @@
+import { redirect } from 'next/navigation';
 import { AuthCard } from '@/features/auth/components/AuthCard';
 import { RoleSelectionForm } from '@/features/auth/components/RoleSelectionForm';
-import { redirect } from 'next/navigation';
+import { getServerSession } from '@/lib/auth-server';
 
-export default function RolePage() {
-  // Server-side guard: require user to be authenticated but role not yet selected.
-  // The actual role check happens client-side in RoleSelectionForm + useAuth.
-  // Redirect authenticated users with an existing role (shouldn't land here).
+export default async function RolePage() {
+  const session = await getServerSession();
+
+  if (!session) {
+    redirect('/login');
+  }
+
+  if (!session.needs_onboarding && session.role_name) {
+    redirect(session.role_name === 'teacher' ? '/teacher' : '/student');
+  }
+
   return (
     <AuthCard>
-      <RoleSelectionForm />
+      <RoleSelectionForm initialUser={session} />
     </AuthCard>
   );
 }

@@ -4,8 +4,8 @@ import { getServerSession } from '@/lib/auth-server';
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession();
 
-  if (session) {
-    const destination = session.role === 'teacher' ? '/teacher' : '/student';
+  if (session && !session.needs_onboarding && session.role_name) {
+    const destination = session.role_name === 'teacher' ? '/teacher' : '/student';
     redirect(destination);
   }
 
