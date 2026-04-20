@@ -40,11 +40,11 @@ export function Header({ title, className }: HeaderProps) {
         <button className="cursor-pointer flex items-center gap-2.5 pl-3 pr-4 py-1.5 rounded-xl hover:bg-surface-container-low transition-colors">
           <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
             <span className="text-white font-display font-bold text-sm">
-              {user?.name?.charAt(0) ?? "U"}
+              {user?.full_name?.charAt(0) ?? "U"}
             </span>
           </div>
           <span className="text-sm font-medium text-on-surface">
-            {user?.name ?? "User"}
+            {user?.full_name ?? "User"}
           </span>
         </button>
       </div>

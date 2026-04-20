@@ -1,25 +1,47 @@
-import { cookies } from 'next/headers';
+import { headers } from "next/headers";
+import { UserSchema } from "@/lib/api/types";
+import { User } from "@/types/user.types";
 
-const SESSION_COOKIE = 'auth-session';
+const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL!;
 
-export interface SessionUser {
-  id: string;
-  role: string;
-  email: string;
+type MeResponse = {
+  user: UserSchema;
+};
+
+function mapServerUser(user: UserSchema): User {
+  return {
+    id: user.id,
+    full_name: user.full_name,
+    email: user.email,
+    role_name: user.role_name ?? null,
+    needs_onboarding: user.needs_onboarding,
+    avatar_url: user.avatar_url ?? null,
+    created_at: user.created_at,
+    profile: user.profile
+      ? {
+          date_of_birth: user.profile.date_of_birth,
+          age: user.profile.age,
+          gender: user.profile.gender,
+          school_name: user.profile.school_name ?? null,
+          onboarding_completed_at: user.profile.onboarding_completed_at,
+        }
+      : null,
+  };
 }
 
-export function decodeSession(cookieValue: string): SessionUser | null {
-  try {
-    return JSON.parse(decodeURIComponent(escape(atob(cookieValue))));
-  } catch {
-    return null;
-  }
-}
+export async function getServerSession(): Promise<User | null> {
+  const cookieHeader = (await headers()).get("cookie");
+  if (!cookieHeader) return null;
 
-/** Server-side: reads the auth-session cookie and returns the user, or null if not logged in. */
-export async function getServerSession(): Promise<SessionUser | null> {
-  const cookieStore = await cookies();
-  const raw = cookieStore.get(SESSION_COOKIE)?.value;
-  if (!raw) return null;
-  return decodeSession(raw);
+  const res = await fetch(`${API_URL}/auth/me`, {
+    headers: {
+      cookie: cookieHeader,
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) return null;
+
+  const data = (await res.json()) as MeResponse;
+  return data.user ? mapServerUser(data.user) : null;
 }

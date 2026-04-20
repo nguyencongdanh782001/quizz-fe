@@ -23,9 +23,7 @@ export function RegisterForm() {
 
   const handleGoogleLogin = () => {
     setIsGoogleLoading(true);
-    window.location.href = `${
-      process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
-    }/auth/google/login`;
+    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google/login`;
   };
 
   const handleSubmit = async (
@@ -33,13 +31,19 @@ export function RegisterForm() {
     helpers: FormikHelpers<RegisterFormValues>,
   ) => {
     try {
-      await register({
-        name: values.name,
+      const user = await register({
+        full_name: values.name,
         email: values.email,
         password: values.password,
         confirmPassword: values.confirmPassword,
       });
-      window.location.href = "/role";
+
+      if (user.needs_onboarding || !user.role_name) {
+        window.location.href = "/role";
+        return;
+      }
+
+      window.location.href = user.role_name === "teacher" ? "/teacher" : "/student";
     } catch {
       helpers.setSubmitting(false);
     }

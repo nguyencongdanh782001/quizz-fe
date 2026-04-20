@@ -10,7 +10,11 @@ export default async function StudentLayout({ children }: { children: React.Reac
     redirect('/login');
   }
 
-  if (session.role !== 'student') {
+  if (session.needs_onboarding || !session.role_name) {
+    redirect('/role');
+  }
+
+  if (session.role_name !== 'student') {
     redirect('/teacher');
   }
 

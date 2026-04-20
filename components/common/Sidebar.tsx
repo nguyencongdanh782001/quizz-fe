@@ -7,30 +7,30 @@ import { Logo } from "./Logo";
 import { useAuth } from "@/hooks/useAuth";
 import {
   BookOpen,
-  Home,
-  Library,
+  ChevronRight,
+  FileCheck,
+  FileText,
   GraduationCap,
   History,
-  FileCheck,
-  Users,
-  FileText,
+  Home,
+  Library,
   LogOut,
-  ChevronRight,
+  Users,
 } from "lucide-react";
 
 const studentNav = [
-  { href: "/", label: "Trang chủ", icon: Home },
-  { href: "/exams", label: "Đề thi", icon: BookOpen },
-  { href: "/classes", label: "Lớp học", icon: GraduationCap },
-  { href: "/history", label: "Lịch sử", icon: History },
-  { href: "/documents", label: "Tài liệu", icon: Library },
+  { href: "/", label: "Trang chu", icon: Home },
+  { href: "/exams", label: "De thi", icon: BookOpen },
+  { href: "/classes", label: "Lop hoc", icon: GraduationCap },
+  { href: "/history", label: "Lich su", icon: History },
+  { href: "/documents", label: "Tai lieu", icon: Library },
 ];
 
 const teacherNav = [
-  { href: "/", label: "Tổng quan", icon: Home },
-  { href: "/teacher/classes", label: "Quản lý lớp", icon: Users },
-  { href: "/teacher/exams", label: "Quản lý bài thi", icon: FileCheck },
-  { href: "/teacher/documents", label: "Tài liệu", icon: FileText },
+  { href: "/", label: "Tong quan", icon: Home },
+  { href: "/teacher/classes", label: "Quan ly lop", icon: Users },
+  { href: "/teacher/exams", label: "Quan ly bai thi", icon: FileCheck },
+  { href: "/teacher/documents", label: "Tai lieu", icon: FileText },
 ];
 
 interface SidebarProps {
@@ -39,9 +39,9 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed = false }: SidebarProps) {
   const pathname = usePathname();
-  const { role, logout } = useAuth();
+  const { role_name, logout } = useAuth();
 
-  const navItems = role === "teacher" ? teacherNav : studentNav;
+  const navItems = role_name === "teacher" ? teacherNav : studentNav;
 
   return (
     <aside
@@ -64,17 +64,17 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
         {!collapsed && <Logo />}
       </div>
 
-      {!collapsed && role && (
+      {!collapsed && role_name && (
         <div className={cn("mx-4 mt-3", collapsed && "hidden")}>
           <span
             className={cn(
               "inline-block px-3 py-1 rounded-full text-xs font-medium",
-              role === "teacher"
+              role_name === "teacher"
                 ? "bg-secondary-container text-on-secondary-container"
                 : "bg-primary-container text-on-primary-container",
             )}
           >
-            {role === "teacher" ? "Giáo viên" : "Học sinh"}
+            {role_name === "teacher" ? "Giao vien" : "Hoc sinh"}
           </span>
         </div>
       )}
@@ -84,6 +84,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
           const isActive =
             pathname === item.href ||
             (item.href !== "/" && pathname.startsWith(item.href));
+
           return (
             <Link
               key={item.href}
@@ -118,7 +119,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
           )}
         >
           <LogOut className="w-5 h-5" />
-          {!collapsed && "Đăng xuất"}
+          {!collapsed && "Dang xuat"}
         </button>
       </div>
     </aside>

@@ -5,12 +5,15 @@ import { useRouter } from "next/navigation";
 export function useAuth() {
   const {
     user,
-    role,
+    role_name,
+    needs_onboarding,
     isAuthenticated,
     isLoading,
     login,
     register,
-    selectRole,
+    fetchMe,
+    completeOnboarding,
+    hydrateFromUser,
     logout,
   } = useAuthStore();
   const router = useRouter();
@@ -23,19 +26,27 @@ export function useAuth() {
 
   const requireRole = (requiredRole: "student" | "teacher") => {
     requireAuth();
-    if (role && role !== requiredRole) {
+    if (needs_onboarding) {
+      router.push("/role");
+      return;
+    }
+
+    if (role_name && role_name !== requiredRole) {
       router.push("/");
     }
   };
 
   return {
     user,
-    role,
+    role_name,
+    needs_onboarding,
     isAuthenticated,
     isLoading,
     login,
     register,
-    selectRole,
+    fetchMe,
+    completeOnboarding,
+    hydrateFromUser,
     logout,
     requireAuth,
     requireRole,

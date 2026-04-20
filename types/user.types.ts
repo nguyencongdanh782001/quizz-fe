@@ -1,8 +1,21 @@
+export type UserRole = "student" | "teacher";
+export type UserGender = "male" | "female" | "other";
+
+export interface UserProfile {
+  date_of_birth: string;
+  age: number;
+  gender: UserGender;
+  school_name: string | null;
+  onboarding_completed_at: string;
+}
+
 export interface User {
-  id: string;
-  name: string;
+  id: number;
+  full_name: string;
   email: string;
-  role: 'student' | 'teacher' | null;
-  avatarUrl?: string;
-  createdAt: string;
+  role_name: UserRole | null;
+  needs_onboarding: boolean;
+  avatar_url: string | null;
+  created_at: string;
+  profile: UserProfile | null;
 }

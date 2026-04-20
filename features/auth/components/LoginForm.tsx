@@ -1,29 +1,48 @@
 "use client";
 
 import { useState } from "react";
-import { Formik, Form, FormikHelpers } from "formik";
+import { Form, Formik, FormikHelpers } from "formik";
 import Link from "next/link";
-import { loginSchema } from "../schemas/login.schema";
-import { useAuth } from "@/hooks/useAuth";
-import { InputField } from "@/components/common/form/input-field";
-import { cn } from "@/lib/utils";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { InputField } from "@/components/common/form/input-field";
+import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
+import { loginSchema } from "../schemas/login.schema";
 
 interface LoginFormValues {
   email: string;
   password: string;
 }
 
+function getOauthErrorMessage(error: string | null) {
+  if (error === "oauth_failed") {
+    return "Đăng nhập Google thất bại. Vui lòng thử lại.";
+  }
+
+  if (error === "session_not_found") {
+    return "Dang nhap Google da xong nhung phien dang nhap khong duoc tao. Neu ban dang mo localhost, hay thu lai bang 127.0.0.1:3000.";
+  }
+
+  if (error === "callback_failed") {
+    return "Khong the xu ly callback Google. Vui long thu lai.";
+  }
+
+  return null;
+}
+
 export function LoginForm() {
   const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [oauthError] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    const error = new URLSearchParams(window.location.search).get("error");
+    return getOauthErrorMessage(error);
+  });
 
   const handleGoogleLogin = () => {
     setIsGoogleLoading(true);
-    window.location.href = `${
-      process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
-    }/auth/google/login`;
+    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google/login`;
   };
 
   const handleSubmit = async (
@@ -31,9 +50,15 @@ export function LoginForm() {
     helpers: FormikHelpers<LoginFormValues>,
   ) => {
     try {
-      await login(values.email, values.password);
-      const role = values.email.includes("teacher") ? "/teacher" : "/student";
-      window.location.href = role;
+      const user = await login(values.email, values.password);
+
+      if (user.needs_onboarding || !user.role_name) {
+        window.location.href = "/role";
+        return;
+      }
+
+      window.location.href =
+        user.role_name === "teacher" ? "/teacher" : "/student";
     } catch {
       helpers.setSubmitting(false);
     }
@@ -50,6 +75,12 @@ export function LoginForm() {
           <h2 className="font-display text-2xl font-bold text-on-surface text-center">
             Đăng nhập
           </h2>
+
+          {oauthError && (
+            <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+              {oauthError}
+            </div>
+          )}
 
           <button
             type="button"
@@ -86,7 +117,7 @@ export function LoginForm() {
                 />
               </svg>
             )}
-            {isGoogleLoading ? "Đang chuyển..." : "Đăng nhập với Google"}
+            {isGoogleLoading ? "Loading..." : "Đăng nhập với Google"}
           </button>
 
           <div className="relative flex items-center">
@@ -105,9 +136,9 @@ export function LoginForm() {
 
           <div className="relative">
             <InputField
-              label="Mật khẩu"
+              label="Mat khau"
               type={showPassword ? "text" : "password"}
-              placeholder="••••••••"
+              placeholder="........"
               error={touched.password ? errors.password : undefined}
               {...getFieldProps("password")}
             />
@@ -150,7 +181,7 @@ export function LoginForm() {
           </button>
 
           <p className="text-center text-sm text-on-surface-variant">
-            Chưa có tài khoản?{" "}
+            chưa có tài khoản?{" "}
             <Link
               href="/register"
               className="text-primary hover:underline font-medium"
