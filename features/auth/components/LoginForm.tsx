@@ -34,6 +34,7 @@ export function LoginForm() {
   const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const [oauthError] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     const error = new URLSearchParams(window.location.search).get("error");
@@ -59,8 +60,9 @@ export function LoginForm() {
 
       window.location.href =
         user.role_name === "teacher" ? "/teacher" : "/student";
-    } catch {
+    } catch (err) {
       helpers.setSubmitting(false);
+      setApiError(err instanceof Error ? err.message : "Đăng nhập thất bại");
     }
   };
 
@@ -70,15 +72,15 @@ export function LoginForm() {
       validationSchema={loginSchema}
       onSubmit={handleSubmit}
     >
-      {({ errors, touched, isSubmitting, getFieldProps }) => (
+      {({ errors, touched, isSubmitting, getFieldProps, handleChange }) => (
         <Form className="space-y-5">
           <h2 className="font-display text-2xl font-bold text-on-surface text-center">
             Đăng nhập
           </h2>
 
-          {oauthError && (
+          {(oauthError || apiError) && (
             <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-              {oauthError}
+              {oauthError ?? apiError}
             </div>
           )}
 
@@ -132,20 +134,28 @@ export function LoginForm() {
             placeholder="nguyen.van.minh@email.com"
             error={touched.email ? errors.email : undefined}
             {...getFieldProps("email")}
+            onChange={(e) => {
+              setApiError(null);
+              handleChange(e);
+            }}
           />
 
           <div className="relative">
             <InputField
-              label="Mat khau"
+              label="Mật khẩu"
               type={showPassword ? "text" : "password"}
               placeholder="........"
               error={touched.password ? errors.password : undefined}
               {...getFieldProps("password")}
+              onChange={(e) => {
+                setApiError(null);
+                handleChange(e);
+              }}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="cursor-pointer absolute right-3 top-9 text-on-surface-variant hover:text-on-surface"
+              className="cursor-pointer absolute right-3 top-10 text-on-surface-variant hover:text-on-surface"
             >
               {showPassword ? (
                 <EyeOff className="w-4 h-4" />

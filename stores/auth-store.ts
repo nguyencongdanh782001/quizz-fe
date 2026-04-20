@@ -106,8 +106,8 @@ export const useAuthStore = create<PersistedAuthState>()(
           const user = userFromSchema(res.data.user);
           applyAuthenticatedUser(set, user);
           return user;
-        } catch {
-          set({ isLoading: false, fetchError: "Dang nhap that bai" });
+        } catch (err) {
+          set({ isLoading: false, fetchError: err instanceof Error ? err.message : "Đăng nhập thất bại" });
           throw new Error("Login failed");
         }
       },
@@ -124,8 +124,8 @@ export const useAuthStore = create<PersistedAuthState>()(
           const user = userFromSchema(res.data.user);
           applyAuthenticatedUser(set, user);
           return user;
-        } catch {
-          set({ isLoading: false, fetchError: "Dang ky that bai" });
+        } catch (err) {
+          set({ isLoading: false, fetchError: err instanceof Error ? err.message : "Đăng ký thất bại" });
           throw new Error("Register failed");
         }
       },
@@ -150,8 +150,8 @@ export const useAuthStore = create<PersistedAuthState>()(
           const user = userFromSchema(res.data.user);
           applyAuthenticatedUser(set, user);
           return user;
-        } catch {
-          set({ isLoading: false, fetchError: "Hoan tat thong tin that bai" });
+        } catch (err) {
+          set({ isLoading: false, fetchError: err instanceof Error ? err.message : "Hoàn tất thông tin thất bại" });
           throw new Error("Onboarding failed");
         }
       },

@@ -29,7 +29,7 @@ function normalizeError(error: unknown): ApiError {
 }
 
 /** Handle 401 by clearing token and redirecting to login. */
-function handle401() {
+function handle403() {
   if (typeof window !== "undefined") {
     window.location.href = "/login";
   }
@@ -38,8 +38,8 @@ function handle401() {
 client.interceptors.response.use(
   (res) => res,
   (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      handle401();
+    if (error.response?.status === 403) {
+      handle403();
     }
     return Promise.reject(normalizeError(error));
   },
