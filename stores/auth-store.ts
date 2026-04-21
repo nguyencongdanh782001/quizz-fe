@@ -19,12 +19,13 @@ interface PersistedAuthState extends AuthState {
 function setSessionCookie(user: User): void {
   if (typeof document === "undefined") return;
 
-  // Proxy still uses this lightweight mirror cookie for optimistic redirects.
+  // Keep a lightweight same-origin mirror so Next layouts can redirect in dev.
   const value = btoa(
     unescape(
       encodeURIComponent(
         JSON.stringify({
           id: user.id,
+          full_name: user.full_name,
           role_name: user.role_name,
           needs_onboarding: user.needs_onboarding,
           email: user.email,
@@ -89,6 +90,26 @@ function clearAuthState(set: (partial: Partial<PersistedAuthState>) => void) {
   clearSessionCookie();
 }
 
+function getAuthErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const maybeError = error as { message?: unknown; detail?: unknown };
+
+    if (typeof maybeError.message === "string" && maybeError.message.trim()) {
+      return maybeError.message;
+    }
+
+    if (typeof maybeError.detail === "string" && maybeError.detail.trim()) {
+      return maybeError.detail;
+    }
+  }
+
+  return fallback;
+}
+
 export const useAuthStore = create<PersistedAuthState>()(
   persist(
     (set) => ({
@@ -107,8 +128,9 @@ export const useAuthStore = create<PersistedAuthState>()(
           applyAuthenticatedUser(set, user);
           return user;
         } catch (err) {
-          set({ isLoading: false, fetchError: err instanceof Error ? err.message : "Đăng nhập thất bại" });
-          throw new Error("Login failed");
+          const message = getAuthErrorMessage(err, "Dang nhap that bai");
+          set({ isLoading: false, fetchError: message });
+          throw new Error(message);
         }
       },
 
@@ -125,8 +147,9 @@ export const useAuthStore = create<PersistedAuthState>()(
           applyAuthenticatedUser(set, user);
           return user;
         } catch (err) {
-          set({ isLoading: false, fetchError: err instanceof Error ? err.message : "Đăng ký thất bại" });
-          throw new Error("Register failed");
+          const message = getAuthErrorMessage(err, "Dang ky that bai");
+          set({ isLoading: false, fetchError: message });
+          throw new Error(message);
         }
       },
 
@@ -151,8 +174,12 @@ export const useAuthStore = create<PersistedAuthState>()(
           applyAuthenticatedUser(set, user);
           return user;
         } catch (err) {
-          set({ isLoading: false, fetchError: err instanceof Error ? err.message : "Hoàn tất thông tin thất bại" });
-          throw new Error("Onboarding failed");
+          const message = getAuthErrorMessage(
+            err,
+            "Hoan tat thong tin that bai",
+          );
+          set({ isLoading: false, fetchError: message });
+          throw new Error(message);
         }
       },
 

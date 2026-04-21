@@ -8,11 +8,14 @@ import { InputField } from "@/components/common/form/input-field";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { loginSchema } from "../schemas/login.schema";
+import { FormikAutofillSync } from "./FormikAutofillSync";
 
 interface LoginFormValues {
   email: string;
   password: string;
 }
+
+const LOGIN_AUTOFILL_FIELDS = ["email", "password"] as const;
 
 function getOauthErrorMessage(error: string | null) {
   if (error === "oauth_failed") {
@@ -20,11 +23,11 @@ function getOauthErrorMessage(error: string | null) {
   }
 
   if (error === "session_not_found") {
-    return "Dang nhap Google da xong nhung phien dang nhap khong duoc tao. Neu ban dang mo localhost, hay thu lai bang 127.0.0.1:3000.";
+    return "Đăng nhập Google đã xong nhưng FE chưa đọc được session. Nếu đang dùng local, hãy mở app bằng cùng host với API callback (localhost:3000 hoặc 127.0.0.1:3000) rồi thử lại.";
   }
 
   if (error === "callback_failed") {
-    return "Khong the xu ly callback Google. Vui long thu lai.";
+    return "Không thể xử lý callback Google. Vui lòng thử lại.";
   }
 
   return null;
@@ -72,8 +75,20 @@ export function LoginForm() {
       validationSchema={loginSchema}
       onSubmit={handleSubmit}
     >
-      {({ errors, touched, isSubmitting, getFieldProps, handleChange }) => (
+      {({
+        errors,
+        touched,
+        isSubmitting,
+        getFieldProps,
+        handleChange,
+        setFieldValue,
+      }) => (
         <Form className="space-y-5">
+          <FormikAutofillSync
+            fields={LOGIN_AUTOFILL_FIELDS}
+            setFieldValue={setFieldValue}
+          />
+
           <h2 className="font-display text-2xl font-bold text-on-surface text-center">
             Đăng nhập
           </h2>
@@ -131,6 +146,7 @@ export function LoginForm() {
           <InputField
             label="Email"
             type="email"
+            autoComplete="username"
             placeholder="nguyen.van.minh@email.com"
             error={touched.email ? errors.email : undefined}
             {...getFieldProps("email")}
@@ -144,6 +160,7 @@ export function LoginForm() {
             <InputField
               label="Mật khẩu"
               type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
               placeholder="........"
               error={touched.password ? errors.password : undefined}
               {...getFieldProps("password")}

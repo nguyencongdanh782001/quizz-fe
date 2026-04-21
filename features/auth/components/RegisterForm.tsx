@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { Formik, Form, FormikHelpers } from "formik";
 import Link from "next/link";
-import { registerSchema } from "../schemas/register.schema";
-import { useAuth } from "@/hooks/useAuth";
-import { InputField } from "@/components/common/form/input-field";
-import { cn } from "@/lib/utils";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { InputField } from "@/components/common/form/input-field";
+import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
+import { registerSchema } from "../schemas/register.schema";
+import { FormikAutofillSync } from "./FormikAutofillSync";
 
 interface RegisterFormValues {
   name: string;
@@ -15,6 +16,13 @@ interface RegisterFormValues {
   password: string;
   confirmPassword: string;
 }
+
+const REGISTER_AUTOFILL_FIELDS = [
+  "name",
+  "email",
+  "password",
+  "confirmPassword",
+] as const;
 
 export function RegisterForm() {
   const { register } = useAuth();
@@ -63,8 +71,20 @@ export function RegisterForm() {
       validationSchema={registerSchema}
       onSubmit={handleSubmit}
     >
-      {({ errors, touched, isSubmitting, getFieldProps, handleChange }) => (
+      {({
+        errors,
+        touched,
+        isSubmitting,
+        getFieldProps,
+        handleChange,
+        setFieldValue,
+      }) => (
         <Form className="space-y-4">
+          <FormikAutofillSync
+            fields={REGISTER_AUTOFILL_FIELDS}
+            setFieldValue={setFieldValue}
+          />
+
           <h2 className="font-display text-2xl font-bold text-on-surface text-center">
             Tạo tài khoản
           </h2>
@@ -121,6 +141,7 @@ export function RegisterForm() {
 
           <InputField
             label="Họ và tên"
+            autoComplete="name"
             placeholder="Nguyễn Văn Minh"
             error={touched.name ? errors.name : undefined}
             {...getFieldProps("name")}
@@ -133,6 +154,7 @@ export function RegisterForm() {
           <InputField
             label="Email"
             type="email"
+            autoComplete="email"
             placeholder="nguyen.van.minh@email.com"
             error={touched.email ? errors.email : undefined}
             {...getFieldProps("email")}
@@ -146,6 +168,7 @@ export function RegisterForm() {
             <InputField
               label="Mật khẩu"
               type={showPassword ? "text" : "password"}
+              autoComplete="new-password"
               placeholder="Tối thiểu 6 ký tự"
               error={touched.password ? errors.password : undefined}
               {...getFieldProps("password")}
@@ -170,6 +193,7 @@ export function RegisterForm() {
           <InputField
             label="Xác nhận mật khẩu"
             type="password"
+            autoComplete="new-password"
             placeholder="Nhập lại mật khẩu"
             error={touched.confirmPassword ? errors.confirmPassword : undefined}
             {...getFieldProps("confirmPassword")}
