@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getServerSession } from '@/lib/auth-server';
 import { TeacherSidebar } from '@/components/common/teacher-sidebar';
 import { Header } from '@/components/common/Header';
+import { AuthHydrator } from '@/components/common/AuthHydrator';
 
 export default async function TeacherLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession();
@@ -19,14 +20,16 @@ export default async function TeacherLayout({ children }: { children: React.Reac
   }
 
   return (
-    <div className="flex h-screen bg-surface overflow-hidden">
-      <TeacherSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
-        </main>
+    <AuthHydrator>
+      <div className="flex h-screen bg-surface overflow-hidden">
+        <TeacherSidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header />
+          <main className="flex-1 overflow-y-auto p-6">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </AuthHydrator>
   );
 }

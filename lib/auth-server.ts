@@ -67,29 +67,31 @@ function decodeMirroredSession(value: string): User | null {
 }
 
 export async function getServerSession(): Promise<User | null> {
+  const cookieHeader = (await headers()).get("cookie");
   const cookieStore = await cookies();
   const mirroredSession = decodeMirroredSession(
     cookieStore.get(SESSION_COOKIE)?.value ?? "",
   );
 
-  const cookieHeader = (await headers()).get("cookie");
-  if (!cookieHeader) return mirroredSession;
+  // Try /auth/me first for fresh data
+  if (cookieHeader) {
+    try {
+      const res = await fetch(`${API_URL}/auth/me`, {
+        headers: {
+          cookie: cookieHeader,
+        },
+        cache: "no-store",
+      });
 
-  try {
-    const res = await fetch(`${API_URL}/auth/me`, {
-      headers: {
-        cookie: cookieHeader,
-      },
-      cache: "no-store",
-    });
-
-    if (!res.ok) {
-      return mirroredSession;
+      if (res.ok) {
+        const data = (await res.json()) as MeResponse;
+        return data.user ? mapServerUser(data.user) : mirroredSession;
+      }
+    } catch {
+      // Fall through to mirrored session
     }
-
-    const data = (await res.json()) as MeResponse;
-    return data.user ? mapServerUser(data.user) : mirroredSession;
-  } catch {
-    return mirroredSession;
   }
+
+  // Fallback: use mirrored session cookie
+  return mirroredSession;
 }

@@ -1,13 +1,17 @@
 import type { AxiosError } from "axios";
 import axios from "axios";
 import type { ApiError } from "./types";
+import { getToken } from "./token-client";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export const client = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${getToken()}`,
+  },
   timeout: 10_000,
 });
 
