@@ -9,6 +9,10 @@ import { cn } from '@/lib/utils';
 
 export default function TeacherHomePage() {
   const { user } = useAuth();
+  const totalStudents = mockClasses.reduce(
+    (sum, cls) => sum + (cls.studentCount ?? 0),
+    0
+  );
 
   return (
     <div className="space-y-8">
@@ -28,7 +32,7 @@ export default function TeacherHomePage() {
         {[
           { label: 'Tong lop', value: mockClasses.length, icon: Users, color: 'bg-primary-container text-on-primary-container' },
           { label: 'Bai thi', value: mockExams.length, icon: FileCheck, color: 'bg-secondary-container text-on-secondary-container' },
-          { label: 'Hoc sinh', value: mockClasses.reduce((sum, c) => sum + c.studentCount, 0), icon: TrendingUp, color: 'bg-tertiary-container text-on-tertiary-container' },
+          { label: 'Hoc sinh', value: totalStudents, icon: TrendingUp, color: 'bg-tertiary-container text-on-tertiary-container' },
           { label: 'Bai thi moi', value: 3, icon: BookOpen, color: 'bg-primary-container text-on-primary-container' },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-surface-container-lowest rounded-xl p-5">
