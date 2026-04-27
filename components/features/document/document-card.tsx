@@ -1,13 +1,14 @@
 'use client';
 
-import { FileText, Video, Image, Link2, Download } from 'lucide-react';
+import Image from 'next/image';
+import { FileText, Video, Image as ImageIcon, Link2, Download } from 'lucide-react';
 import { Document as Doc } from '@/types/document.types';
 import { cn } from '@/lib/utils';
 
 const typeIcon = {
   pdf: FileText,
   video: Video,
-  image: Image,
+  image: ImageIcon,
   doc: FileText,
   link: Link2,
 };
@@ -41,6 +42,7 @@ interface DocumentCardProps {
 
 export function DocumentCard({ doc }: DocumentCardProps) {
   const Icon = typeIcon[doc.type];
+  const actionLabel = doc.actionLabel ?? 'Tải về';
 
   return (
     <div
@@ -53,7 +55,13 @@ export function DocumentCard({ doc }: DocumentCardProps) {
     >
       {doc.thumbnailUrl && doc.type === 'video' && (
         <div className="relative h-36 overflow-hidden">
-          <img src={doc.thumbnailUrl} alt={doc.title} className="w-full h-full object-cover" />
+          <Image
+            src={doc.thumbnailUrl}
+            alt={doc.title}
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            className="object-cover"
+          />
           <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
             <Video className="w-8 h-8 text-white" />
           </div>
@@ -71,7 +79,15 @@ export function DocumentCard({ doc }: DocumentCardProps) {
             <Icon className="w-3 h-3" />
             {typeLabel[doc.type]}
           </span>
-          <span className="text-xs text-muted-foreground font-medium">Lớp {doc.grade}</span>
+          {doc.grade > 0 ? (
+            <span className="text-xs text-muted-foreground font-medium">
+              Lớp {doc.grade}
+            </span>
+          ) : doc.classroomName ? (
+            <span className="text-xs text-muted-foreground font-medium">
+              {doc.classroomName}
+            </span>
+          ) : null}
         </div>
 
         <h3 className="font-display font-semibold text-on-surface text-sm leading-snug mb-2 line-clamp-2 flex-1">
@@ -89,10 +105,12 @@ export function DocumentCard({ doc }: DocumentCardProps) {
               {formatFileSize(doc.fileSize)}
             </span>
           )}
-          <span className="flex items-center gap-1">
-            <Download className="w-3 h-3" />
-            {doc.downloadCount}
-          </span>
+          {doc.downloadCount > 0 && (
+            <span className="flex items-center gap-1">
+              <Download className="w-3 h-3" />
+              {doc.downloadCount}
+            </span>
+          )}
         </div>
 
         <a
@@ -103,7 +121,7 @@ export function DocumentCard({ doc }: DocumentCardProps) {
           )}
         >
           <Download className="w-4 h-4" />
-          Tải về
+          {actionLabel}
         </a>
       </div>
     </div>

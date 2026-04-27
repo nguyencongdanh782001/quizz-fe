@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useSyncExternalStore, Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -10,10 +10,14 @@ import {
   Star,
   Home,
   BookOpen,
+  Trophy,
 } from "lucide-react";
-import { mockExams } from "@/data/mock/mock-exams";
-import { getQuestionsByExamId } from "@/data/mock/mock-questions";
-import { ExamAttempt } from "@/types/exam.types";
+import {
+  getStudentAttemptResult,
+  readCachedStudentAttemptResult,
+  StudentSubmitAttemptResultData,
+  writeCachedStudentAttemptResult,
+} from "@/lib/student-system-exams";
 import { cn } from "@/lib/utils";
 
 function formatDuration(seconds: number): string {
@@ -22,58 +26,98 @@ function formatDuration(seconds: number): string {
   return `${m}m ${s}s`;
 }
 
-function ResultPageContent({ id }: { id: string }) {
+function ResultPageContent() {
   const searchParams = useSearchParams();
   const attemptId = searchParams.get("attemptId");
-  const exam = mockExams.find((e) => e.id === id);
-  const questions = getQuestionsByExamId(id);
-  const attempt = useSyncExternalStore(
-    () => () => {},
-    () => {
-      if (!attemptId) return null;
-      const stored = sessionStorage.getItem(`attempt-${attemptId}`);
-      return stored ? (JSON.parse(stored) as ExamAttempt) : null;
-    },
-    () => null,
+  const [result, setResult] = useState<StudentSubmitAttemptResultData | null>(
+    null,
   );
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  if (!exam) {
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadResult() {
+      if (!attemptId) {
+        setResult(null);
+        setLoadError("Không tìm thấy lượt nộp bài.");
+        setIsLoading(false);
+        return;
+      }
+
+      const cachedResult = readCachedStudentAttemptResult(attemptId);
+      setResult(cachedResult);
+      setLoadError(null);
+      setIsLoading(!cachedResult);
+
+      const liveResult = await getStudentAttemptResult(attemptId);
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (liveResult) {
+        writeCachedStudentAttemptResult(liveResult);
+        setResult(liveResult);
+        setLoadError(null);
+      } else if (!cachedResult) {
+        setLoadError("Không tìm thấy kết quả");
+      }
+
+      setIsLoading(false);
+    }
+
+    void loadResult();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [attemptId]);
+
+  if (isLoading && !result) {
+    return (
+      <div className="text-center py-20 text-muted-foreground">
+        Đang tải kết quả...
+      </div>
+    );
+  }
+
+  if (!result) {
     return (
       <div className="text-center py-20">
-        <p className="text-muted-foreground">Không tìm thấy kết quả</p>
-        <Link href="/exams" className="text-primary text-sm mt-2 inline-block">
+        <p className="text-muted-foreground">
+          {loadError ?? "Không tìm thấy kết quả"}
+        </p>
+        <Link
+          href="/student/exams"
+          className="text-primary text-sm mt-2 inline-block"
+        >
           ← Quay lại đề thi
         </Link>
       </div>
     );
   }
 
-  // Mock attempt if none found
-  const result = attempt ?? {
-    id: "mock",
-    examId: exam.id,
-    userId: "user",
-    answers: {},
-    score: Math.floor(questions.length * 0.7),
-    totalPoints: questions.length,
-    percentage: 70,
-    passed: true,
-    startedAt: new Date().toISOString(),
-    submittedAt: new Date().toISOString(),
-    timeSpent: exam.duration * 45,
-  };
-
   const scorePercent =
     result.totalPoints > 0
       ? Math.round((result.score / result.totalPoints) * 100)
       : 0;
-  const isPassed = scorePercent >= exam.passingScore;
+  const timeSpent = Math.max(
+    0,
+    Math.round(
+      (new Date(result.submittedAt).getTime() -
+        new Date(result.startedAt).getTime()) /
+        1000,
+    ),
+  );
+  const isExcellent = scorePercent >= 80;
 
   return (
     <div className="space-y-8 w-full mx-auto">
       {/* Back */}
       <Link
-        href="/exams"
+        href="/student/exams"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-on-surface transition-colors"
       >
         ← Quay lại đề thi
@@ -83,26 +127,26 @@ function ResultPageContent({ id }: { id: string }) {
       <div
         className={cn(
           "rounded-2xl p-8 text-center",
-          isPassed
+          isExcellent
             ? "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-200 dark:border-green-800/30"
-            : "bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 border border-red-200 dark:border-red-800/30",
+            : "bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-950/20 dark:to-cyan-950/20 border border-sky-200 dark:border-sky-800/30",
         )}
       >
         <div
           className={cn(
             "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold mb-4",
-            isPassed
+            isExcellent
               ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-              : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+              : "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
           )}
         >
-          {isPassed ? (
+          {isExcellent ? (
             <>
-              <CheckCircle className="w-4 h-4" /> Đạt
+              <Trophy className="w-4 h-4" /> Kết quả tốt
             </>
           ) : (
             <>
-              <XCircle className="w-4 h-4" /> Chưa đạt
+              <CheckCircle className="w-4 h-4" /> Đã nộp bài
             </>
           )}
         </div>
@@ -111,28 +155,28 @@ function ResultPageContent({ id }: { id: string }) {
           <div
             className="font-display font-bold text-6xl mb-1"
             style={{
-              color: isPassed ? "#059669" : "#dc2626",
+              color: isExcellent ? "#059669" : "#0284c7",
             }}
           >
             {scorePercent}%
           </div>
           <p className="text-muted-foreground text-sm">
-            {result.score}/{result.totalPoints} câu đúng
+            {result.score}/{result.totalPoints} điểm
           </p>
         </div>
 
         <h1 className="font-display font-bold text-xl text-on-surface mb-2">
-          {exam.title}
+          {result.examTitle}
         </h1>
 
         <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground mt-4">
           <span className="flex items-center gap-1.5">
             <Star className="w-4 h-4" />
-            Điểm tối thiểu: {exam.passingScore}%
+            {result.correctAnswersCount}/{result.totalQuestions} câu đúng
           </span>
           <span className="flex items-center gap-1.5">
             <Clock className="w-4 h-4" />
-            Thời gian: {formatDuration(result.timeSpent)}
+            Thời gian: {formatDuration(timeSpent)}
           </span>
         </div>
       </div>
@@ -140,14 +184,14 @@ function ResultPageContent({ id }: { id: string }) {
       {/* Actions */}
       <div className="flex gap-3">
         <Link
-          href="/exams"
+          href="/student/exams"
           className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
         >
           <BookOpen className="w-4 h-4" />
           Làm bài khác
         </Link>
         <Link
-          href="/"
+          href="/student"
           className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium border border-outline/20 text-on-surface hover:bg-surface-container-low transition-colors"
         >
           <Home className="w-4 h-4" />
@@ -156,61 +200,59 @@ function ResultPageContent({ id }: { id: string }) {
       </div>
 
       {/* Per-question breakdown */}
-      {questions.length > 0 && (
+      {result.answers.length > 0 && (
         <div>
           <h2 className="font-display font-semibold text-lg text-on-surface mb-4">
             Chi tiết từng câu
           </h2>
           <div className="space-y-3">
-            {questions.map((q, i) => {
-              const selected = result.answers[q.id] ?? [];
-              const correctIds = q.options
-                .filter((o) => o.isCorrect)
-                .map((o) => o.id);
-              const isSingleSelect =
-                q.type === "single" ||
-                q.type === "multiple_choice" ||
-                q.type === "true_false";
-              const isCorrect = isSingleSelect
-                ? selected.length === 1 && correctIds.includes(selected[0])
-                : selected.length === correctIds.length &&
-                  selected.every((id) => correctIds.includes(id));
-
+            {result.answers.map((answer, i) => {
               return (
                 <div
-                  key={q.id}
+                  key={answer.questionId}
                   className={cn(
                     "rounded-xl p-4 border",
-                    isCorrect
+                    answer.isCorrect
                       ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800/30"
                       : "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800/30",
                   )}
                 >
                   <div className="flex items-start gap-3">
-                    {isCorrect ? (
+                    {answer.isCorrect ? (
                       <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
                     ) : (
                       <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-on-surface">
-                        Câu {i + 1}: {q.text}
+                        Câu {i + 1}: {answer.prompt}
                       </p>
-                      {!isCorrect && q.explanation && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Giải thích: {q.explanation}
-                        </p>
-                      )}
+                      <div className="mt-1 space-y-1 text-xs text-muted-foreground">
+                        {answer.selectedOptionText && (
+                          <p>Đã chọn: {answer.selectedOptionText}</p>
+                        )}
+                        {answer.submittedAnswerText && (
+                          <p>Trả lời: {answer.submittedAnswerText}</p>
+                        )}
+                        {answer.correctOptionText && (
+                          <p>Đáp án đúng: {answer.correctOptionText}</p>
+                        )}
+                        {answer.acceptedAnswers.length > 0 && (
+                          <p>
+                            Đáp án chấp nhận: {answer.acceptedAnswers.join(", ")}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     <span
                       className={cn(
                         "text-xs font-medium shrink-0",
-                        isCorrect
+                        answer.isCorrect
                           ? "text-green-600 dark:text-green-400"
                           : "text-red-600 dark:text-red-400",
                       )}
                     >
-                      {q.points}đ
+                      {answer.pointsEarned}/{answer.maxPoints}đ
                     </span>
                   </div>
                 </div>
@@ -223,12 +265,7 @@ function ResultPageContent({ id }: { id: string }) {
   );
 }
 
-export default function ExamResultPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = use(params);
+export default function ExamResultPage() {
   return (
     <Suspense
       fallback={
@@ -237,7 +274,7 @@ export default function ExamResultPage({
         </div>
       }
     >
-      <ResultPageContent id={id} />
+      <ResultPageContent />
     </Suspense>
   );
 }

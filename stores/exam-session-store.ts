@@ -75,6 +75,18 @@ function computeScore(questions: Question[], answers: Record<string, string[]>):
   };
 }
 
+function hasLocalAnswerKey(questions: Question[]): boolean {
+  return questions.every((question) => {
+    if (question.type === 'text') {
+      return false;
+    }
+
+    return question.options.some(
+      (option) => typeof option.isCorrect === 'boolean',
+    );
+  });
+}
+
 export const useExamSessionStore = create<ExamSessionState & ExamSessionActions>()(
   persist(
     (set, get) => ({
@@ -131,6 +143,9 @@ export const useExamSessionStore = create<ExamSessionState & ExamSessionActions>
       submitExam: () => {
         const { exam, questions, answers, startedAt, attemptId } = get();
         if (!exam || !startedAt) throw new Error('No active exam');
+        if (!hasLocalAnswerKey(questions)) {
+          throw new Error('Local grading is not available for this exam');
+        }
 
         const submittedAt = new Date().toISOString();
         const timeSpent = Math.round(

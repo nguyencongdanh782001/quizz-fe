@@ -4,26 +4,30 @@ import { ExamNavigation } from "@/components/features/exam/exam-navigation";
 import { ExamTimer } from "@/components/features/exam/exam-timer";
 import { ProgressOrbs } from "@/components/features/exam/progress-orbs";
 import { QuestionCard } from "@/components/features/exam/question-card";
-import { mockExams } from "@/data/mock/mock-exams";
-import { getQuestionsByExamId } from "@/data/mock/mock-questions";
 import { useExamTimer } from "@/hooks/use-exam-timer";
+import {
+  getStudentExamDetail,
+  writeCachedStudentAttemptResult,
+  saveStudentAttemptAnswers,
+  submitStudentAttempt,
+  StudentExamDetailData,
+} from "@/lib/student-system-exams";
 import { cn } from "@/lib/utils";
 import { useExamSessionStore } from "@/stores/exam-session-store";
 import { AlertTriangle, X } from "lucide-react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { use, useCallback, useEffect, useState } from "react";
 
-export default function ExamTakePage({
-  params,
+function ExamTakeContent({
+  id,
+  examDetail,
 }: {
-  params: Promise<{ id: string }>;
+  id: string;
+  examDetail: StudentExamDetailData;
 }) {
-  const { id } = use(params);
   const router = useRouter();
-
-  const exam = mockExams.find((e) => e.id === id);
-  const questions = getQuestionsByExamId(id);
-
+  const searchParams = useSearchParams();
   const {
     phase,
     currentIndex,
@@ -33,85 +37,149 @@ export default function ExamTakePage({
     goToQuestion,
     nextQuestion,
     prevQuestion,
-    submitExam,
     resetSession,
   } = useExamSessionStore();
 
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingAnswer, setIsSavingAnswer] = useState(false);
+  const [saveAnswerError, setSaveAnswerError] = useState<string | null>(null);
+  const exam = examDetail.exam;
+  const questions = examDetail.questions;
+  const activeAttemptId =
+    searchParams.get("attemptId") ?? examDetail.inProgressAttemptId;
 
-  // Start exam when entering; block if session is too old
   useEffect(() => {
-    if (!exam || questions.length === 0) return;
+    const state = useExamSessionStore.getState();
 
-    const { startedAt } = useExamSessionStore.getState();
-    if (startedAt) {
-      const elapsed = (Date.now() - new Date(startedAt).getTime()) / 1000;
-      const maxAge = (exam.duration + 5) * 60; // duration + 5 min grace
+    if (state.exam?.id && state.exam.id !== exam.id) {
+      resetSession();
+      startExam(exam, questions);
+      return;
+    }
+
+    if (state.startedAt) {
+      const elapsed = (Date.now() - new Date(state.startedAt).getTime()) / 1000;
+      const maxAge = (exam.duration + 5) * 60;
+
       if (elapsed > maxAge) {
         resetSession();
-        router.replace(`/exam/${id}/result?attemptId=expired`);
+        startExam(exam, questions);
         return;
       }
     }
 
-    if (phase === "not-started") {
+    if (state.phase === "not-started") {
       startExam(exam, questions);
     }
-  }, [exam, questions, phase, startExam, resetSession, router, id]);
-
-  // Redirect if no exam
-  useEffect(() => {
-    if (!exam || questions.length === 0) {
-      router.replace("/exams");
-    }
-  }, [exam, questions, router]);
-
-  // Drift-free timer
-
-  const handleSubmit = useCallback(async () => {
-    setIsSubmitting(true);
-    try {
-      const attempt = submitExam();
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem(
-          `attempt-${attempt.id}`,
-          JSON.stringify(attempt),
-        );
-      }
-      router.push(`/exam/${id}/result?attemptId=${attempt.id}`);
-    } catch {
-      setIsSubmitting(false);
-    }
-  }, [submitExam, router, id]);
-
-  const { timeLeft, isExpired } = useExamTimer(
-    exam?.duration ? exam.duration * 60 : 0,
-    useCallback(() => {
-      if (phase === "in-progress") {
-        handleSubmit();
-      }
-    }, [handleSubmit, phase]),
-  );
-
-  // Time expired auto-submit
-  useEffect(() => {
-    const submit = async () => {
-      if (isExpired && phase === "in-progress") {
-        await handleSubmit();
-      }
-    };
-    submit();
-  }, [isExpired, phase, handleSubmit]);
-
-  if (!exam || questions.length === 0) return null;
+  }, [exam, questions, resetSession, startExam]);
 
   const currentQuestion = questions[currentIndex];
   const answeredIds = new Set(
     Object.keys(answers).filter((k) => answers[k].length > 0),
   );
   const answeredCount = answeredIds.size;
-  // const hasCurrentAnswer = (answers[currentQuestion?.id] ?? []).length > 0;
+
+  const persistQuestionAnswer = useCallback(async () => {
+    if (!currentQuestion) {
+      return true;
+    }
+
+    setSaveAnswerError(null);
+
+    const selectedIds = answers[currentQuestion.id] ?? [];
+
+    if (selectedIds.length === 0) {
+      return true;
+    }
+
+    if (!activeAttemptId) {
+      setSaveAnswerError(
+        "Không tìm thấy lượt làm bài hiện tại. Hãy quay lại trang chi tiết đề thi và bắt đầu lại.",
+      );
+      return false;
+    }
+
+    setIsSavingAnswer(true);
+
+    try {
+      await saveStudentAttemptAnswers(
+        activeAttemptId,
+        currentQuestion,
+        selectedIds,
+      );
+      return true;
+    } catch (error) {
+      const message =
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        typeof error.message === "string"
+          ? error.message
+          : "Không thể lưu câu trả lời. Vui lòng thử lại.";
+
+      setSaveAnswerError(message);
+      return false;
+    } finally {
+      setIsSavingAnswer(false);
+    }
+  }, [activeAttemptId, answers, currentQuestion]);
+
+  const handleNextQuestion = useCallback(async () => {
+    const isSaved = await persistQuestionAnswer();
+
+    if (isSaved) {
+      nextQuestion();
+    }
+  }, [nextQuestion, persistQuestionAnswer]);
+
+  const handleSubmit = useCallback(async () => {
+    if (!activeAttemptId) {
+      setSaveAnswerError(
+        "Không tìm thấy lượt làm bài hiện tại. Hãy quay lại trang chi tiết đề thi và bắt đầu lại.",
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSaveAnswerError(null);
+
+    try {
+      const isSaved = await persistQuestionAnswer();
+
+      if (!isSaved) {
+        setIsSubmitting(false);
+        return;
+      }
+
+      const result = await submitStudentAttempt(activeAttemptId);
+
+      writeCachedStudentAttemptResult(result);
+
+      resetSession();
+      router.push(`/student/exam/${id}/result?attemptId=${result.attemptId}`);
+    } catch (error) {
+      const message =
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        typeof error.message === "string"
+          ? error.message
+          : "Không thể nộp bài. Vui lòng thử lại.";
+
+      setSaveAnswerError(message);
+      setIsSubmitting(false);
+    }
+  }, [activeAttemptId, id, persistQuestionAnswer, resetSession, router]);
+
+  const { timeLeft } = useExamTimer(
+    exam?.duration ? exam.duration * 60 : 0,
+    useCallback(() => {
+      if (phase === "in-progress") {
+        void handleSubmit();
+      }
+    }, [handleSubmit, phase]),
+  );
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -132,6 +200,18 @@ export default function ExamTakePage({
 
       {/* Main content */}
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
+        {examDetail?.inProgressAttemptId && (
+          <div className="mb-6 rounded-2xl border border-outline/10 bg-surface-container-lowest px-4 py-3 text-sm text-muted-foreground">
+            Bạn đang tiếp tục một lượt làm bài đang diễn ra.
+          </div>
+        )}
+
+        {saveAnswerError && (
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {saveAnswerError}
+          </div>
+        )}
+
         {/* Progress orbs */}
         <div className="mb-6">
           <ProgressOrbs
@@ -161,8 +241,10 @@ export default function ExamTakePage({
           currentIndex={currentIndex}
           total={questions.length}
           onPrev={prevQuestion}
-          onNext={nextQuestion}
+          onNext={() => void handleNextQuestion()}
           onSubmit={() => setShowSubmitConfirm(true)}
+          isNextDisabled={isSavingAnswer}
+          nextLabel={isSavingAnswer ? "Đang lưu..." : "Câu tiếp"}
         />
 
         {/* Unanswered warning */}
@@ -224,7 +306,7 @@ export default function ExamTakePage({
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isSavingAnswer}
                 className={cn(
                   "cursor-pointer flex-1 py-2.5 rounded-xl text-sm font-semibold",
                   "bg-secondary text-white hover:bg-secondary/90",
@@ -239,4 +321,83 @@ export default function ExamTakePage({
       )}
     </div>
   );
+}
+
+export default function ExamTakePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+  const [examDetail, setExamDetail] = useState<StudentExamDetailData | null>(
+    null,
+  );
+  const [isLoadingExam, setIsLoadingExam] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadExamDetail() {
+      setIsLoadingExam(true);
+      setLoadError(null);
+      setExamDetail(null);
+
+      try {
+        const detail = await getStudentExamDetail(id);
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (!detail || detail.questions.length === 0) {
+          setLoadError("Không thể tải đề thi hoặc đề thi chưa có câu hỏi.");
+          return;
+        }
+
+        setExamDetail(detail);
+      } finally {
+        if (isMounted) {
+          setIsLoadingExam(false);
+        }
+      }
+    }
+
+    void loadExamDetail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
+
+  if (isLoadingExam) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="text-center text-muted-foreground">
+          <p className="font-medium">Đang tải đề thi...</p>
+          <p className="text-sm mt-1">Vui lòng chờ trong giây lát</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!examDetail || examDetail.questions.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="max-w-md rounded-2xl border border-outline/10 bg-surface-container-lowest p-6 text-center">
+          <p className="font-medium text-on-surface">
+            {loadError ?? "Không tìm thấy đề thi."}
+          </p>
+          <Link
+            href="/student/exams"
+            className="mt-4 inline-flex text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+          >
+            Quay lại danh sách đề thi
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return <ExamTakeContent id={id} examDetail={examDetail} />;
 }

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { ExamCard } from "@/components/features/exam/exam-card";
-import { mockExams, SUBJECTS, GRADES } from "@/data/mock/mock-exams";
-import { ExamDifficulty } from "@/types/exam.types";
+import { getStudentSystemExams } from "@/lib/student-system-exams";
+import { Exam, ExamDifficulty } from "@/types/exam.types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -28,22 +28,70 @@ const ALL_GRADES = "__all_grades__";
 const ALL_DIFFICULTIES = "__all_difficulties__";
 
 export default function ExamsPage() {
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [isLoadingExams, setIsLoadingExams] = useState(true);
   const [search, setSearch] = useState("");
-  const [subject, setSubject] = useState("");
+  const [classroom, setClassroom] = useState("");
   const [grade, setGrade] = useState<number | "">("");
   const [difficulty, setDifficulty] = useState<ExamDifficulty | "">("");
   const [showFilters, setShowFilters] = useState(false);
 
-  const filtered = mockExams.filter((exam) => {
-    if (search && !exam.title.toLowerCase().includes(search.toLowerCase()))
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadExams() {
+      try {
+        const items = await getStudentSystemExams();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setExams(items);
+      } finally {
+        if (isMounted) {
+          setIsLoadingExams(false);
+        }
+      }
+    }
+
+    void loadExams();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const classroomOptions = Array.from(
+    new Set(
+      exams
+        .map((exam) => exam.classroomName?.trim())
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ).sort((a, b) => a.localeCompare(b, "vi"));
+
+  const gradeOptions = Array.from(
+    new Set(exams.map((exam) => exam.grade).filter((item) => item > 0)),
+  ).sort((a, b) => a - b);
+
+  const filtered = exams.filter((exam) => {
+    const keyword = search.trim().toLowerCase();
+
+    if (
+      keyword &&
+      ![exam.title, exam.description, exam.classroomName ?? ""]
+        .some((value) => value.toLowerCase().includes(keyword))
+    ) {
       return false;
-    if (subject && exam.subject !== subject) return false;
+    }
+    if (classroom && exam.classroomName !== classroom) return false;
     if (grade && exam.grade !== grade) return false;
     if (difficulty && exam.difficulty !== difficulty) return false;
     return true;
   });
 
-  const activeFilterCount = [subject, grade, difficulty].filter(Boolean).length;
+  const activeFilterCount = [classroom, grade, difficulty].filter(Boolean)
+    .length;
 
   return (
     <div className="space-y-6">
@@ -52,7 +100,9 @@ export default function ExamsPage() {
           Thư viện đề thi
         </h1>
         <p className="text-sm text-muted-foreground">
-          {mockExams.length} đề thi available — tìm kiếm và làm bài ngay
+          {isLoadingExams
+            ? "Đang tải đề thi hệ thống..."
+            : `${exams.length} đề thi hệ thống — tìm kiếm và làm bài ngay`}
         </p>
       </div>
 
@@ -93,22 +143,22 @@ export default function ExamsPage() {
         <div className="grid grid-cols-1 gap-4 rounded-2xl border border-outline/10 bg-surface-container-lowest p-4 shadow-[0_18px_44px_-32px_rgba(7,30,39,0.18)] sm:grid-cols-3">
           <div>
             <Label className="mb-2 block text-xs font-medium text-on-surface-variant">
-              Môn học
+              Lớp học
             </Label>
             <Select
-              value={subject || ALL_SUBJECTS}
+              value={classroom || ALL_SUBJECTS}
               onValueChange={(value) =>
-                setSubject(value === ALL_SUBJECTS ? "" : value)
+                setClassroom(value === ALL_SUBJECTS ? "" : value)
               }
             >
               <SelectTrigger className="h-12 rounded-2xl border-outline/15 bg-surface shadow-none">
-                <SelectValue placeholder="Tất cả môn" />
+                <SelectValue placeholder="Tất cả lớp học" />
               </SelectTrigger>
               <SelectContent position="popper">
-                <SelectItem value={ALL_SUBJECTS}>Tất cả môn</SelectItem>
-                {SUBJECTS.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s}
+                <SelectItem value={ALL_SUBJECTS}>Tất cả lớp học</SelectItem>
+                {classroomOptions.map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {item}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -130,7 +180,7 @@ export default function ExamsPage() {
               </SelectTrigger>
               <SelectContent position="popper">
                 <SelectItem value={ALL_GRADES}>Tất cả khối</SelectItem>
-                {GRADES.map((g) => (
+                {gradeOptions.map((g) => (
                   <SelectItem key={g} value={String(g)}>
                     Lớp {g}
                   </SelectItem>
@@ -170,18 +220,30 @@ export default function ExamsPage() {
       )}
 
       {/* Results */}
-      {filtered.length === 0 ? (
+      {isLoadingExams ? (
         <div className="text-center py-16 text-muted-foreground">
           <Search className="w-10 h-10 mx-auto mb-3 opacity-40" />
-          <p className="font-medium">Không tìm thấy đề thi nào</p>
+          <p className="font-medium">Đang tải đề thi</p>
+          <p className="text-sm mt-1">Vui lòng chờ trong giây lát</p>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16 text-muted-foreground">
+          <Search className="w-10 h-10 mx-auto mb-3 opacity-40" />
+          <p className="font-medium">
+            {exams.length === 0
+              ? "Chưa có đề thi hệ thống nào"
+              : "Không tìm thấy đề thi nào"}
+          </p>
           <p className="text-sm mt-1">
-            Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm
+            {exams.length === 0
+              ? "Hãy quay lại sau khi hệ thống cập nhật thêm đề thi"
+              : "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"}
           </p>
         </div>
       ) : (
         <>
           <p className="text-sm text-muted-foreground">
-            Hiển thị {filtered.length} trong {mockExams.length} đề thi
+            Hiển thị {filtered.length} trong {exams.length} đề thi
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {filtered.map((exam) => (

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Users, FileCheck, ArrowRight } from 'lucide-react';
+import { CalendarDays, FileCheck, ArrowRight, Users } from 'lucide-react';
 import { ClassInfo } from '@/types/class.types';
 import { cn } from '@/lib/utils';
 
@@ -10,10 +10,32 @@ interface ClassCardProps {
   variant?: 'default' | 'compact';
 }
 
+function formatJoinedAt(joinedAt?: string | null): string | null {
+  if (!joinedAt) {
+    return null;
+  }
+
+  const date = new Date(joinedAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date);
+}
+
 export function ClassCard({ cls, variant = 'default' }: ClassCardProps) {
+  const joinedAtLabel = formatJoinedAt(cls.joinedAt);
+  const teacherLabel =
+    cls.teacherName?.trim() || cls.joinCode || cls.inviteCode || cls.name;
+
   return (
     <Link
-      href={`/classes/${cls.id}`}
+      href={`/student/classes/${cls.id}`}
       className={cn(
         'block bg-surface-container-lowest rounded-xl overflow-hidden',
         'shadow-[0_4px_24px_rgba(7,30,39,0.06)]',
@@ -30,9 +52,11 @@ export function ClassCard({ cls, variant = 'default' }: ClassCardProps) {
           <h3 className="font-display font-semibold text-on-surface text-base leading-snug line-clamp-2 flex-1">
             {cls.name}
           </h3>
-          <span className="text-xs text-muted-foreground font-medium shrink-0">
-            Lớp {cls.grade}
-          </span>
+          {cls.grade > 0 && (
+            <span className="text-xs text-muted-foreground font-medium shrink-0">
+              Lớp {cls.grade}
+            </span>
+          )}
         </div>
 
         <p className={cn(
@@ -43,10 +67,17 @@ export function ClassCard({ cls, variant = 'default' }: ClassCardProps) {
         </p>
 
         <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
-          <span className="flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5" />
-            {cls.studentCount} học sinh
-          </span>
+          {typeof cls.studentCount === 'number' ? (
+            <span className="flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5" />
+              {cls.studentCount} học sinh
+            </span>
+          ) : joinedAtLabel ? (
+            <span className="flex items-center gap-1.5">
+              <CalendarDays className="w-3.5 h-3.5" />
+              Tham gia {joinedAtLabel}
+            </span>
+          ) : null}
           <span className="flex items-center gap-1.5">
             <FileCheck className="w-3.5 h-3.5" />
             {cls.examCount} bài thi
@@ -59,9 +90,13 @@ export function ClassCard({ cls, variant = 'default' }: ClassCardProps) {
               className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold"
               style={{ backgroundColor: cls.coverColor }}
             >
-              {cls.teacherName.charAt(0)}
+              {teacherLabel.charAt(0).toUpperCase()}
             </div>
-            <span className="text-xs text-muted-foreground">{cls.teacherName}</span>
+            <span className="text-xs text-muted-foreground line-clamp-1">
+              {cls.teacherName?.trim()
+                ? cls.teacherName
+                : `Mã vào lớp: ${teacherLabel}`}
+            </span>
           </div>
           <ArrowRight className="w-4 h-4 text-muted-foreground" />
         </div>

@@ -12,9 +12,11 @@ export function useExamTimer(
   initialSeconds: number,
   onExpire?: () => void
 ): TimerState {
-  const [endTime, setEndTime] = useState<number | null>(null);
+  const [endTime] = useState<number | null>(() =>
+    initialSeconds > 0 ? Date.now() + initialSeconds * 1000 : null,
+  );
   const [timeLeft, setTimeLeft] = useState(initialSeconds);
-  const [isRunning, setIsRunning] = useState(false);
+  const [isRunning, setIsRunning] = useState(initialSeconds > 0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const handleExpire = useEffectEvent(() => {
     onExpire?.();
@@ -51,7 +53,7 @@ export function useExamTimer(
         intervalRef.current = null;
       }
     };
-  }, [endTime, handleExpire, isRunning]);
+  }, [endTime, isRunning]);
 
   return {
     timeLeft,

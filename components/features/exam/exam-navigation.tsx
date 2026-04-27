@@ -9,6 +9,8 @@ interface ExamNavigationProps {
   onPrev: () => void;
   onNext: () => void;
   onSubmit: () => void;
+  isNextDisabled?: boolean;
+  nextLabel?: string;
 }
 
 export function ExamNavigation({
@@ -17,6 +19,8 @@ export function ExamNavigation({
   onPrev,
   onNext,
   onSubmit,
+  isNextDisabled = false,
+  nextLabel = "Câu tiếp",
 }: ExamNavigationProps) {
   const isFirst = currentIndex === 0;
   const isLast = currentIndex === total - 1;
@@ -58,13 +62,15 @@ export function ExamNavigation({
       ) : (
         <button
           onClick={onNext}
+          disabled={isNextDisabled}
           className={cn(
             "cursor-pointer flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium",
             "bg-primary text-white transition-all duration-150",
             "hover:bg-primary/90 active:scale-95",
+            "disabled:cursor-not-allowed disabled:opacity-60",
           )}
         >
-          Câu tiếp
+          {nextLabel}
           <ChevronRight className="w-4 h-4" />
         </button>
       )}

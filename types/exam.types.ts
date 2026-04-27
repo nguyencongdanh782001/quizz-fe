@@ -5,7 +5,7 @@ export type ExamStatus = 'draft' | 'published' | 'archived';
 export interface AnswerOption {
   id: string;
   text: string;
-  isCorrect: boolean;
+  isCorrect?: boolean;
 }
 
 export interface Question {
@@ -36,6 +36,10 @@ export interface Exam {
   thumbnailUrl?: string;
   tags: string[];
   classIds: string[]; // assigned class ids
+  classroomName?: string | null;
+  totalPoints?: number | null;
+  scope?: string | null;
+  isActive?: boolean;
 }
 
 export interface ExamAttempt {

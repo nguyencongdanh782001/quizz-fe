@@ -130,6 +130,162 @@ export interface RootResponse {
   message: string;
 }
 
+export interface StudentSystemExamSchema {
+  id: number;
+  title: string;
+  description: string;
+  scope: string;
+  classroom_id: number;
+  classroom_name: string | null;
+  duration_minutes: number;
+  total_points: number;
+  question_count: number;
+  is_active: boolean;
+}
+
+export interface StudentSystemExamListResponse {
+  items: StudentSystemExamSchema[];
+}
+
+export interface StudentSystemDocumentSchema {
+  id: number;
+  title: string;
+  summary: string;
+  content: string;
+  scope: string;
+  classroom_id: number;
+  classroom_name: string | null;
+  created_at: string;
+}
+
+export interface StudentSystemDocumentListResponse {
+  items: StudentSystemDocumentSchema[];
+}
+
+export interface StudentClassSchema {
+  id: number;
+  name: string;
+  description: string;
+  join_code: string;
+  joined_at: string;
+  exam_count: number;
+  document_count: number;
+}
+
+export interface StudentClassListResponse {
+  items: StudentClassSchema[];
+}
+
+export interface StudentJoinClassRequest {
+  join_code: string;
+}
+
+export interface StudentJoinClassResponse {
+  message: string;
+  classroom: StudentClassSchema;
+}
+
+export interface StudentExamOptionSchema {
+  id: number;
+  option_key: string;
+  option_text: string;
+}
+
+export interface StudentExamQuestionSchema {
+  id: number;
+  question_type: string;
+  order_index: number;
+  prompt: string;
+  points: number;
+  options: StudentExamOptionSchema[];
+}
+
+export interface StudentExamDetailResponse {
+  id: number;
+  title: string;
+  description: string;
+  scope: string;
+  classroom_id: number;
+  classroom_name: string | null;
+  duration_minutes: number;
+  total_points: number;
+  question_count: number;
+  is_active: boolean;
+  questions: StudentExamQuestionSchema[];
+  in_progress_attempt_id: number | null;
+}
+
+export interface StudentExamAttemptSchema {
+  id: number;
+  exam_id: number;
+  status: string;
+  score: number;
+  total_points: number;
+  correct_answers_count: number;
+  total_questions: number;
+  answered_count: number;
+  started_at: string;
+  submitted_at: string | null;
+}
+
+export interface StudentStartExamAttemptResponse {
+  message: string;
+  attempt: StudentExamAttemptSchema;
+}
+
+export interface StudentAttemptAnswerPayloadItem {
+  question_id: number;
+  selected_option_id?: number | null;
+  answer_text?: string | null;
+}
+
+export interface StudentSaveAttemptAnswersRequest {
+  answers: StudentAttemptAnswerPayloadItem[];
+}
+
+export interface StudentSaveAttemptAnswersResponse {
+  message: string;
+  attempt: StudentExamAttemptSchema;
+}
+
+export interface StudentSubmittedAnswerSchema {
+  question_id: number;
+  question_type: string;
+  prompt: string;
+  selected_option_id: number | null;
+  selected_option_text: string | null;
+  submitted_answer_text: string | null;
+  correct_option_id: number | null;
+  correct_option_text: string | null;
+  accepted_answers: string[];
+  is_correct: boolean;
+  points_earned: number;
+  max_points: number;
+}
+
+export interface StudentSubmitAttemptResultSchema {
+  attempt_id: number;
+  exam_id: number;
+  exam_title: string;
+  status: string;
+  score: number;
+  total_points: number;
+  correct_answers_count: number;
+  total_questions: number;
+  started_at: string;
+  submitted_at: string;
+  answers: StudentSubmittedAnswerSchema[];
+}
+
+export interface StudentSubmitAttemptResponse {
+  message: string;
+  result: StudentSubmitAttemptResultSchema;
+}
+
+export interface StudentAttemptResultResponse {
+  result: StudentSubmitAttemptResultSchema;
+}
+
 // ─── Generic API response wrapper ───────────────────────────────────────────
 
 export interface ApiResponse<T> {

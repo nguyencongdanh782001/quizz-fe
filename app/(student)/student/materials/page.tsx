@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, Download } from "lucide-react";
 import { DocumentCard } from "@/components/features/document/document-card";
-import { mockDocuments } from "@/data/mock/mock-documents";
-import { SUBJECTS, GRADES } from "@/data/mock/mock-exams";
+import { getStudentSystemDocuments } from "@/lib/student-system-documents";
+import type { Document } from "@/types/document.types";
 import { DocumentType } from "@/types/document.types";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,25 +18,80 @@ import { cn } from "@/lib/utils";
 
 const typeFilters: { value: DocumentType | ""; label: string }[] = [
   { value: "", label: "Tất cả" },
-  { value: "pdf", label: "PDF" },
-  { value: "video", label: "Video" },
   { value: "doc", label: "DOC" },
-  { value: "image", label: "Hình ảnh" },
 ];
 
-const ALL_SUBJECTS = "__all_subjects__";
+const ALL_CLASSROOMS = "__all_classrooms__";
 const ALL_GRADES = "__all_grades__";
 
 export default function DocumentsPage() {
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
   const [search, setSearch] = useState("");
-  const [subject, setSubject] = useState("");
+  const [classroom, setClassroom] = useState("");
   const [grade, setGrade] = useState<number | "">("");
   const [type, setType] = useState<DocumentType | "">("");
 
-  const filtered = mockDocuments.filter((doc) => {
-    if (search && !doc.title.toLowerCase().includes(search.toLowerCase()))
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadDocuments() {
+      try {
+        const items = await getStudentSystemDocuments();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setDocuments(items);
+      } finally {
+        if (isMounted) {
+          setIsLoadingDocuments(false);
+        }
+      }
+    }
+
+    void loadDocuments();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const classroomOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          documents
+            .map((document) => document.classroomName?.trim())
+            .filter((value): value is string => Boolean(value)),
+        ),
+      ).sort((a, b) => a.localeCompare(b, "vi")),
+    [documents],
+  );
+
+  const gradeOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          documents
+            .map((document) => document.grade)
+            .filter((value) => value > 0),
+        ),
+      ).sort((a, b) => a - b),
+    [documents],
+  );
+
+  const filtered = documents.filter((doc) => {
+    if (
+      search &&
+      ![doc.title, doc.description, doc.content ?? "", doc.classroomName ?? ""]
+        .join(" ")
+        .toLowerCase()
+        .includes(search.toLowerCase())
+    )
       return false;
-    if (subject && doc.subject !== subject) return false;
+    if (classroom && doc.classroomName !== classroom) return false;
     if (grade && doc.grade !== grade) return false;
     if (type && doc.type !== type) return false;
     return true;
@@ -49,7 +104,7 @@ export default function DocumentsPage() {
           Thư viện tài liệu
         </h1>
         <p className="text-sm text-muted-foreground">
-          {mockDocuments.length} tài liệu học tập — sách, video, hình ảnh
+          {documents.length} tài liệu hệ thống dành cho học sinh
         </p>
       </div>
 
@@ -68,19 +123,19 @@ export default function DocumentsPage() {
       {/* Filters */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Select
-          value={subject || ALL_SUBJECTS}
+          value={classroom || ALL_CLASSROOMS}
           onValueChange={(value) =>
-            setSubject(value === ALL_SUBJECTS ? "" : value)
+            setClassroom(value === ALL_CLASSROOMS ? "" : value)
           }
         >
           <SelectTrigger className="h-12 rounded-2xl border-outline/15 bg-surface-container-lowest shadow-none">
-            <SelectValue placeholder="Tất cả môn" />
+            <SelectValue placeholder="Tất cả lớp học" />
           </SelectTrigger>
           <SelectContent position="popper">
-            <SelectItem value={ALL_SUBJECTS}>Tất cả môn</SelectItem>
-            {SUBJECTS.map((s) => (
-              <SelectItem key={s} value={s}>
-                {s}
+            <SelectItem value={ALL_CLASSROOMS}>Tất cả lớp học</SelectItem>
+            {classroomOptions.map((item) => (
+              <SelectItem key={item} value={item}>
+                {item}
               </SelectItem>
             ))}
           </SelectContent>
@@ -96,7 +151,7 @@ export default function DocumentsPage() {
           </SelectTrigger>
           <SelectContent position="popper">
             <SelectItem value={ALL_GRADES}>Tất cả khối</SelectItem>
-            {GRADES.map((g) => (
+            {gradeOptions.map((g) => (
               <SelectItem key={g} value={String(g)}>
                 Lớp {g}
               </SelectItem>
@@ -122,15 +177,23 @@ export default function DocumentsPage() {
       </div>
 
       {/* Results */}
-      {filtered.length === 0 ? (
+      {isLoadingDocuments ? (
+        <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest p-6 text-sm text-muted-foreground">
+          Đang tải tài liệu hệ thống...
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
           <Download className="w-10 h-10 mx-auto mb-3 opacity-40" />
-          <p className="font-medium">Không tìm thấy tài liệu nào</p>
+          <p className="font-medium">
+            {documents.length === 0
+              ? "Chưa có tài liệu hệ thống khả dụng."
+              : "Không tìm thấy tài liệu nào"}
+          </p>
         </div>
       ) : (
         <>
           <p className="text-sm text-muted-foreground">
-            Hiển thị {filtered.length} trong {mockDocuments.length} tài liệu
+            Hiển thị {filtered.length} trong {documents.length} tài liệu
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {filtered.map((doc) => (

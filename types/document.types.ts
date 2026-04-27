@@ -15,6 +15,11 @@ export interface Document {
   fileSize?: number; // bytes
   downloadCount: number;
   tags: string[];
+  content?: string;
+  scope?: string | null;
+  classroomId?: string | null;
+  classroomName?: string | null;
+  actionLabel?: string;
 }
 
 export interface DocumentFilter {
