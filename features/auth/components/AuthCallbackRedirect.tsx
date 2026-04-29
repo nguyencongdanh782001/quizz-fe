@@ -50,10 +50,10 @@ export function AuthCallbackRedirect() {
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
       <div className="space-y-1">
         <h1 className="font-display text-xl font-semibold text-on-surface">
-          Dang dang nhap...
+          Đang đăng nhập...
         </h1>
         <p className="text-sm text-muted-foreground">
-          Chung toi dang dong bo thong tin tai khoan cua ban.
+          Chúng tôi đang đồng bộ thông tin tài khoản của bạn.
         </p>
       </div>
     </div>

@@ -12,6 +12,7 @@ import {
   FileText,
   LogOut,
   ChevronRight,
+  UserRound,
 } from "lucide-react";
 
 const teacherNav = [
@@ -19,6 +20,7 @@ const teacherNav = [
   { href: "/teacher/classes", label: "Quản lý lớp", icon: Users },
   { href: "/teacher/exams", label: "Quản lý bài thi", icon: FileCheck },
   { href: "/teacher/documents", label: "Tài liệu", icon: FileText },
+  { href: "/teacher/profile", label: "Hồ sơ", icon: UserRound },
 ];
 
 export function TeacherSidebar() {

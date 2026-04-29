@@ -13,6 +13,7 @@ import {
   History,
   LogOut,
   ChevronRight,
+  UserRound,
 } from "lucide-react";
 
 const studentNav = [
@@ -21,6 +22,7 @@ const studentNav = [
   { href: "/student/classes", label: "Lớp học", icon: GraduationCap },
   { href: "/student/results", label: "Kết quả", icon: History },
   { href: "/student/materials", label: "Tài liệu", icon: Library },
+  { href: "/student/profile", label: "Hồ sơ", icon: UserRound },
 ];
 
 export function StudentSidebar() {
