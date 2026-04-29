@@ -1,7 +1,6 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AuthCallbackRedirect } from "@/features/auth/components/AuthCallbackRedirect";
-import { getServerSession } from "@/lib/auth-server";
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"]);
 
@@ -74,20 +73,5 @@ export default async function AuthCallbackPage({
     redirect("/login?error=oauth_failed");
   }
 
-  const session = await getServerSession();
-  if (!session) {
-    redirect("/login?error=session_not_found");
-  }
-
-  const queryNeedsOnboarding =
-    getSingleValue(resolvedSearchParams.needs_onboarding) === "true";
-
-  return (
-    <AuthCallbackRedirect
-      fallbackUser={{
-        ...session,
-        needs_onboarding: queryNeedsOnboarding || session.needs_onboarding,
-      }}
-    />
-  );
+  return <AuthCallbackRedirect />;
 }

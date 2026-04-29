@@ -13,14 +13,8 @@ function getDestination(user: Pick<User, "role_name" | "needs_onboarding">) {
   return user.role_name === "teacher" ? "/teacher" : "/student";
 }
 
-interface AuthCallbackRedirectProps {
-  fallbackUser: User;
-}
-
-export function AuthCallbackRedirect({
-  fallbackUser,
-}: AuthCallbackRedirectProps) {
-  const { fetchMe, hydrateFromUser } = useAuth();
+export function AuthCallbackRedirect() {
+  const { fetchMe } = useAuth();
   const hasStartedRef = useRef(false);
 
   useEffect(() => {
@@ -38,18 +32,18 @@ export function AuthCallbackRedirect({
         return;
       }
 
-      const nextUser = freshUser ?? fallbackUser;
       if (!freshUser) {
-        hydrateFromUser(fallbackUser);
+        window.location.replace("/login?error=session_not_found");
+        return;
       }
 
-      window.location.replace(getDestination(nextUser));
+      window.location.replace(getDestination(freshUser));
     })();
 
     return () => {
       isCancelled = true;
     };
-  }, [fallbackUser, fetchMe, hydrateFromUser]);
+  }, [fetchMe]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-6 text-center">
