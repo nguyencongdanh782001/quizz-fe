@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { AuthCallbackRedirect } from "@/features/auth/components/AuthCallbackRedirect";
 import { getServerSession } from "@/lib/auth-server";
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"]);
@@ -61,17 +62,6 @@ async function redirectToPreferredLocalHostIfNeeded(
   redirect(target.toString());
 }
 
-function redirectBySession(
-  roleName: "teacher" | "student" | null,
-  needsOnboarding: boolean,
-) {
-  if (needsOnboarding || !roleName) {
-    redirect("/role");
-  }
-
-  redirect(roleName === "teacher" ? "/teacher" : "/student");
-}
-
 export default async function AuthCallbackPage({
   searchParams,
 }: {
@@ -91,8 +81,13 @@ export default async function AuthCallbackPage({
 
   const queryNeedsOnboarding =
     getSingleValue(resolvedSearchParams.needs_onboarding) === "true";
-  redirectBySession(
-    session.role_name,
-    queryNeedsOnboarding || session.needs_onboarding,
+
+  return (
+    <AuthCallbackRedirect
+      fallbackUser={{
+        ...session,
+        needs_onboarding: queryNeedsOnboarding || session.needs_onboarding,
+      }}
+    />
   );
 }
