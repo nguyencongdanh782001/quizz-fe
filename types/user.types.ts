@@ -12,7 +12,9 @@ export interface UserProfile {
 export interface User {
   id: number;
   full_name: string;
+  username: string;
   email: string;
+  auth_type: string;
   role_name: UserRole | null;
   needs_onboarding: boolean;
   avatar_url: string | null;

@@ -12,7 +12,9 @@ type MeResponse = {
 type MirroredSessionPayload = {
   id: number;
   full_name?: string;
+  username?: string;
   email: string;
+  auth_type?: string;
   role?: "teacher" | "student" | null;
   role_name?: "teacher" | "student" | null;
   needs_onboarding?: boolean;
@@ -22,7 +24,9 @@ function mapServerUser(user: UserSchema): User {
   return {
     id: user.id,
     full_name: user.full_name,
+    username: user.username,
     email: user.email,
+    auth_type: user.auth_type,
     role_name: user.role_name ?? null,
     needs_onboarding: user.needs_onboarding,
     avatar_url: user.avatar_url ?? null,
@@ -54,7 +58,9 @@ function decodeMirroredSession(value: string): User | null {
     return {
       id: payload.id,
       full_name: payload.full_name ?? "",
+      username: payload.username ?? "",
       email: payload.email,
+      auth_type: payload.auth_type ?? "",
       role_name: roleName,
       needs_onboarding: payload.needs_onboarding ?? !roleName,
       avatar_url: null,

@@ -26,9 +26,11 @@ function setSessionCookie(user: User): void {
         JSON.stringify({
           id: user.id,
           full_name: user.full_name,
+          username: user.username,
           role_name: user.role_name,
           needs_onboarding: user.needs_onboarding,
           email: user.email,
+          auth_type: user.auth_type,
         }),
       ),
     ),
@@ -46,7 +48,9 @@ function userFromSchema(user: UserSchema): User {
   return {
     id: user.id,
     full_name: user.full_name,
+    username: user.username,
     email: user.email,
+    auth_type: user.auth_type,
     role_name: user.role_name ?? null,
     needs_onboarding: user.needs_onboarding,
     avatar_url: user.avatar_url ?? null,
