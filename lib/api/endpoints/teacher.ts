@@ -1,6 +1,8 @@
 import { client } from "../client";
 import type {
   MessageResponse,
+  TeacherClassDocumentListResponse,
+  TeacherClassExamListResponse,
   TeacherClassListResponse,
   TeacherCreateClassRequest,
   TeacherCreateClassResponse,
@@ -16,6 +18,14 @@ export const api = {
       students: (classId: string | number) =>
         client.get<TeacherClassStudentListResponse>(
           `/teacher/classes/${classId}/students`,
+        ),
+      documents: (classId: string | number) =>
+        client.get<TeacherClassDocumentListResponse>(
+          `/teacher/classes/${classId}/documents`,
+        ),
+      exams: (classId: string | number) =>
+        client.get<TeacherClassExamListResponse>(
+          `/teacher/classes/${classId}/exams`,
         ),
       removeStudent: (classId: string | number, studentId: string | number) =>
         client.delete<MessageResponse>(

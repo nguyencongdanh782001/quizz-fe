@@ -1,10 +1,14 @@
 import { api as teacherApi } from '@/lib/api/endpoints/teacher';
 import type {
+  TeacherClassDocumentSchema,
+  TeacherClassExamSchema,
   TeacherClassSchema,
   TeacherClassStudentSchema,
   TeacherCreateClassRequest,
 } from '@/lib/api/types';
 import type { ClassInfo, ClassStudent } from '@/types/class.types';
+import type { Document } from '@/types/document.types';
+import type { Exam, ExamDifficulty } from '@/types/exam.types';
 
 const CLASS_COVER_COLORS = [
   '#00464a',
@@ -66,6 +70,84 @@ function mapTeacherClassStudent(item: TeacherClassStudentSchema): ClassStudent {
   };
 }
 
+function inferGrade(classroomName: string | null): number {
+  if (!classroomName) {
+    return 0;
+  }
+
+  const match = classroomName.match(/(?:lop|lớp)\s*(\d{1,2})|(\d{1,2})/i);
+  const grade = Number(match?.[1] ?? match?.[2]);
+
+  if (Number.isNaN(grade) || grade < 1 || grade > 12) {
+    return 0;
+  }
+
+  return grade;
+}
+
+function mapTeacherClassDocument(item: TeacherClassDocumentSchema): Document {
+  return {
+    id: String(item.id),
+    title: item.title,
+    description: item.summary,
+    type: 'doc',
+    url: `/teacher/documents`,
+    subject: item.classroom_name ?? 'Tài liệu lớp học',
+    grade: inferGrade(item.classroom_name),
+    uploadedBy: 'teacher',
+    uploadedByName: 'Giáo viên',
+    createdAt: item.created_at,
+    downloadCount: 0,
+    tags: [item.scope, item.is_published ? 'published' : 'draft'].filter(Boolean),
+    content: item.content,
+    scope: item.scope,
+    classroomId: item.classroom_id ? String(item.classroom_id) : null,
+    classroomName: item.classroom_name,
+    actionLabel: item.is_published ? 'Xem tài liệu' : 'Chỉnh sửa tài liệu',
+  };
+}
+
+function inferDifficulty(
+  durationMinutes: number,
+  questionCount: number,
+): ExamDifficulty {
+  if (durationMinutes >= 60 || questionCount >= 40) {
+    return 'hard';
+  }
+
+  if (durationMinutes <= 20 || questionCount <= 10) {
+    return 'easy';
+  }
+
+  return 'medium';
+}
+
+function mapTeacherClassExam(item: TeacherClassExamSchema): Exam {
+  return {
+    id: String(item.id),
+    title: item.title,
+    description: item.description,
+    subject: item.classroom_name ?? 'Bài thi lớp học',
+    grade: inferGrade(item.classroom_name),
+    difficulty: inferDifficulty(item.duration_minutes, item.question_count),
+    duration: item.duration_minutes,
+    passingScore: 0,
+    questionCount: item.question_count,
+    attemptCount: item.attempt_count,
+    status: item.is_published ? 'published' : 'draft',
+    createdBy: 'teacher',
+    createdAt: item.created_at,
+    updatedAt: item.updated_at,
+    thumbnailUrl: item.image_url ?? undefined,
+    tags: [item.scope, item.is_published ? 'published' : 'draft'].filter(Boolean),
+    classIds: item.classroom_id ? [String(item.classroom_id)] : [],
+    classroomName: item.classroom_name,
+    totalPoints: item.total_points,
+    scope: item.scope,
+    isActive: item.is_active,
+  };
+}
+
 export async function getTeacherClasses(): Promise<ClassInfo[]> {
   const response = await teacherApi.teacher.classes.list();
   return (response.data.items ?? []).map(mapTeacherClass);
@@ -83,6 +165,20 @@ export async function getTeacherClassStudents(
 ): Promise<ClassStudent[]> {
   const response = await teacherApi.teacher.classes.students(classId);
   return (response.data.items ?? []).map(mapTeacherClassStudent);
+}
+
+export async function getTeacherClassDocuments(
+  classId: string,
+): Promise<Document[]> {
+  const response = await teacherApi.teacher.classes.documents(classId);
+  return (response.data.items ?? []).map(mapTeacherClassDocument);
+}
+
+export async function getTeacherClassExams(
+  classId: string,
+): Promise<Exam[]> {
+  const response = await teacherApi.teacher.classes.exams(classId);
+  return (response.data.items ?? []).map(mapTeacherClassExam);
 }
 
 export async function removeTeacherClassStudent(

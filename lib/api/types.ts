@@ -258,6 +258,45 @@ export interface TeacherClassStudentListResponse {
   items: TeacherClassStudentSchema[];
 }
 
+export interface TeacherClassDocumentSchema {
+  id: number;
+  title: string;
+  summary: string;
+  content: string;
+  scope: string;
+  classroom_id: number | null;
+  classroom_name: string | null;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TeacherClassDocumentListResponse {
+  items: TeacherClassDocumentSchema[];
+}
+
+export interface TeacherClassExamSchema {
+  id: number;
+  title: string;
+  description: string;
+  image_url: string | null;
+  scope: string;
+  classroom_id: number | null;
+  classroom_name: string | null;
+  duration_minutes: number;
+  total_points: number;
+  question_count: number;
+  attempt_count: number;
+  is_published: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TeacherClassExamListResponse {
+  items: TeacherClassExamSchema[];
+}
+
 export interface StudentExamOptionSchema {
   id: number;
   option_key: string;
