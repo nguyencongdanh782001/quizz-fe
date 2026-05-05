@@ -99,10 +99,10 @@ export function RoleSelectionForm({ initialUser }: RoleSelectionFormProps) {
         <Form className="space-y-6">
           <div className="text-center">
             <h2 className="font-display text-2xl font-bold text-on-surface">
-              Chon vai tro cua ban
+              Chọn vai trò cuả bạn
             </h2>
             <p className="mt-2 text-sm text-on-surface-variant">
-              Hoan tat thong tin de bat dau su dung tai khoan Google.
+              Hoàn tất thông tin để bắt đầu sử dụng tài khoản Google.
             </p>
           </div>
 
@@ -126,10 +126,10 @@ export function RoleSelectionForm({ initialUser }: RoleSelectionFormProps) {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-display text-lg font-bold text-on-surface transition-colors group-hover:text-primary">
-                    Hoc sinh
+                    Học sinh
                   </h3>
                   <p className="mt-0.5 text-sm text-on-surface-variant">
-                    Lam bai thi, xem ket qua, tham gia lop hoc.
+                    Làm bài thi, xem kết quả, tham gia lớp học.
                   </p>
                 </div>
                 {values.role === "student" && (
@@ -159,10 +159,10 @@ export function RoleSelectionForm({ initialUser }: RoleSelectionFormProps) {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-display text-lg font-bold text-on-surface transition-colors group-hover:text-secondary">
-                    Giao vien
+                    Giáo viên
                   </h3>
                   <p className="mt-0.5 text-sm text-on-surface-variant">
-                    Tao bai thi, quan ly lop hoc, theo doi tien do.
+                    Tạo bài thi, quản lý lớp học, theo dõi tiến độ.
                   </p>
                 </div>
                 {values.role === "teacher" && (
@@ -180,19 +180,19 @@ export function RoleSelectionForm({ initialUser }: RoleSelectionFormProps) {
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <InputField
-              label="Ngay sinh"
+              label="Ngày sinh"
               type="date"
               error={touched.date_of_birth ? errors.date_of_birth : undefined}
               {...getFieldProps("date_of_birth")}
             />
 
             <SelectField
-              label="Gioi tinh"
-              placeholder="Chon gioi tinh"
+              label="Giới tính"
+              placeholder="Chọn giới tính"
               options={[
                 { value: "male", label: "Nam" },
-                { value: "female", label: "Nu" },
-                { value: "other", label: "Khac" },
+                { value: "female", label: "Nữ" },
+                { value: "other", label: "Khác" },
               ]}
               value={values.gender}
               onValueChange={(value) => {
@@ -207,10 +207,10 @@ export function RoleSelectionForm({ initialUser }: RoleSelectionFormProps) {
           </div>
 
           <InputField
-            label="Truong hoc"
-            placeholder="Ten truong cua ban"
+            label="Trường học"
+            placeholder="Tên trường học của bạn"
             error={touched.school_name ? errors.school_name : undefined}
-            helperText="Truong hoc la tuy chon, ban co the bo sung sau."
+            helperText="Trường học là tuỳ chọn, bạn có thể bổ sung sau."
             {...getFieldProps("school_name")}
           />
 
@@ -231,7 +231,7 @@ export function RoleSelectionForm({ initialUser }: RoleSelectionFormProps) {
             )}
           >
             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-            Hoan tat
+            Hoàn tất
           </button>
         </Form>
       )}

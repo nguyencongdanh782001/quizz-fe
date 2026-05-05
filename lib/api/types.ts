@@ -216,6 +216,48 @@ export interface StudentJoinClassResponse {
   classroom: StudentClassSchema;
 }
 
+export interface TeacherClassSchema {
+  id: number;
+  name: string;
+  description: string;
+  join_code: string;
+  student_count: number;
+  exam_count: number;
+  document_count: number;
+  created_at: string;
+}
+
+export interface TeacherClassListResponse {
+  items: TeacherClassSchema[];
+}
+
+export interface TeacherCreateClassRequest {
+  name: string;
+  description: string;
+  join_code: string;
+}
+
+export interface TeacherCreateClassResponse {
+  message: string;
+  classroom: TeacherClassSchema;
+}
+
+export interface TeacherClassStudentSchema {
+  id: number;
+  full_name: string;
+  username: string;
+  email: string | null;
+  phone: string | null;
+  avatar_url: string | null;
+  gender: string | null;
+  school_name: string | null;
+  joined_at: string;
+}
+
+export interface TeacherClassStudentListResponse {
+  items: TeacherClassStudentSchema[];
+}
+
 export interface StudentExamOptionSchema {
   id: number;
   option_key: string;
