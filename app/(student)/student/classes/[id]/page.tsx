@@ -1,8 +1,9 @@
 'use client';
 
-import { use, useEffect, useMemo, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
+  AlertCircle,
   ArrowLeft,
   BookOpen,
   CalendarDays,
@@ -16,13 +17,15 @@ import {
 } from 'lucide-react';
 import { getStudentClassById } from '@/lib/student-classes';
 import { getStudentClassDocuments } from '@/lib/student-system-documents';
+import { getStudentClassExams } from '@/lib/student-system-exams';
 import {
-  getStudentClassExams,
-  readAllCachedStudentAttemptResults,
-  StudentSubmitAttemptResultData,
-} from '@/lib/student-system-exams';
+  createEmptyStudentSystemResults,
+  getStudentClassResults,
+  type StudentSystemResultListData,
+} from '@/lib/student-system-results';
 import { DocumentCard } from '@/components/features/document/document-card';
 import { ExamCard } from '@/components/features/exam/exam-card';
+import { Button } from '@/components/ui/button';
 import type { ClassInfo } from '@/types/class.types';
 import type { Document } from '@/types/document.types';
 import type { Exam } from '@/types/exam.types';
@@ -30,16 +33,56 @@ import { cn } from '@/lib/utils';
 
 type ClassTab = 'exams' | 'results' | 'documents';
 
+const DATE_TIME_FORMATTER = new Intl.DateTimeFormat('vi-VN', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+function formatDate(iso: string): string {
+  return DATE_TIME_FORMATTER.format(new Date(iso));
+}
+
+function formatPercent(value: number): string {
+  const roundedValue = Math.round(value * 10) / 10;
+  return Number.isInteger(roundedValue)
+    ? `${roundedValue}%`
+    : `${roundedValue.toFixed(1)}%`;
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof error.message === 'string' &&
+    error.message.trim()
+  ) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
 export default function ClassDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [cls, setCls] = useState<ClassInfo | null>(null);
   const [activeTab, setActiveTab] = useState<ClassTab>('exams');
   const [exams, setExams] = useState<Exam[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [cachedResults, setCachedResults] = useState<StudentSubmitAttemptResultData[]>([]);
+  const [resultsData, setResultsData] = useState<StudentSystemResultListData>(
+    () => createEmptyStudentSystemResults(),
+  );
   const [isLoadingClass, setIsLoadingClass] = useState(true);
   const [isLoadingExams, setIsLoadingExams] = useState(true);
+  const [isLoadingResults, setIsLoadingResults] = useState(true);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
+  const [examsError, setExamsError] = useState<string | null>(null);
+  const [resultsError, setResultsError] = useState<string | null>(null);
+  const [documentsError, setDocumentsError] = useState<string | null>(null);
+  const [tabRequestKey, setTabRequestKey] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -70,69 +113,124 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
   useEffect(() => {
     let isMounted = true;
 
-    async function loadClassExams() {
-      try {
-        const items = await getStudentClassExams(id);
+    async function loadActiveTabData() {
+      switch (activeTab) {
+        case 'exams': {
+          setIsLoadingExams(true);
+          setExamsError(null);
+          setExams([]);
 
-        if (!isMounted) {
+          try {
+            const items = await getStudentClassExams(id, { throwOnError: true });
+
+            if (!isMounted) {
+              return;
+            }
+
+            setExams(items);
+          } catch (error) {
+            console.error(`Failed to fetch exams for class ${id}`, error);
+
+            if (!isMounted) {
+              return;
+            }
+
+            setExams([]);
+            setExamsError(
+              getErrorMessage(error, 'Không thể tải danh sách đề thi. Vui lòng thử lại.'),
+            );
+          } finally {
+            if (isMounted) {
+              setIsLoadingExams(false);
+            }
+          }
+
           return;
         }
 
-        setExams(items);
-      } finally {
-        if (isMounted) {
-          setIsLoadingExams(false);
+        case 'results': {
+          setIsLoadingResults(true);
+          setResultsError(null);
+          setResultsData(createEmptyStudentSystemResults());
+
+          try {
+            const nextResults = await getStudentClassResults(id);
+
+            if (!isMounted) {
+              return;
+            }
+
+            setResultsData(nextResults);
+          } catch (error) {
+            console.error(`Failed to fetch results for class ${id}`, error);
+
+            if (!isMounted) {
+              return;
+            }
+
+            setResultsData(createEmptyStudentSystemResults());
+            setResultsError(
+              getErrorMessage(error, 'Không thể tải kết quả của lớp. Vui lòng thử lại.'),
+            );
+          } finally {
+            if (isMounted) {
+              setIsLoadingResults(false);
+            }
+          }
+
+          return;
+        }
+
+        case 'documents': {
+          setIsLoadingDocuments(true);
+          setDocumentsError(null);
+          setDocuments([]);
+
+          try {
+            const items = await getStudentClassDocuments(id, {
+              throwOnError: true,
+            });
+
+            if (!isMounted) {
+              return;
+            }
+
+            setDocuments(items);
+          } catch (error) {
+            console.error(`Failed to fetch documents for class ${id}`, error);
+
+            if (!isMounted) {
+              return;
+            }
+
+            setDocuments([]);
+            setDocumentsError(
+              getErrorMessage(error, 'Không thể tải tài liệu của lớp. Vui lòng thử lại.'),
+            );
+          } finally {
+            if (isMounted) {
+              setIsLoadingDocuments(false);
+            }
+          }
+
+          return;
         }
       }
     }
 
-    void loadClassExams();
+    void loadActiveTabData();
 
     return () => {
       isMounted = false;
     };
-  }, [id]);
+  }, [activeTab, id, tabRequestKey]);
 
-  useEffect(() => {
-    let isMounted = true;
+  const classResults = resultsData.items;
+  const resultSummary = resultsData.summary;
 
-    async function loadClassDocuments() {
-      try {
-        const items = await getStudentClassDocuments(id);
-
-        if (!isMounted) {
-          return;
-        }
-
-        setDocuments(items);
-      } finally {
-        if (isMounted) {
-          setIsLoadingDocuments(false);
-        }
-      }
-    }
-
-    void loadClassDocuments();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [id]);
-
-  useEffect(() => {
-    setCachedResults(readAllCachedStudentAttemptResults());
-  }, []);
-
-  const classResults = useMemo(() => {
-    const classExamIds = new Set(exams.map((exam) => exam.id));
-
-    return cachedResults
-      .filter((result) => classExamIds.has(result.examId))
-      .sort(
-        (a, b) =>
-          new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
-      );
-  }, [cachedResults, exams]);
+  function retryActiveTab() {
+    setTabRequestKey((current) => current + 1);
+  }
 
   if (isLoadingClass) {
     return (
@@ -163,10 +261,11 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
       }).format(new Date(cls.joinedAt))
     : null;
   const examCount = isLoadingExams ? cls.examCount : exams.length;
+  const resultCount = isLoadingResults ? 0 : resultSummary.totalCompletedExams;
   const documentCount = isLoadingDocuments ? (cls.documentCount ?? 0) : documents.length;
   const tabs: Array<{ id: ClassTab; label: string; count: number }> = [
     { id: 'exams', label: 'Đề thi', count: examCount },
-    { id: 'results', label: 'Kết quả', count: classResults.length },
+    { id: 'results', label: 'Kết quả', count: resultCount },
     { id: 'documents', label: 'Tài liệu', count: documentCount },
   ];
 
@@ -259,9 +358,8 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
             Ghi chú
           </h2>
           <p className="text-sm text-muted-foreground">
-            Đề thi và tài liệu đang được tải theo quyền thành viên của học sinh.
-            Tab kết quả hiện hiển thị các lần nộp đã lưu trên thiết bị này cho
-            đến khi có API lịch sử kết quả theo lớp.
+            Mỗi lần chuyển tab, hệ thống sẽ tải mới dữ liệu tương ứng từ máy
+            chủ để học sinh luôn xem được thông tin cập nhật nhất.
           </p>
         </div>
       </div>
@@ -301,6 +399,27 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
               <div className="rounded-xl bg-surface-container-lowest p-5 text-sm text-muted-foreground">
                 Đang tải đề thi của lớp...
               </div>
+            ) : examsError ? (
+              <div className="rounded-xl border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <div>
+                      <p className="font-medium">Không thể tải đề thi</p>
+                      <p className="mt-1">{examsError}</p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={retryActiveTab}
+                    className="border-red-200 bg-white text-red-700 hover:bg-red-100 hover:text-red-800 dark:border-red-800/30 dark:bg-red-950/30 dark:text-red-200 dark:hover:bg-red-950/50"
+                  >
+                    Thử lại
+                  </Button>
+                </div>
+              </div>
             ) : exams.length === 0 ? (
               <div className="rounded-xl bg-surface-container-lowest p-5 text-sm text-muted-foreground">
                 Chưa có đề thi nào cho lớp này.
@@ -322,29 +441,64 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                 Kết quả
               </h2>
               <span className="text-sm text-muted-foreground">
-                {classResults.length} lượt nộp
+                {isLoadingResults ? 'Đang tải...' : `${resultCount} lượt nộp`}
               </span>
             </div>
 
-            <div className="rounded-xl border border-outline/10 bg-surface-container-lowest p-4 text-sm text-muted-foreground">
-              Kết quả trong tab này đang hiển thị từ các lần nộp đã lưu trên
-              thiết bị hiện tại. Khi có API kết quả theo lớp, danh sách sẽ đồng
-              bộ đầy đủ hơn.
-            </div>
-
-            {classResults.length === 0 ? (
+            {isLoadingResults ? (
               <div className="rounded-xl bg-surface-container-lowest p-5 text-sm text-muted-foreground">
-                Chưa có kết quả nào được lưu cho lớp này.
+                Đang tải kết quả của lớp...
+              </div>
+            ) : resultsError ? (
+              <div className="rounded-xl border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <div>
+                      <p className="font-medium">Không thể tải kết quả</p>
+                      <p className="mt-1">{resultsError}</p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={retryActiveTab}
+                    className="border-red-200 bg-white text-red-700 hover:bg-red-100 hover:text-red-800 dark:border-red-800/30 dark:bg-red-950/30 dark:text-red-200 dark:hover:bg-red-950/50"
+                  >
+                    Thử lại
+                  </Button>
+                </div>
+              </div>
+            ) : classResults.length === 0 ? (
+              <div className="rounded-xl bg-surface-container-lowest p-5 text-sm text-muted-foreground">
+                Chưa có kết quả nào cho lớp này.
               </div>
             ) : (
-              <div className="space-y-3">
-                {classResults.map((result) => {
-                  const scorePercent =
-                    result.totalPoints > 0
-                      ? Math.round((result.score / result.totalPoints) * 100)
-                      : 0;
+              <div className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="rounded-xl bg-surface-container-lowest p-4">
+                    <p className="text-xs text-muted-foreground">Đã hoàn thành</p>
+                    <p className="mt-1 font-display text-2xl font-bold text-on-surface">
+                      {resultSummary.totalCompletedExams}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-surface-container-lowest p-4">
+                    <p className="text-xs text-muted-foreground">Đã đạt</p>
+                    <p className="mt-1 font-display text-2xl font-bold text-on-surface">
+                      {resultSummary.passedExams}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-surface-container-lowest p-4">
+                    <p className="text-xs text-muted-foreground">Điểm trung bình</p>
+                    <p className="mt-1 font-display text-2xl font-bold text-on-surface">
+                      {formatPercent(resultSummary.averageScorePercent)}
+                    </p>
+                  </div>
+                </div>
 
-                  return (
+                <div className="space-y-3">
+                  {classResults.map((result) => (
                     <div
                       key={result.attemptId}
                       className="rounded-xl border border-outline/10 bg-surface-container-lowest p-4"
@@ -357,13 +511,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                           <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Clock className="w-3.5 h-3.5" />
-                              {new Intl.DateTimeFormat('vi-VN', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              }).format(new Date(result.submittedAt))}
+                              {formatDate(result.submittedAt)}
                             </span>
                             <span className="flex items-center gap-1">
                               <CheckCircle className="w-3.5 h-3.5" />
@@ -379,7 +527,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                         <div className="flex items-center gap-3 sm:shrink-0">
                           <div className="rounded-xl bg-primary/10 px-3 py-2 text-center">
                             <p className="text-lg font-display font-bold text-primary">
-                              {scorePercent}%
+                              {formatPercent(result.scorePercent)}
                             </p>
                           </div>
                           <Link
@@ -392,8 +540,8 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                         </div>
                       </div>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -413,6 +561,27 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
             {isLoadingDocuments ? (
               <div className="rounded-xl bg-surface-container-lowest p-5 text-sm text-muted-foreground">
                 Đang tải tài liệu của lớp...
+              </div>
+            ) : documentsError ? (
+              <div className="rounded-xl border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <div>
+                      <p className="font-medium">Không thể tải tài liệu</p>
+                      <p className="mt-1">{documentsError}</p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={retryActiveTab}
+                    className="border-red-200 bg-white text-red-700 hover:bg-red-100 hover:text-red-800 dark:border-red-800/30 dark:bg-red-950/30 dark:text-red-200 dark:hover:bg-red-950/50"
+                  >
+                    Thử lại
+                  </Button>
+                </div>
               </div>
             ) : documents.length === 0 ? (
               <div className="rounded-xl bg-surface-container-lowest p-5 text-sm text-muted-foreground">

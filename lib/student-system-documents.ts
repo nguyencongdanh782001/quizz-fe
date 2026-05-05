@@ -2,6 +2,10 @@ import { api as studentApi } from '@/lib/api/endpoints/student';
 import type { StudentSystemDocumentSchema } from '@/lib/api/types';
 import type { Document } from '@/types/document.types';
 
+interface StudentDocumentFetchOptions {
+  throwOnError?: boolean;
+}
+
 function inferGrade(classroomName: string | null): number {
   if (!classroomName) {
     return 0;
@@ -58,12 +62,16 @@ export async function getStudentSystemDocument(
 
 export async function getStudentClassDocuments(
   classId: string,
+  options: StudentDocumentFetchOptions = {},
 ): Promise<Document[]> {
   try {
     const response = await studentApi.student.classes.documents(classId);
     return (response.data.items ?? []).map(mapStudentDocument);
   } catch (error) {
     console.error(`Failed to fetch class documents for ${classId}`, error);
+    if (options.throwOnError) {
+      throw error;
+    }
     return [];
   }
 }

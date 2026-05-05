@@ -1,23 +1,27 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
+  AlertCircle,
   CheckCircle,
   XCircle,
   Clock,
   Star,
   Home,
   BookOpen,
+  RotateCcw,
   Trophy,
 } from "lucide-react";
 import {
   getStudentAttemptResult,
   readCachedStudentAttemptResult,
+  startStudentExamAttempt,
   StudentSubmitAttemptResultData,
   writeCachedStudentAttemptResult,
 } from "@/lib/student-system-exams";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 function formatDuration(seconds: number): string {
@@ -27,6 +31,7 @@ function formatDuration(seconds: number): string {
 }
 
 function ResultPageContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const attemptId = searchParams.get("attemptId");
   const [result, setResult] = useState<StudentSubmitAttemptResultData | null>(
@@ -34,6 +39,10 @@ function ResultPageContent() {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isStartingRetake, setIsStartingRetake] = useState(false);
+  const [retakeToastMessage, setRetakeToastMessage] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -75,6 +84,20 @@ function ResultPageContent() {
     };
   }, [attemptId]);
 
+  useEffect(() => {
+    if (!retakeToastMessage) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setRetakeToastMessage(null);
+    }, 4000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [retakeToastMessage]);
+
   if (isLoading && !result) {
     return (
       <div className="text-center py-20 text-muted-foreground">
@@ -112,9 +135,56 @@ function ResultPageContent() {
     ),
   );
   const isExcellent = scorePercent >= 80;
+  const canRetakeExam =
+    Boolean(result.submittedAt) && result.status !== "in_progress";
+
+  async function handleRetakeExam() {
+    setIsStartingRetake(true);
+    setRetakeToastMessage(null);
+
+    try {
+      const attempt = await startStudentExamAttempt(result?.examId || "");
+      router.push(
+        `/student/exam/${result?.examId}/take?attemptId=${attempt.id}`,
+      );
+    } catch (error) {
+      const message =
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        typeof error.message === "string"
+          ? error.message
+          : "Không thể tạo lượt làm bài mới. Vui lòng thử lại.";
+
+      setRetakeToastMessage(message);
+      setIsStartingRetake(false);
+    }
+  }
 
   return (
     <div className="space-y-8 w-full mx-auto">
+      {retakeToastMessage && (
+        <div className="fixed right-4 top-4 z-50 max-w-sm" role="alert">
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-[0_16px_40px_-24px_rgba(220,38,38,0.45)] dark:border-red-800/30 dark:bg-red-950/85 dark:text-red-200">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">Retake failed</p>
+                <p className="mt-1">{retakeToastMessage}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRetakeToastMessage(null)}
+                className="shrink-0 text-red-500 transition-colors hover:text-red-700 dark:text-red-300 dark:hover:text-red-100"
+                aria-label="Dismiss error message"
+              >
+                <XCircle className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Back */}
       <Link
         href="/student/exams"
@@ -128,8 +198,8 @@ function ResultPageContent() {
         className={cn(
           "rounded-2xl p-8 text-center",
           isExcellent
-            ? "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-200 dark:border-green-800/30"
-            : "bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-950/20 dark:to-cyan-950/20 border border-sky-200 dark:border-sky-800/30",
+            ? "bg-linear-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-200 dark:border-green-800/30"
+            : "bg-linear-to-br from-sky-50 to-cyan-50 dark:from-sky-950/20 dark:to-cyan-950/20 border border-sky-200 dark:border-sky-800/30",
         )}
       >
         <div
@@ -179,6 +249,24 @@ function ResultPageContent() {
             Thời gian: {formatDuration(timeSpent)}
           </span>
         </div>
+
+        {canRetakeExam && (
+          <div className="mt-6 flex justify-center">
+            <Button
+              type="button"
+              size="lg"
+              onClick={() => void handleRetakeExam()}
+              disabled={isStartingRetake}
+              aria-busy={isStartingRetake}
+              className="min-w-55 rounded-2xl px-6"
+            >
+              <RotateCcw
+                className={cn("h-4 w-4", isStartingRetake && "animate-spin")}
+              />
+              Thi lại
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Actions */}
@@ -239,7 +327,8 @@ function ResultPageContent() {
                         )}
                         {answer.acceptedAnswers.length > 0 && (
                           <p>
-                            Đáp án chấp nhận: {answer.acceptedAnswers.join(", ")}
+                            Đáp án chấp nhận:{" "}
+                            {answer.acceptedAnswers.join(", ")}
                           </p>
                         )}
                       </div>

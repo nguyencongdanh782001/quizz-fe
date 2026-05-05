@@ -134,6 +134,7 @@ export interface StudentSystemExamSchema {
   id: number;
   title: string;
   description: string;
+  image_url?: string | null;
   scope: string;
   classroom_id: number;
   classroom_name: string | null;
@@ -160,6 +161,36 @@ export interface StudentSystemDocumentSchema {
 
 export interface StudentSystemDocumentListResponse {
   items: StudentSystemDocumentSchema[];
+}
+
+export interface StudentSystemResultSummarySchema {
+  total_completed_exams: number;
+  passed_exams: number;
+  average_score_percent: number;
+}
+
+export interface StudentSystemResultSchema {
+  attempt_id: number;
+  exam_id: number;
+  exam_title: string;
+  exam_description: string;
+  exam_image_url: string | null;
+  scope: string;
+  classroom_id: number | null;
+  classroom_name: string | null;
+  score: number;
+  total_points: number;
+  score_percent: number;
+  correct_answers_count: number;
+  total_questions: number;
+  is_passed: boolean;
+  started_at: string;
+  submitted_at: string;
+}
+
+export interface StudentSystemResultListResponse {
+  summary: StudentSystemResultSummarySchema;
+  items: StudentSystemResultSchema[];
 }
 
 export interface StudentClassSchema {

@@ -10,6 +10,10 @@ import type {
 } from '@/lib/api/types';
 import type { Exam, ExamDifficulty, Question, QuestionType } from '@/types/exam.types';
 
+interface StudentFetchOptions {
+  throwOnError?: boolean;
+}
+
 function inferDifficulty(
   durationMinutes: number,
   questionCount: number,
@@ -56,6 +60,7 @@ function mapStudentSystemExam(item: StudentSystemExamSchema): Exam {
     createdBy: 'system',
     createdAt: '',
     updatedAt: '',
+    thumbnailUrl: item.image_url ?? undefined,
     tags: item.scope ? [item.scope] : [],
     classIds: item.classroom_id ? [String(item.classroom_id)] : [],
     classroomName: item.classroom_name,
@@ -297,9 +302,24 @@ export async function getStudentSystemExams(): Promise<Exam[]> {
   }
 }
 
-export async function getStudentClassExams(classId: string): Promise<Exam[]> {
-  const exams = await getStudentSystemExams();
-  return exams.filter((exam) => exam.classIds.includes(classId));
+export async function getStudentClassExams(
+  classId: string,
+  options: StudentFetchOptions = {},
+): Promise<Exam[]> {
+  try {
+    const response = await studentApi.student.classes.exams(classId);
+    const data = response.data;
+
+    return (data.items ?? [])
+      .filter((item) => item.is_active)
+      .map(mapStudentSystemExam);
+  } catch (error) {
+    console.error(`Failed to fetch class exams for ${classId}`, error);
+    if (options.throwOnError) {
+      throw error;
+    }
+    return [];
+  }
 }
 
 export async function getStudentExamDetail(
