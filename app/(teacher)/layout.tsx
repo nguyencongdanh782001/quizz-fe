@@ -1,32 +1,40 @@
-import { redirect } from 'next/navigation';
-import { getServerSession } from '@/lib/auth-server';
-import { TeacherSidebar } from '@/components/common/teacher-sidebar';
-import { Header } from '@/components/common/Header';
-import { AuthHydrator } from '@/components/common/AuthHydrator';
+import { redirect } from "next/navigation";
+import { getServerSession } from "@/lib/auth-server";
+import { TeacherSidebar } from "@/components/common/teacher-sidebar";
+import { Header } from "@/components/common/Header";
+import { AuthHydrator } from "@/components/common/AuthHydrator";
 
-export default async function TeacherLayout({ children }: { children: React.ReactNode }) {
+export default async function TeacherLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const session = await getServerSession();
 
   if (!session) {
-    redirect('/login');
+    redirect("/login");
   }
 
   if (session.needs_onboarding || !session.role_name) {
-    redirect('/role');
+    redirect("/role");
   }
 
-  if (session.role_name !== 'teacher') {
-    redirect('/student');
+  if (session.role_name !== "teacher") {
+    redirect("/student");
   }
 
   return (
     <AuthHydrator>
-      <div className="flex h-screen bg-surface overflow-hidden">
+      <div className="flex bg-surface">
+        {/* Sidebar */}
         <TeacherSidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
+
+        {/* Right content */}
+        <div className="flex min-w-0 flex-1 flex-col">
           <Header />
-          <main className="flex-1 overflow-y-auto p-6">
-            {children}
+          {/* Scroll area */}
+          <main className="flex-1 overflow-y-auto overflow-x-hidden flex-col overflow-hidden">
+            <div className="min-w-0 p-6">{children}</div>
           </main>
         </div>
       </div>

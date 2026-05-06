@@ -8,11 +8,13 @@ import { ExamTable } from "./exam-table";
 import { LoadingState } from "./loading-state";
 
 export function ExamsTab({
+  classId,
   exams,
   isLoading,
   error,
   onRetry,
 }: {
+  classId: string;
   exams: Exam[];
   isLoading: boolean;
   error: string | null;
@@ -30,7 +32,7 @@ export function ExamsTab({
           </p>
         </div>
         <Button asChild>
-          <Link href="/teacher/exams/create">
+          <Link href={`/teacher/classes/${classId}/exams/create`}>
             <Plus className="mr-2 h-4 w-4" />
             Tạo bài thi
           </Link>
@@ -52,7 +54,7 @@ export function ExamsTab({
           description="Bạn có thể tạo bài thi mới và gán cho lớp này khi backend lớp học hỗ trợ danh sách bài thi riêng."
           action={
             <Button asChild>
-              <Link href="/teacher/exams/create">
+              <Link href={`/teacher/classes/${classId}/exams/create`}>
                 <Plus className="mr-2 h-4 w-4" />
                 Tạo bài thi
               </Link>

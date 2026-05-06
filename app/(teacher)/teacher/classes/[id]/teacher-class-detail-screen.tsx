@@ -125,6 +125,7 @@ export function TeacherClassDetailScreen({ classId }: { classId: string }) {
 
         {activeTab === "exams" ? (
           <ExamsTab
+            classId={classId}
             exams={exams}
             isLoading={isLoadingExams}
             error={examsError}

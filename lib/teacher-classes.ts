@@ -4,6 +4,7 @@ import type {
   TeacherClassExamSchema,
   TeacherClassSchema,
   TeacherClassStudentSchema,
+  TeacherCreateClassExamRequest,
   TeacherCreateClassRequest,
 } from '@/lib/api/types';
 import type { ClassInfo, ClassStudent } from '@/types/class.types';
@@ -179,6 +180,14 @@ export async function getTeacherClassExams(
 ): Promise<Exam[]> {
   const response = await teacherApi.teacher.classes.exams(classId);
   return (response.data.items ?? []).map(mapTeacherClassExam);
+}
+
+export async function createTeacherClassExam(
+  classId: string,
+  data: TeacherCreateClassExamRequest,
+): Promise<string> {
+  const response = await teacherApi.teacher.classes.createExam(classId, data);
+  return response.data.message;
 }
 
 export async function removeTeacherClassStudent(

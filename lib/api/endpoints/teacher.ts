@@ -4,6 +4,8 @@ import type {
   TeacherClassDocumentListResponse,
   TeacherClassExamListResponse,
   TeacherClassListResponse,
+  TeacherCreateClassExamRequest,
+  TeacherCreateClassExamResponse,
   TeacherCreateClassRequest,
   TeacherCreateClassResponse,
   TeacherClassStudentListResponse,
@@ -26,6 +28,14 @@ export const api = {
       exams: (classId: string | number) =>
         client.get<TeacherClassExamListResponse>(
           `/teacher/classes/${classId}/exams`,
+        ),
+      createExam: (
+        classId: string | number,
+        data: TeacherCreateClassExamRequest,
+      ) =>
+        client.post<TeacherCreateClassExamResponse>(
+          `/teacher/classes/${classId}/exams`,
+          data,
         ),
       removeStudent: (classId: string | number, studentId: string | number) =>
         client.delete<MessageResponse>(

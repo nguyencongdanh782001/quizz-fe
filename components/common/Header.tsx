@@ -15,11 +15,12 @@ export function Header({ title, className }: HeaderProps) {
   return (
     <header
       className={cn(
-        "glass flex items-center justify-between",
+        "sticky top-0 glass flex items-center justify-between",
         "border-b border-outline/15",
         "px-6 py-4",
         className,
       )}
+      style={{ background: "rgba(243, 250, 255, 1)" }}
     >
       <div>
         {title && (

@@ -185,6 +185,9 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    margin: 0;
+    padding: 0;
+    box-sizing: "border-box";
   }
   body {
     @apply bg-background text-foreground;
@@ -208,8 +211,13 @@
 
 /* Progress orb animations */
 @keyframes pulse-ring {
-  0%, 100% { box-shadow: 0 0 0 0 var(--secondary); }
-  50% { box-shadow: 0 0 0 4px transparent; }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--secondary);
+  }
+  50% {
+    box-shadow: 0 0 0 4px transparent;
+  }
 }
 
 .animate-pulse-ring {

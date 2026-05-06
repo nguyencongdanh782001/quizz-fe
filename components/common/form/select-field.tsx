@@ -29,7 +29,9 @@ interface SelectFieldProps {
 
 export const SelectField = forwardRef<HTMLDivElement, SelectFieldProps>(
   ({ label, error, helperText, options, placeholder, value, onValueChange, onChange, onBlur, name, disabled, required, className }, ref) => {
-    const selectId = label?.toLowerCase().replace(/\s+/g, '-');
+    const selectId =
+      name?.replace(/[^a-zA-Z0-9_-]+/g, "-") ??
+      label?.toLowerCase().replace(/\s+/g, "-");
     return (
       <div className="space-y-1.5" ref={ref}>
         {label && (

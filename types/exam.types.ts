@@ -46,7 +46,7 @@ export interface ExamAttempt {
   id: string;
   examId: string;
   userId: string;
-  answers: Record<string, string[]>; // questionId → selected option ids
+  answers: Record<string, string[]>; // questionId → selected option ids or a single text answer
   score: number;
   totalPoints: number;
   percentage: number;
@@ -67,7 +67,7 @@ export interface ExamSession {
   examId: string;
   attemptId: string;
   currentIndex: number;
-  answers: Record<string, string[]>;
+  answers: Record<string, string[]>; // questionId → selected option ids or a single text answer
   timeLeft: number; // seconds
   startedAt: string;
 }

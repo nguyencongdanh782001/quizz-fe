@@ -297,6 +297,38 @@ export interface TeacherClassExamListResponse {
   items: TeacherClassExamSchema[];
 }
 
+export interface TeacherCreateClassExamOptionRequest {
+  option_key: string;
+  option_text: string;
+  image_url?: string | null;
+  is_correct: boolean;
+}
+
+export interface TeacherCreateClassExamQuestionRequest {
+  question_type: "single_choice" | "text";
+  prompt: string;
+  image_url?: string | null;
+  order_index: number;
+  points: number;
+  options: TeacherCreateClassExamOptionRequest[];
+  accepted_answers?: string[];
+}
+
+export interface TeacherCreateClassExamRequest {
+  title: string;
+  description?: string | null;
+  image_url?: string | null;
+  duration_minutes: number;
+  is_published: boolean;
+  is_active: boolean;
+  questions: TeacherCreateClassExamQuestionRequest[];
+}
+
+export interface TeacherCreateClassExamResponse {
+  message: string;
+  exam?: TeacherClassExamSchema;
+}
+
 export interface StudentExamOptionSchema {
   id: number;
   option_key: string;

@@ -30,7 +30,7 @@ export function TeacherSidebar() {
   return (
     <aside
       className={cn(
-        "glass flex flex-col h-full border-r border-outline/15 w-60",
+        "sticky top-0 min-h-screen glass flex flex-col h-full border-r border-outline/15 w-60",
       )}
     >
       <div className="flex items-center gap-3 px-5 py-4">
@@ -62,7 +62,7 @@ export function TeacherSidebar() {
                   : "text-on-surface hover:bg-surface-container-low",
               )}
             >
-              <item.icon className="w-5 h-5 flex-shrink-0" />
+              <item.icon className="w-5 h-5 shrink-0" />
               <span>{item.label}</span>
               {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
             </Link>

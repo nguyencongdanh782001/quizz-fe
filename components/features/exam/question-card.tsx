@@ -3,6 +3,7 @@
 import { Flag, CheckCircle } from 'lucide-react';
 import { Question } from '@/types/exam.types';
 import { AnswerOption } from './answer-option';
+import { Textarea } from '@/components/ui/textarea';
 
 interface QuestionCardProps {
   question: Question;
@@ -25,6 +26,7 @@ export function QuestionCard({
     question.type === 'single' ||
     question.type === 'multiple_choice' ||
     question.type === 'true_false';
+  const textAnswer = selectedIds[0] ?? '';
 
   const handleSelect = (optionId: string) => {
     if (isSingleSelect) {
@@ -69,18 +71,38 @@ export function QuestionCard({
       </div>
 
       {/* Options */}
-      <div className="space-y-3">
-        {question.options.map((option, i) => (
-          <AnswerOption
-            key={option.id}
-            option={option}
-            index={i}
-            isSelected={selectedIds.includes(option.id)}
-            isMultiple={question.type === 'multiple'}
-            onSelect={handleSelect}
+      {question.type === 'text' ? (
+        <div className="space-y-2">
+          <Textarea
+            value={textAnswer}
+            onChange={(event) => {
+              const nextValue = event.target.value;
+              onSelect(
+                question.id,
+                nextValue.trim() ? [nextValue] : [],
+              );
+            }}
+            placeholder="Nhập câu trả lời của bạn"
+            className="min-h-36"
           />
-        ))}
-      </div>
+          <p className="text-xs text-muted-foreground">
+            Câu trả lời sẽ được lưu khi bạn chuyển câu hoặc nộp bài.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {question.options.map((option, i) => (
+            <AnswerOption
+              key={option.id}
+              option={option}
+              index={i}
+              isSelected={selectedIds.includes(option.id)}
+              isMultiple={question.type === 'multiple'}
+              onSelect={handleSelect}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Points */}
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">

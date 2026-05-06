@@ -9,7 +9,7 @@ interface ExamSessionState {
   questions: Question[];
   phase: ExamPhase;
   currentIndex: number;
-  answers: Record<string, string[]>; // questionId → selected option ids
+  answers: Record<string, string[]>; // questionId → selected option ids or a single text answer
   startedAt: string | null;
   submittedAt: string | null;
   attemptId: string;
