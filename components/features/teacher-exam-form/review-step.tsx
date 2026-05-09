@@ -1,7 +1,13 @@
 "use client";
 
 import { useFormikContext } from "formik";
-import { CheckCircle2, Clock3, Eye, FileCheck2, ListChecks } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock3,
+  Eye,
+  FileCheck2,
+  ListChecks,
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -11,7 +17,10 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { TeacherExamFormValues } from "./types";
-import { normalizeTeacherExamQuestionType, parseAcceptedAnswers } from "./utils";
+import {
+  normalizeTeacherExamQuestionType,
+  parseAcceptedAnswers,
+} from "./utils";
 
 function getTotalPoints(values: TeacherExamFormValues): number {
   return values.questions.reduce(
@@ -20,7 +29,9 @@ function getTotalPoints(values: TeacherExamFormValues): number {
   );
 }
 
-function getCorrectOptions(question: TeacherExamFormValues["questions"][number]) {
+function getCorrectOptions(
+  question: TeacherExamFormValues["questions"][number],
+) {
   return question.options.filter((option) => option.is_correct);
 }
 
@@ -85,7 +96,7 @@ export function ReviewStep() {
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                  {values.is_published ? "Published" : "Draft"}
+                  {values.is_published ? "Published" : "riêng tư"}
                 </span>
                 <span className="inline-flex items-center rounded-full bg-secondary/12 px-2.5 py-1 text-xs font-semibold text-secondary">
                   {values.is_active ? "Đang hoạt động" : "Tạm ẩn"}
@@ -125,7 +136,8 @@ export function ReviewStep() {
                   Mô tả
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
-                  {values.description.trim() || "Chưa có mô tả cho bài thi này."}
+                  {values.description.trim() ||
+                    "Chưa có mô tả cho bài thi này."}
                 </p>
               </div>
 
@@ -145,7 +157,7 @@ export function ReviewStep() {
                   <p className="mt-2 text-sm text-on-surface-variant">
                     {values.is_published
                       ? "Bài thi sẽ được hiển thị dưới dạng published."
-                      : "Bài thi sẽ được tạo ở trạng thái draft."}
+                      : "Bài thi sẽ được tạo ở trạng thái riêng tư."}
                   </p>
                 </div>
               </div>
@@ -197,7 +209,8 @@ export function ReviewStep() {
                             </span>
                           </div>
                           <CardTitle className="mt-3 text-lg text-on-surface">
-                            {question.prompt.trim() || "Chưa nhập nội dung câu hỏi"}
+                            {question.prompt.trim() ||
+                              "Chưa nhập nội dung câu hỏi"}
                           </CardTitle>
                         </div>
 
@@ -241,7 +254,10 @@ export function ReviewStep() {
                                   <span className="font-semibold text-on-surface">
                                     {String.fromCharCode(65 + optionIndex)}.
                                   </span>
-                                  <span>{option.option_text.trim() || "Chưa nhập đáp án"}</span>
+                                  <span>
+                                    {option.option_text.trim() ||
+                                      "Chưa nhập đáp án"}
+                                  </span>
                                   {option.is_correct ? (
                                     <span className="inline-flex items-center rounded-full bg-primary/12 px-2 py-0.5 text-[0.7rem] font-semibold text-primary">
                                       Đúng

@@ -4,8 +4,8 @@ import type {
   TeacherClassDocumentListResponse,
   TeacherClassExamListResponse,
   TeacherClassListResponse,
-  TeacherCreateClassExamRequest,
   TeacherCreateClassExamResponse,
+  TeacherCreateExamRequest,
   TeacherCreateClassRequest,
   TeacherCreateClassResponse,
   TeacherClassStudentListResponse,
@@ -31,7 +31,7 @@ export const api = {
         ),
       createExam: (
         classId: string | number,
-        data: TeacherCreateClassExamRequest,
+        data: TeacherCreateExamRequest,
       ) =>
         client.post<TeacherCreateClassExamResponse>(
           `/teacher/classes/${classId}/exams`,

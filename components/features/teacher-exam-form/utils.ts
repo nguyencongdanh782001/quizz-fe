@@ -1,7 +1,7 @@
 import * as Yup from "yup";
 import type {
-  TeacherCreateClassExamQuestionRequest,
-  TeacherCreateClassExamRequest,
+  TeacherCreateExamQuestionRequest,
+  TeacherCreateExamRequest,
 } from "@/lib/api/types";
 import type {
   TeacherExamFormValues,
@@ -77,7 +77,7 @@ export function normalizeTeacherExamQuestionType(
 function mapQuestion(
   question: TeacherExamQuestionFormValues,
   index: number,
-): TeacherCreateClassExamQuestionRequest {
+): TeacherCreateExamQuestionRequest {
   const questionType = normalizeTeacherExamQuestionType(question.question_type);
   const acceptedAnswers = parseAcceptedAnswers(question.accepted_answers);
 
@@ -104,7 +104,7 @@ function mapQuestion(
 
 export function mapTeacherExamFormToPayload(
   values: TeacherExamFormValues,
-): TeacherCreateClassExamRequest {
+): TeacherCreateExamRequest {
   return {
     title: values.title.trim(),
     description: normalizeOptionalText(values.description),

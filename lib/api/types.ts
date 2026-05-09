@@ -275,7 +275,26 @@ export interface TeacherClassDocumentListResponse {
   items: TeacherClassDocumentSchema[];
 }
 
-export interface TeacherClassExamSchema {
+export interface TeacherExamOptionSchema {
+  id: number;
+  option_key: string;
+  option_text: string;
+  image_url: string | null;
+  is_correct: boolean;
+}
+
+export interface TeacherExamQuestionSchema {
+  id: number;
+  question_type: "single_choice" | "text";
+  prompt: string;
+  image_url: string | null;
+  order_index: number;
+  points: number;
+  options: TeacherExamOptionSchema[];
+  accepted_answers: string[];
+}
+
+export interface TeacherExamSummarySchema {
   id: number;
   title: string;
   description: string;
@@ -293,40 +312,56 @@ export interface TeacherClassExamSchema {
   updated_at: string;
 }
 
+export interface TeacherSystemExamListResponse {
+  items: TeacherExamSummarySchema[];
+}
+
+export interface TeacherSystemExamDetailResponse
+  extends TeacherExamSummarySchema {
+  questions?: TeacherExamQuestionSchema[] | null;
+}
+
+export type TeacherClassExamSchema = TeacherExamSummarySchema;
+
 export interface TeacherClassExamListResponse {
   items: TeacherClassExamSchema[];
 }
 
-export interface TeacherCreateClassExamOptionRequest {
+export interface TeacherCreateExamOptionRequest {
   option_key: string;
   option_text: string;
   image_url?: string | null;
   is_correct: boolean;
 }
 
-export interface TeacherCreateClassExamQuestionRequest {
+export interface TeacherCreateExamQuestionRequest {
   question_type: "single_choice" | "text";
   prompt: string;
   image_url?: string | null;
   order_index: number;
   points: number;
-  options: TeacherCreateClassExamOptionRequest[];
+  options: TeacherCreateExamOptionRequest[];
   accepted_answers?: string[];
 }
 
-export interface TeacherCreateClassExamRequest {
+export interface TeacherCreateExamRequest {
   title: string;
   description?: string | null;
   image_url?: string | null;
   duration_minutes: number;
   is_published: boolean;
   is_active: boolean;
-  questions: TeacherCreateClassExamQuestionRequest[];
+  questions: TeacherCreateExamQuestionRequest[];
 }
 
 export interface TeacherCreateClassExamResponse {
   message: string;
   exam?: TeacherClassExamSchema;
+}
+
+export interface TeacherCreateSystemExamResponse {
+  message: string;
+  exam: TeacherSystemExamDetailResponse;
 }
 
 export interface StudentExamOptionSchema {

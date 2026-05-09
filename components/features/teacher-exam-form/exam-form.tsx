@@ -175,11 +175,13 @@ function ExamFormBody({
   isSubmitting,
   submitLabel,
   submitError,
+  submitContextLabel,
 }: {
   cancelHref: string;
   isSubmitting: boolean;
   submitLabel: string;
   submitError?: string | null;
+  submitContextLabel: string;
 }) {
   const { values, errors, isValid, setTouched, validateForm } =
     useFormikContext<TeacherExamFormValues>();
@@ -245,7 +247,7 @@ function ExamFormBody({
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                    {values.is_published ? "Published" : "Draft"}
+                    {values.is_published ? "Công Khai" : "Riêng tư"}
                   </span>
                   <span className="inline-flex items-center rounded-full bg-secondary/12 px-2.5 py-1 text-xs font-semibold text-secondary">
                     {values.is_active ? "Đang hoạt động" : "Tạm ẩn"}
@@ -341,7 +343,7 @@ function ExamFormBody({
                 Sẵn sàng gửi bài thi
               </CardTitle>
               <CardDescription className="mt-2 text-sm leading-relaxed text-white/70">
-                Kiểm tra lại các chỉ số cuối cùng rồi tạo bài thi cho lớp học.
+                Kiểm tra lại các chỉ số cuối cùng rồi tạo bài thi cho {submitContextLabel}.
               </CardDescription>
             </div>
           </div>
@@ -405,6 +407,7 @@ function ExamFormBody({
     isValid,
     questionCount,
     singleChoiceCount,
+    submitContextLabel,
     submitError,
     textQuestionCount,
     totalPoints,
@@ -541,6 +544,7 @@ export function ExamForm({
   isSubmitting,
   submitLabel = "Tạo bài thi",
   submitError,
+  submitContextLabel = "lớp học",
 }: {
   initialValues: TeacherExamFormValues;
   onSubmit: (values: TeacherExamFormValues) => Promise<void>;
@@ -548,6 +552,7 @@ export function ExamForm({
   isSubmitting: boolean;
   submitLabel?: string;
   submitError?: string | null;
+  submitContextLabel?: string;
 }) {
   return (
     <Formik<TeacherExamFormValues>
@@ -563,6 +568,7 @@ export function ExamForm({
         isSubmitting={isSubmitting}
         submitLabel={submitLabel}
         submitError={submitError}
+        submitContextLabel={submitContextLabel}
       />
     </Formik>
   );

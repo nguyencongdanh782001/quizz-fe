@@ -1,0 +1,317 @@
+"use client";
+/* eslint-disable @next/next/no-img-element */
+
+import type { ReactNode } from "react";
+import Link from "next/link";
+import {
+  BookOpen,
+  CalendarClock,
+  CheckCircle2,
+  Clock3,
+  Copy,
+  Eye,
+  GraduationCap,
+  MoreHorizontal,
+  PencilLine,
+  Rocket,
+  Trash2,
+  Trophy,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import type { TeacherExam } from "@/types/exam";
+import {
+  formatExamDateTime,
+  formatExamNumber,
+  getActiveBadgeConfig,
+  getPublishedBadgeConfig,
+} from "./exam-utils";
+
+interface ExamCardProps {
+  exam: TeacherExam;
+  isDeleting: boolean;
+  isPublishing: boolean;
+  onCopyLink: (exam: TeacherExam) => void;
+  onDeleteRequest: (exam: TeacherExam) => void;
+  onTogglePublish: (exam: TeacherExam) => void;
+  onViewDetail: (exam: TeacherExam) => void;
+}
+
+interface ExamActionMenuProps {
+  exam: TeacherExam;
+  isDeleting: boolean;
+  isPublishing: boolean;
+  onCopyLink: (exam: TeacherExam) => void;
+  onDeleteRequest: (exam: TeacherExam) => void;
+  onTogglePublish: (exam: TeacherExam) => void;
+}
+
+export function TruncatedTooltipText({
+  text,
+  className,
+  lines = 1,
+}: {
+  text: string;
+  className?: string;
+  lines?: 1 | 2 | 3;
+}) {
+  const clampClassName =
+    lines === 1 ? "line-clamp-1" : lines === 2 ? "line-clamp-2" : "line-clamp-3";
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <p className={cn("min-w-0 break-words", clampClassName, className)}>
+          {text}
+        </p>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-sm">
+        {text}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+export function ExamStatusBadges({ exam }: { exam: TeacherExam }) {
+  const publishedBadge = getPublishedBadgeConfig(exam.is_published);
+  const activeBadge = getActiveBadgeConfig(exam.is_active);
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Badge className={publishedBadge.className}>
+        <Rocket className="mr-1.5 size-3" />
+        {publishedBadge.label}
+      </Badge>
+      <Badge className={activeBadge.className}>
+        <CheckCircle2 className="mr-1.5 size-3" />
+        {activeBadge.label}
+      </Badge>
+    </div>
+  );
+}
+
+export function ExamActionMenu({
+  exam,
+  isDeleting,
+  isPublishing,
+  onCopyLink,
+  onDeleteRequest,
+  onTogglePublish,
+}: ExamActionMenuProps) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full text-muted-foreground hover:text-on-surface"
+          aria-label="Thêm hành động"
+        >
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-60">
+        <DropdownMenuItem onSelect={() => onCopyLink(exam)}>
+          <Copy className="size-4" />
+          Sao chép liên kết
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={isPublishing}
+          onSelect={() => onTogglePublish(exam)}
+        >
+          <Rocket className="size-4" />
+          {exam.is_published ? "Bỏ xuất bản" : "Xuất bản"}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          destructive
+          disabled={isDeleting}
+          onSelect={() => onDeleteRequest(exam)}
+        >
+          <Trash2 className="size-4" />
+          {isDeleting ? "Đang xóa..." : "Xóa bài thi"}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function ExamMetaItem({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-outline/10 bg-surface px-3 py-2.5">
+      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <p className="mt-1.5 line-clamp-1 text-sm font-semibold text-on-surface">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+export function ExamCard({
+  exam,
+  isDeleting,
+  isPublishing,
+  onCopyLink,
+  onDeleteRequest,
+  onTogglePublish,
+  onViewDetail,
+}: ExamCardProps) {
+  return (
+    <article
+      className={cn(
+        "group overflow-hidden rounded-[28px] border border-outline/10 bg-surface-container-lowest shadow-[0_20px_65px_-40px_rgba(7,30,39,0.26)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_26px_75px_-38px_rgba(7,30,39,0.34)]",
+        isDeleting && "opacity-70",
+      )}
+    >
+      <div className="relative h-48 overflow-hidden bg-linear-to-br from-primary/20 via-secondary/12 to-tertiary/15">
+        {exam.image_url ? (
+          <img
+            src={exam.image_url}
+            alt={exam.title}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center bg-linear-to-br from-primary/12 via-secondary/10 to-tertiary/12">
+            <div className="rounded-full bg-white/70 p-5 shadow-lg backdrop-blur-sm dark:bg-slate-900/30">
+              <GraduationCap className="size-10 text-primary" />
+            </div>
+          </div>
+        )}
+        <div className="absolute inset-0 bg-linear-to-t from-slate-950/45 via-slate-950/5 to-transparent" />
+        <div className="absolute top-4 left-4 right-4 flex items-start justify-between gap-3">
+          <Badge className="border-white/30 bg-white/85 text-slate-900 shadow-sm backdrop-blur-sm dark:bg-slate-950/45 dark:text-white">
+            {exam.scope ?? "Bài thi"}
+          </Badge>
+          <ExamActionMenu
+            exam={exam}
+            isDeleting={isDeleting}
+            isPublishing={isPublishing}
+            onCopyLink={onCopyLink}
+            onDeleteRequest={onDeleteRequest}
+            onTogglePublish={onTogglePublish}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-5 p-5">
+        <div className="space-y-3">
+          <ExamStatusBadges exam={exam} />
+
+          <div className="space-y-2">
+            <TruncatedTooltipText
+              text={exam.title}
+              lines={2}
+              className="font-display text-xl font-semibold leading-snug text-on-surface"
+            />
+            <TruncatedTooltipText
+              text={exam.description || "Bài thi chưa có mô tả."}
+              lines={3}
+              className="text-sm leading-relaxed text-muted-foreground"
+            />
+          </div>
+
+          <div className="rounded-2xl border border-outline/10 bg-surface px-4 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Lớp học
+            </p>
+            <TruncatedTooltipText
+              text={exam.classroom_name || "Chưa gắn lớp học"}
+              className="mt-2 text-sm font-medium text-on-surface"
+            />
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <ExamMetaItem
+            icon={<Clock3 className="size-3.5" />}
+            label="Thời lượng"
+            value={`${formatExamNumber(exam.duration_minutes)} phút`}
+          />
+          <ExamMetaItem
+            icon={<Trophy className="size-3.5" />}
+            label="Tổng điểm"
+            value={formatExamNumber(exam.total_points)}
+          />
+          <ExamMetaItem
+            icon={<BookOpen className="size-3.5" />}
+            label="Câu hỏi"
+            value={formatExamNumber(exam.question_count)}
+          />
+          <ExamMetaItem
+            icon={<CheckCircle2 className="size-3.5" />}
+            label="Lượt làm"
+            value={formatExamNumber(exam.attempt_count)}
+          />
+        </div>
+
+        <div className="grid gap-3 rounded-[24px] border border-outline/10 bg-surface p-4 sm:grid-cols-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              <CalendarClock className="size-3.5" />
+              Tạo lúc
+            </div>
+            <TruncatedTooltipText
+              text={formatExamDateTime(exam.created_at)}
+              className="mt-1.5 text-sm font-semibold text-on-surface"
+            />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              <CalendarClock className="size-3.5" />
+              Cập nhật
+            </div>
+            <TruncatedTooltipText
+              text={formatExamDateTime(exam.updated_at)}
+              className="mt-1.5 text-sm font-semibold text-on-surface"
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="default"
+            size="lg"
+            onClick={() => onViewDetail(exam)}
+            className="h-11 flex-1 rounded-2xl"
+          >
+            <Eye className="mr-2 size-4" />
+            Xem chi tiết
+          </Button>
+          <Button
+            asChild
+            type="button"
+            variant="outline"
+            size="lg"
+            className="h-11 flex-1 rounded-2xl"
+          >
+            <Link href={`/teacher/exams/create?edit=${exam.id}`}>
+              <PencilLine className="mr-2 size-4" />
+              Chỉnh sửa
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+}
