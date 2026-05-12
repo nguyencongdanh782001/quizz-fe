@@ -343,7 +343,8 @@ function ExamFormBody({
                 Sẵn sàng gửi bài thi
               </CardTitle>
               <CardDescription className="mt-2 text-sm leading-relaxed text-white/70">
-                Kiểm tra lại các chỉ số cuối cùng rồi tạo bài thi cho {submitContextLabel}.
+                Kiểm tra lại các chỉ số cuối cùng rồi tạo bài thi cho{" "}
+                {submitContextLabel}.
               </CardDescription>
             </div>
           </div>
@@ -507,16 +508,17 @@ function ExamFormBody({
                 </Button>
               )}
 
-              {currentStep.id === "review" ? (
-                <Button
-                  type="submit"
-                  size="lg"
-                  disabled={isSubmitting || !isValid}
-                >
-                  <FileCheck2 className="mr-2 h-4 w-4" />
-                  {isSubmitting ? "Đang tạo bài thi..." : submitLabel}
-                </Button>
-              ) : (
+              <Button
+                type="submit"
+                size="lg"
+                disabled={isSubmitting || !isValid}
+                className={`${currentStep.id !== "review" ? "hidden" : ""}`}
+              >
+                <FileCheck2 className="mr-2 h-4 w-4" />
+                {isSubmitting ? "Đang tạo bài thi..." : submitLabel}
+              </Button>
+
+              {currentStep.id !== "review" && (
                 <Button type="button" size="lg" onClick={handleNextStep}>
                   {nextButtonLabel}
                   <ArrowRight className="ml-2 h-4 w-4" />

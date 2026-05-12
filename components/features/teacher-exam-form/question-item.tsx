@@ -17,10 +17,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import type { TeacherExamFormValues } from "./types";
-import {
-  createEmptyOption,
-  normalizeTeacherExamQuestionType,
-} from "./utils";
+import { createEmptyOption, normalizeTeacherExamQuestionType } from "./utils";
 import { OptionItem } from "./option-item";
 
 function normalizeOptionsForSingleChoice(
@@ -68,7 +65,10 @@ export function QuestionItem({
   const question = values.questions[questionIndex];
   const questionType = normalizeTeacherExamQuestionType(question.question_type);
   const isSingleChoiceQuestion = questionType === "single_choice";
-  const questionTypeError = getIn(errors, `questions.${questionIndex}.question_type`);
+  const questionTypeError = getIn(
+    errors,
+    `questions.${questionIndex}.question_type`,
+  );
   const questionTypeTouched = getIn(
     touched,
     `questions.${questionIndex}.question_type`,
@@ -95,7 +95,8 @@ export function QuestionItem({
       ? fieldError
       : undefined;
   const shouldHighlightQuestionError =
-    Boolean(questionStateError) && (submitCount > 0 || Boolean(questionStateTouched));
+    Boolean(questionStateError) &&
+    (submitCount > 0 || Boolean(questionStateTouched));
   const correctOptionId =
     question.options.find((option) => option.is_correct)?.client_id ?? "";
 
@@ -410,6 +411,19 @@ export function QuestionItem({
             />
           </div>
         )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleAddOption}
+          className={cn(
+            "flex w-full items-center justify-center gap-2 rounded-[28px] border border-dashed border-outline/30 bg-surface px-4 py-5 text-sm font-medium text-on-surface transition-all",
+            "hover:border-primary/35 hover:bg-primary/5 hover:text-primary",
+          )}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Thêm đáp án
+        </Button>
       </div>
     </div>
   );

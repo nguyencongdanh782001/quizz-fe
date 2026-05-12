@@ -51,7 +51,12 @@ import type {
   TeacherExamPagination,
   TeacherExamQuery,
 } from "@/types/exam";
-import { ExamCard, ExamActionMenu, ExamStatusBadges, TruncatedTooltipText } from "./ExamCard";
+import {
+  ExamCard,
+  ExamActionMenu,
+  ExamStatusBadges,
+  TruncatedTooltipText,
+} from "./ExamCard";
 import { ExamDetailModal } from "./ExamDetailModal";
 import { ExamFilters } from "./ExamFilters";
 import {
@@ -108,7 +113,9 @@ function getErrorMessage(error: unknown): string {
 }
 
 function getBooleanFilter(
-  value: TeacherExamFilterFormValues["published"] | TeacherExamFilterFormValues["active"],
+  value:
+    | TeacherExamFilterFormValues["published"]
+    | TeacherExamFilterFormValues["active"],
 ): boolean | undefined {
   if (value === "published" || value === "active") {
     return true;
@@ -154,7 +161,9 @@ function patchExamInResult(
 
   return {
     ...base,
-    items: base.items.map((item) => (item.id === examId ? updater(item) : item)),
+    items: base.items.map((item) =>
+      item.id === examId ? updater(item) : item,
+    ),
   };
 }
 
@@ -197,7 +206,10 @@ function LoadingState() {
               </thead>
               <tbody>
                 {Array.from({ length: 6 }).map((_, index) => (
-                  <tr key={index} className="border-b border-outline/10 last:border-b-0">
+                  <tr
+                    key={index}
+                    className="border-b border-outline/10 last:border-b-0"
+                  >
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-4">
                         <Skeleton className="h-16 w-24 rounded-2xl" />
@@ -283,7 +295,8 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
         Không thể tải danh sách bài thi
       </h2>
       <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-        Đã có lỗi khi tải danh sách bài thi. Hãy thử tải lại hoặc kiểm tra lại phản hồi từ API.
+        Đã có lỗi khi tải danh sách bài thi. Hãy thử tải lại hoặc kiểm tra lại
+        phản hồi từ API.
       </p>
       <Button
         type="button"
@@ -312,7 +325,9 @@ function EmptyState({
         <FileX2 className="size-8" />
       </div>
       <h2 className="mt-5 font-display text-2xl font-semibold text-on-surface">
-        {hasActiveFilters ? "Không tìm thấy bài thi phù hợp" : "Chưa có bài thi nào"}
+        {hasActiveFilters
+          ? "Không tìm thấy bài thi phù hợp"
+          : "Chưa có bài thi nào"}
       </h2>
       <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
         {hasActiveFilters
@@ -356,7 +371,8 @@ function PaginationControls({
   return (
     <div className="flex flex-col gap-3 rounded-[24px] border border-outline/10 bg-surface-container-lowest px-4 py-4 shadow-[0_18px_50px_-42px_rgba(7,30,39,0.22)] sm:flex-row sm:items-center sm:justify-between">
       <p className="text-sm text-muted-foreground">
-        Trang {pagination.page} / {pagination.total_pages} • {formatExamNumber(pagination.total)} bài thi
+        Trang {pagination.page} / {pagination.total_pages} •{" "}
+        {formatExamNumber(pagination.total)} bài thi
       </p>
       <div className="flex items-center gap-2">
         <Button
@@ -387,7 +403,9 @@ function PaginationControls({
 export function ExamList() {
   const [page, setPage] = useState(1);
   const [selectedExam, setSelectedExam] = useState<TeacherExam | null>(null);
-  const [deleteCandidate, setDeleteCandidate] = useState<TeacherExam | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<TeacherExam | null>(
+    null,
+  );
   const [publishingExamId, setPublishingExamId] = useState<number | null>(null);
   const [deletingExamId, setDeletingExamId] = useState<number | null>(null);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -419,16 +437,14 @@ export function ExamList() {
     sort_order: formik.values.sort_order,
   };
 
-  const {
-    data,
-    error,
-    isLoading,
-    isValidating,
-    mutate,
-  } = useSWR([TEACHER_EXAMS_KEY, query], async ([, params]) => getTeacherSystemExams(params), {
-    revalidateOnFocus: false,
-    keepPreviousData: true,
-  });
+  const { data, error, isLoading, isValidating, mutate } = useSWR(
+    [TEACHER_EXAMS_KEY, query],
+    async ([, params]) => getTeacherSystemExams(params),
+    {
+      revalidateOnFocus: false,
+      keepPreviousData: true,
+    },
+  );
 
   const addToast = ({
     title,
@@ -456,7 +472,11 @@ export function ExamList() {
     formik.values.sort_order,
   );
 
-  const pagination = buildPagination(filteredItems.length, page, EXAMS_PAGE_SIZE);
+  const pagination = buildPagination(
+    filteredItems.length,
+    page,
+    EXAMS_PAGE_SIZE,
+  );
   const safePage = clampPage(page, pagination.total_pages);
   const visibleItems = filteredItems.slice(
     (safePage - 1) * EXAMS_PAGE_SIZE,
@@ -600,257 +620,272 @@ export function ExamList() {
     <ToastProvider duration={3500}>
       <TooltipProvider>
         <div className="space-y-6">
-        <section className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Teacher Workspace
-            </p>
-            <h1 className="mt-2 font-display text-3xl font-bold text-on-surface">
-              Quản lý bài thi
-            </h1>
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <span>
-                {isLoading ? "Đang tải danh sách bài thi..." : `${formatExamNumber(totalCount)} bài thi`}
-              </span>
-              {isRefreshing ? (
-                <span className="inline-flex items-center rounded-full bg-secondary/12 px-2.5 py-1 text-xs font-semibold text-secondary">
-                  <LoaderCircle className="mr-1.5 size-3 animate-spin" />
-                  Đồng bộ dữ liệu
+          <section className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Teacher Workspace
+              </p>
+              <h1 className="mt-2 font-display text-3xl font-bold text-on-surface">
+                Quản lý bài thi
+              </h1>
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <span>
+                  {isLoading
+                    ? "Đang tải danh sách bài thi..."
+                    : `${formatExamNumber(totalCount)} bài thi`}
                 </span>
-              ) : null}
+                {isRefreshing ? (
+                  <span className="inline-flex items-center rounded-full bg-secondary/12 px-2.5 py-1 text-xs font-semibold text-secondary">
+                    <LoaderCircle className="mr-1.5 size-3 animate-spin" />
+                    Đồng bộ dữ liệu
+                  </span>
+                ) : null}
+              </div>
             </div>
-          </div>
 
-          <Button asChild size="lg" className="h-11 rounded-2xl px-5">
-            <Link href="/teacher/exams/create">
-              <Plus className="mr-2 size-4" />
-              Tạo bài thi
-            </Link>
-          </Button>
-        </section>
+            <Button asChild size="lg" className="h-11 rounded-2xl px-5">
+              <Link href="/teacher/exams/create">
+                <Plus className="mr-2 size-4" />
+                Tạo bài thi
+              </Link>
+            </Button>
+          </section>
 
-        <ExamFilters
-          formik={formik}
-          hasActiveFilters={hasActiveFilters}
-          isSearchDebouncing={isSearchDebouncing}
-          resultCount={visibleItems.length}
-          totalCount={totalCount}
-          onReset={() => {
-            void formik.resetForm({ values: DEFAULT_EXAM_FILTER_VALUES });
-          }}
-        />
-
-        {error ? (
-          <ErrorState onRetry={() => void mutate()} />
-        ) : isLoading ? (
-          <LoadingState />
-        ) : isEmpty ? (
-          <EmptyState
+          <ExamFilters
+            formik={formik}
             hasActiveFilters={hasActiveFilters}
+            isSearchDebouncing={isSearchDebouncing}
+            resultCount={visibleItems.length}
+            totalCount={totalCount}
             onReset={() => {
               void formik.resetForm({ values: DEFAULT_EXAM_FILTER_VALUES });
             }}
           />
-        ) : (
-          <>
-            <div className="hidden xl:block">
-              <Card className="rounded-[28px] border-0 bg-surface-container-lowest py-0 shadow-[0_24px_70px_-50px_rgba(7,30,39,0.24)]">
-                <CardContent className="overflow-x-auto px-0">
-                  <table className="min-w-full">
-                    <thead>
-                      <tr className="border-b border-outline/10">
-                        {[
-                          "Bài thi",
-                          "Số liệu",
-                          "Trạng thái",
-                          "Thời gian",
-                          "Hành động",
-                        ].map((heading) => (
-                          <th
-                            key={heading}
-                            className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
-                          >
-                            {heading}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visibleItems.map((exam) => (
-                        <tr
-                          key={exam.id}
-                          className="border-b border-outline/10 align-top transition-colors hover:bg-surface-container-low last:border-b-0"
-                        >
-                          <td className="px-5 py-4">
-                            <div className="flex min-w-[20rem] items-start gap-4">
-                              <div className="h-16 w-24 shrink-0 overflow-hidden rounded-2xl bg-linear-to-br from-primary/18 via-secondary/12 to-tertiary/14">
-                                {exam.image_url ? (
-                                  <img
-                                    src={exam.image_url}
-                                    alt={exam.title}
-                                    className="h-full w-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="flex h-full items-center justify-center">
-                                    <FileX2 className="size-5 text-primary/70" />
-                                  </div>
-                                )}
-                              </div>
 
-                              <div className="min-w-0 flex-1 space-y-2">
-                                <TruncatedTooltipText
-                                  text={exam.title}
-                                  lines={2}
-                                  className="font-display text-lg font-semibold leading-snug text-on-surface"
-                                />
-                                <TruncatedTooltipText
-                                  text={exam.description || "Bài thi chưa có mô tả."}
-                                  lines={2}
-                                  className="max-w-xl text-sm text-muted-foreground"
-                                />
-                                <div className="rounded-2xl bg-surface px-3 py-2">
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                                    Lớp học
-                                  </p>
+          {error ? (
+            <ErrorState onRetry={() => void mutate()} />
+          ) : isLoading ? (
+            <LoadingState />
+          ) : isEmpty ? (
+            <EmptyState
+              hasActiveFilters={hasActiveFilters}
+              onReset={() => {
+                void formik.resetForm({ values: DEFAULT_EXAM_FILTER_VALUES });
+              }}
+            />
+          ) : (
+            <>
+              <div className="hidden xl:block">
+                <Card className="rounded-[28px] border-0 bg-surface-container-lowest py-0 shadow-[0_24px_70px_-50px_rgba(7,30,39,0.24)]">
+                  <CardContent className="overflow-x-auto px-0">
+                    <table className="min-w-full">
+                      <thead>
+                        <tr className="border-b border-outline/10">
+                          {[
+                            "Bài thi",
+                            "Số liệu",
+                            "Trạng thái",
+                            "Thời gian",
+                            "Hành động",
+                          ].map((heading) => (
+                            <th
+                              key={heading}
+                              className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+                            >
+                              {heading}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {visibleItems.map((exam) => (
+                          <tr
+                            key={exam.id}
+                            className="border-b border-outline/10 align-top transition-colors hover:bg-surface-container-low last:border-b-0"
+                          >
+                            <td className="px-5 py-4">
+                              <div className="flex min-w-[20rem] items-start gap-4">
+                                <div className="h-16 w-24 shrink-0 overflow-hidden rounded-2xl bg-linear-to-br from-primary/18 via-secondary/12 to-tertiary/14">
+                                  {exam.image_url ? (
+                                    <img
+                                      src={exam.image_url}
+                                      alt={exam.title}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="flex h-full items-center justify-center">
+                                      <FileX2 className="size-5 text-primary/70" />
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="min-w-0 flex-1 space-y-2">
                                   <TruncatedTooltipText
-                                    text={exam.classroom_name || "Chưa gắn lớp học"}
-                                    className="mt-1 text-sm font-medium text-on-surface"
+                                    text={exam.title}
+                                    lines={2}
+                                    className="font-display text-lg font-semibold leading-snug text-on-surface"
                                   />
+                                  <TruncatedTooltipText
+                                    text={
+                                      exam.description ||
+                                      "Bài thi chưa có mô tả."
+                                    }
+                                    lines={2}
+                                    className="max-w-xl text-sm text-muted-foreground"
+                                  />
+                                  <div className="rounded-2xl bg-surface px-3 py-2">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                                      Lớp học
+                                    </p>
+                                    <TruncatedTooltipText
+                                      text={
+                                        exam.classroom_name ||
+                                        "Chưa gắn lớp học"
+                                      }
+                                      className="mt-1 text-sm font-medium text-on-surface"
+                                    />
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </td>
+                            </td>
 
-                          <td className="px-5 py-4">
-                            <div className="grid min-w-[15rem] gap-2 sm:grid-cols-2">
-                              {[
-                                {
-                                  label: "Thời lượng",
-                                  value: `${formatExamNumber(exam.duration_minutes)} phút`,
-                                },
-                                {
-                                  label: "Tổng điểm",
-                                  value: formatExamNumber(exam.total_points),
-                                },
-                                {
-                                  label: "Câu hỏi",
-                                  value: formatExamNumber(exam.question_count),
-                                },
-                                {
-                                  label: "Lượt làm",
-                                  value: formatExamNumber(exam.attempt_count),
-                                },
-                              ].map((stat) => (
-                                <div
-                                  key={stat.label}
-                                  className="rounded-2xl border border-outline/10 bg-surface px-3 py-2.5"
-                                >
+                            <td className="px-5 py-4">
+                              <div className="grid min-w-60 gap-2 sm:grid-cols-2">
+                                {[
+                                  {
+                                    label: "Thời lượng",
+                                    value: `${formatExamNumber(exam.duration_minutes)} phút`,
+                                  },
+                                  {
+                                    label: "Tổng điểm",
+                                    value: formatExamNumber(exam.total_points),
+                                  },
+                                  {
+                                    label: "Câu hỏi",
+                                    value: formatExamNumber(
+                                      exam.question_count,
+                                    ),
+                                  },
+                                  {
+                                    label: "Lượt làm",
+                                    value: formatExamNumber(exam.attempt_count),
+                                  },
+                                ].map((stat) => (
+                                  <div
+                                    key={stat.label}
+                                    className="rounded-2xl border border-outline/10 bg-surface px-3 py-2.5"
+                                  >
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                                      {stat.label}
+                                    </p>
+                                    <p className="mt-1.5 text-sm font-semibold text-on-surface">
+                                      {stat.value}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+
+                            <td className="px-5 py-4">
+                              <div className="min-w-48 space-y-3">
+                                <ExamStatusBadges exam={exam} />
+                                <div className="rounded-2xl border border-outline/10 bg-surface px-3 py-2.5">
                                   <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                                    {stat.label}
+                                    Scope
+                                  </p>
+                                  <p className="mt-1.5 line-clamp-1 text-sm font-semibold text-on-surface">
+                                    {exam.scope ?? "Bài thi"}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="px-5 py-4">
+                              <div className="min-w-48 space-y-3 rounded-2xl border border-outline/10 bg-surface px-4 py-3">
+                                <div>
+                                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                                    Tạo lúc
                                   </p>
                                   <p className="mt-1.5 text-sm font-semibold text-on-surface">
-                                    {stat.value}
+                                    {formatExamDateTime(exam.created_at)}
                                   </p>
                                 </div>
-                              ))}
-                            </div>
-                          </td>
-
-                          <td className="px-5 py-4">
-                            <div className="min-w-[12rem] space-y-3">
-                              <ExamStatusBadges exam={exam} />
-                              <div className="rounded-2xl border border-outline/10 bg-surface px-3 py-2.5">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                                  Scope
-                                </p>
-                                <p className="mt-1.5 line-clamp-1 text-sm font-semibold text-on-surface">
-                                  {exam.scope ?? "Bài thi"}
-                                </p>
+                                <div>
+                                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                                    Cập nhật
+                                  </p>
+                                  <p className="mt-1.5 text-sm font-semibold text-on-surface">
+                                    {formatExamDateTime(exam.updated_at)}
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          </td>
+                            </td>
 
-                          <td className="px-5 py-4">
-                            <div className="min-w-[12rem] space-y-3 rounded-2xl border border-outline/10 bg-surface px-4 py-3">
-                              <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                                  Tạo lúc
-                                </p>
-                                <p className="mt-1.5 text-sm font-semibold text-on-surface">
-                                  {formatExamDateTime(exam.created_at)}
-                                </p>
+                            <td className="px-5 py-4">
+                              <div className="flex min-w-60 justify-end gap-2">
+                                <Button
+                                  type="button"
+                                  variant="default"
+                                  size="lg"
+                                  onClick={() => setSelectedExam(exam)}
+                                  className="h-10 rounded-2xl px-4"
+                                >
+                                  <Eye className="mr-2 size-4" />
+                                  Xem
+                                </Button>
+                                <Button
+                                  asChild
+                                  type="button"
+                                  variant="outline"
+                                  size="lg"
+                                  className="h-10 rounded-2xl px-4"
+                                >
+                                  <Link
+                                    href={`/teacher/exams/create?edit=${exam.id}`}
+                                  >
+                                    <PencilLine className="mr-2 size-4" />
+                                    Sửa
+                                  </Link>
+                                </Button>
+                                <ExamActionMenu
+                                  exam={exam}
+                                  isDeleting={deletingExamId === exam.id}
+                                  isPublishing={publishingExamId === exam.id}
+                                  onCopyLink={handleCopyLink}
+                                  onDeleteRequest={setDeleteCandidate}
+                                  onTogglePublish={handleTogglePublish}
+                                />
                               </div>
-                              <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                                  Cập nhật
-                                </p>
-                                <p className="mt-1.5 text-sm font-semibold text-on-surface">
-                                  {formatExamDateTime(exam.updated_at)}
-                                </p>
-                              </div>
-                            </div>
-                          </td>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </CardContent>
+                </Card>
+              </div>
 
-                          <td className="px-5 py-4">
-                            <div className="flex min-w-[15rem] justify-end gap-2">
-                              <Button
-                                type="button"
-                                variant="default"
-                                size="lg"
-                                onClick={() => setSelectedExam(exam)}
-                                className="h-10 rounded-2xl px-4"
-                              >
-                                <Eye className="mr-2 size-4" />
-                                Xem
-                              </Button>
-                              <Button
-                                asChild
-                                type="button"
-                                variant="outline"
-                                size="lg"
-                                className="h-10 rounded-2xl px-4"
-                              >
-                                <Link href={`/teacher/exams/create?edit=${exam.id}`}>
-                                  <PencilLine className="mr-2 size-4" />
-                                  Sửa
-                                </Link>
-                              </Button>
-                              <ExamActionMenu
-                                exam={exam}
-                                isDeleting={deletingExamId === exam.id}
-                                isPublishing={publishingExamId === exam.id}
-                                onCopyLink={handleCopyLink}
-                                onDeleteRequest={setDeleteCandidate}
-                                onTogglePublish={handleTogglePublish}
-                              />
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </CardContent>
-              </Card>
-            </div>
+              <div className="grid gap-5 md:grid-cols-2 xl:hidden">
+                {visibleItems.map((exam) => (
+                  <ExamCard
+                    key={exam.id}
+                    exam={exam}
+                    isDeleting={deletingExamId === exam.id}
+                    isPublishing={publishingExamId === exam.id}
+                    onCopyLink={handleCopyLink}
+                    onDeleteRequest={setDeleteCandidate}
+                    onTogglePublish={handleTogglePublish}
+                    onViewDetail={setSelectedExam}
+                  />
+                ))}
+              </div>
 
-            <div className="grid gap-5 md:grid-cols-2 xl:hidden">
-              {visibleItems.map((exam) => (
-                <ExamCard
-                  key={exam.id}
-                  exam={exam}
-                  isDeleting={deletingExamId === exam.id}
-                  isPublishing={publishingExamId === exam.id}
-                  onCopyLink={handleCopyLink}
-                  onDeleteRequest={setDeleteCandidate}
-                  onTogglePublish={handleTogglePublish}
-                  onViewDetail={setSelectedExam}
-                />
-              ))}
-            </div>
-
-            <PaginationControls pagination={pagination} onPageChange={setPage} />
-          </>
-        )}
+              <PaginationControls
+                pagination={pagination}
+                onPageChange={setPage}
+              />
+            </>
+          )}
         </div>
 
         <ExamDetailModal
@@ -914,9 +949,7 @@ export function ExamList() {
             variant={toast.variant}
             onOpenChange={(open) => {
               setToasts((current) =>
-                open
-                  ? current
-                  : current.filter((item) => item.id !== toast.id),
+                open ? current : current.filter((item) => item.id !== toast.id),
               );
             }}
           >
