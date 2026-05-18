@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope, Public_Sans } from "next/font/google";
+import { AppProviders } from "./providers";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -29,7 +30,7 @@ export default function RootLayout({
       <body
         className={`${manrope.variable} ${publicSans.variable} font-sans antialiased bg-background text-foreground`}
       >
-        {children}
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );

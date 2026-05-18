@@ -6,6 +6,10 @@ import type {
   TeacherExamQuestionType,
   TeacherExamSortKey,
 } from "@/types/exam";
+import {
+  getExamScopeLabel as getTeacherExamScopeLabel,
+  getTeacherExamQuestionTypeLabel,
+} from "./exam-flow-messages";
 
 export const EXAMS_PAGE_SIZE = 9;
 
@@ -101,7 +105,11 @@ export function getActiveBadgeConfig(isActive: boolean) {
 export function getQuestionTypeLabel(
   examQuestionType: TeacherExamQuestionType,
 ): string {
-  return examQuestionType === "text" ? "Tự luận" : "Một đáp án";
+  return getTeacherExamQuestionTypeLabel(examQuestionType);
+}
+
+export function getExamScopeLabel(scope: string | null | undefined): string {
+  return getTeacherExamScopeLabel(scope);
 }
 
 export function buildStudentExamLink(examId: number): string {

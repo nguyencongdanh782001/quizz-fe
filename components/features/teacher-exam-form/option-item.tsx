@@ -2,8 +2,10 @@
 
 import { getIn, useFormikContext } from "formik";
 import { Trash2 } from "lucide-react";
+import { EXAM_FLOW_MESSAGES } from "@/components/exams/exam-flow-messages";
 import { InputField } from "@/components/common/form/input-field";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
@@ -11,20 +13,26 @@ import type { TeacherExamFormValues } from "./types";
 
 const OPTION_KEYS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
+type OptionSelectionMode = "single" | "multiple";
+
 export function OptionItem({
   questionIndex,
   optionIndex,
   optionId,
+  selectionMode,
   isCorrect,
   canRemove,
   onRemove,
+  onCorrectChange,
 }: {
   questionIndex: number;
   optionIndex: number;
   optionId: string;
+  selectionMode: OptionSelectionMode;
   isCorrect: boolean;
   canRemove: boolean;
   onRemove: () => void;
+  onCorrectChange: (checked: boolean) => void;
 }) {
   const { values, errors, touched, setFieldValue, submitCount } =
     useFormikContext<TeacherExamFormValues>();
@@ -49,7 +57,11 @@ export function OptionItem({
     (submitCount > 0 || Boolean(fieldTouched)) && typeof fieldError === "string"
       ? fieldError
       : undefined;
-  const radioId = `question-${questionIndex}-option-${optionId}`;
+  const controlId = `question-${questionIndex}-option-${optionId}`;
+  const helperText =
+    selectionMode === "single"
+      ? "Chọn nút tròn để đánh dấu đáp án đúng."
+      : "Có thể chọn nhiều ô vuông nếu câu hỏi có nhiều đáp án đúng.";
 
   return (
     <div
@@ -61,17 +73,31 @@ export function OptionItem({
       )}
     >
       <div className="flex items-start gap-3">
-        <RadioGroupItem id={radioId} value={optionId} className="mt-1.5" />
+        <div className="mt-1.5">
+          {selectionMode === "single" ? (
+            <RadioGroupItem id={controlId} value={optionId} />
+          ) : (
+            <Checkbox
+              id={controlId}
+              checked={isCorrect}
+              onCheckedChange={(checked) => onCorrectChange(checked === true)}
+              aria-label={`Đánh dấu đáp án ${
+                OPTION_KEYS[optionIndex] ?? optionIndex + 1
+              } là đáp án đúng`}
+            />
+          )}
+        </div>
 
         <div className="min-w-0 flex-1 space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <Label
-                  htmlFor={radioId}
+                  htmlFor={controlId}
                   className="text-sm font-semibold text-on-surface"
                 >
-                  Đáp án {OPTION_KEYS[optionIndex] ?? optionIndex + 1}
+                  {EXAM_FLOW_MESSAGES.labels.answer}{" "}
+                  {OPTION_KEYS[optionIndex] ?? optionIndex + 1}
                 </Label>
                 {isCorrect ? (
                   <span className="inline-flex items-center rounded-full bg-primary/15 px-2.5 py-1 text-[0.7rem] font-semibold text-primary">
@@ -80,7 +106,7 @@ export function OptionItem({
                 ) : null}
               </div>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Chọn nút tròn để đánh dấu đáp án đúng.
+                {helperText}
               </p>
             </div>
 
@@ -90,7 +116,7 @@ export function OptionItem({
                 variant="ghost"
                 size="icon-xs"
                 onClick={onRemove}
-                aria-label={`Xóa đáp án ${
+                aria-label={`${EXAM_FLOW_MESSAGES.buttons.deleteOption} ${
                   OPTION_KEYS[optionIndex] ?? optionIndex + 1
                 }`}
               >
@@ -100,8 +126,8 @@ export function OptionItem({
           </div>
 
           <InputField
-            id={`${radioId}-text`}
-            label="Nội dung đáp án"
+            id={`${controlId}-text`}
+            label={EXAM_FLOW_MESSAGES.labels.answer}
             required
             value={option.option_text}
             onChange={(event) =>
@@ -111,14 +137,12 @@ export function OptionItem({
               )
             }
             error={shouldShowError(optionTouched, optionError)}
-            placeholder={`Nhập nội dung đáp án ${
-              OPTION_KEYS[optionIndex] ?? optionIndex + 1
-            }`}
+            placeholder={EXAM_FLOW_MESSAGES.placeholders.option}
           />
 
           <InputField
-            id={`${radioId}-image`}
-            label="Hình minh họa (tùy chọn)"
+            id={`${controlId}-image`}
+            label="Ảnh đáp án (tùy chọn)"
             value={option.image_url}
             onChange={(event) =>
               void setFieldValue(

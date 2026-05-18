@@ -54,11 +54,11 @@ export function ExamFilters({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Bộ lọc bài thi
+                Bộ lọc đề thi
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 <span>
-                  Hiển thị {resultCount} / {totalCount} bài thi
+                  Hiển thị {resultCount} / {totalCount} đề thi
                 </span>
                 {activeFilterCount > 0 ? (
                   <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
@@ -92,7 +92,7 @@ export function ExamFilters({
                 htmlFor="teacher-exam-search"
                 className="mb-2 block text-xs font-medium text-on-surface-variant"
               >
-                Tìm kiếm theo tiêu đề
+                Tìm kiếm theo tên đề thi
               </Label>
               <div className="relative">
                 <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -101,7 +101,7 @@ export function ExamFilters({
                   name="search"
                   value={formik.values.search}
                   onChange={formik.handleChange}
-                  placeholder="Nhập tiêu đề bài thi..."
+                  placeholder="Nhập tên đề thi"
                   className="h-12 rounded-2xl border-outline/15 bg-surface pl-10 pr-4 shadow-none"
                 />
               </div>

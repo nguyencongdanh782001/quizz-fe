@@ -2,7 +2,6 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useState } from "react";
-import useSWR from "swr";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { useDebounce } from "use-debounce";
@@ -15,7 +14,6 @@ import {
   PencilLine,
   Plus,
   RefreshCw,
-  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,29 +26,19 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import {
-  deleteTeacherSystemExam,
-  getTeacherSystemExams,
-  updateTeacherSystemExamPublishState,
-} from "@/services/exam.service";
+import { updateTeacherSystemExamPublishState } from "@/services/exam.service";
+import { DeleteExamDialog } from "@/components/exams/DeleteExamDialog";
+import { useDeleteExam } from "@/hooks/queries/useDeleteExam";
+import { useTeacherExams } from "@/hooks/queries/useTeacherExams";
+import { getApiErrorMessage } from "@/lib/api/error-message";
 import type {
   TeacherExam,
   TeacherExamFilterFormValues,
-  TeacherExamListResult,
   TeacherExamPagination,
   TeacherExamQuery,
 } from "@/types/exam";
+import { EXAM_FLOW_MESSAGES } from "./exam-flow-messages";
 import {
   ExamCard,
   ExamActionMenu,
@@ -66,6 +54,7 @@ import {
   buildStudentExamLink,
   formatExamDateTime,
   formatExamNumber,
+  getExamScopeLabel,
   matchesClientFilters,
   sortExams,
 } from "./exam-utils";
@@ -79,8 +68,6 @@ interface ToastItem {
   open: boolean;
   variant: ToastVariant;
 }
-
-const TEACHER_EXAMS_KEY = "teacher-system-exams";
 
 const filterSchema = Yup.object({
   search: Yup.string().max(120, "Từ khóa quá dài"),
@@ -98,20 +85,6 @@ const filterSchema = Yup.object({
     .required(),
 });
 
-function getErrorMessage(error: unknown): string {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof error.message === "string" &&
-    error.message.trim()
-  ) {
-    return error.message;
-  }
-
-  return "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.";
-}
-
 function getBooleanFilter(
   value:
     | TeacherExamFilterFormValues["published"]
@@ -126,12 +99,6 @@ function getBooleanFilter(
   }
 
   return undefined;
-}
-
-function createEmptyResult(): TeacherExamListResult {
-  return {
-    items: [],
-  };
 }
 
 function buildPagination(
@@ -152,33 +119,6 @@ function buildPagination(
   };
 }
 
-function patchExamInResult(
-  current: TeacherExamListResult | undefined,
-  examId: number,
-  updater: (exam: TeacherExam) => TeacherExam,
-): TeacherExamListResult {
-  const base = current ?? createEmptyResult();
-
-  return {
-    ...base,
-    items: base.items.map((item) =>
-      item.id === examId ? updater(item) : item,
-    ),
-  };
-}
-
-function removeExamFromResult(
-  current: TeacherExamListResult | undefined,
-  examId: number,
-): TeacherExamListResult {
-  const base = current ?? createEmptyResult();
-
-  return {
-    ...base,
-    items: base.items.filter((item) => item.id !== examId),
-  };
-}
-
 function LoadingState() {
   return (
     <div className="space-y-5">
@@ -189,7 +129,7 @@ function LoadingState() {
               <thead>
                 <tr className="border-b border-outline/10">
                   {[
-                    "Bài thi",
+                    "Đề thi",
                     "Số liệu",
                     "Trạng thái",
                     "Thời gian",
@@ -292,10 +232,10 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
         <AlertTriangle className="size-7" />
       </div>
       <h2 className="mt-4 font-display text-2xl font-semibold text-on-surface">
-        Không thể tải danh sách bài thi
+        Không thể tải danh sách đề thi
       </h2>
       <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-        Đã có lỗi khi tải danh sách bài thi. Hãy thử tải lại hoặc kiểm tra lại
+        Đã có lỗi khi tải danh sách đề thi. Hãy thử tải lại hoặc kiểm tra lại
         phản hồi từ API.
       </p>
       <Button
@@ -326,13 +266,13 @@ function EmptyState({
       </div>
       <h2 className="mt-5 font-display text-2xl font-semibold text-on-surface">
         {hasActiveFilters
-          ? "Không tìm thấy bài thi phù hợp"
-          : "Chưa có bài thi nào"}
+          ? "Không tìm thấy đề thi phù hợp"
+          : "Chưa có đề thi nào"}
       </h2>
       <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
         {hasActiveFilters
-          ? "Hãy thử đổi từ khóa tìm kiếm hoặc đặt lại bộ lọc để xem thêm bài thi."
-          : "Khi API trả về dữ liệu, các bài thi sẽ xuất hiện tại đây với đầy đủ thống kê và thao tác quản lý."}
+          ? "Hãy thử đổi từ khóa tìm kiếm hoặc đặt lại bộ lọc để xem thêm đề thi."
+          : "Khi API trả về dữ liệu, các đề thi sẽ xuất hiện tại đây với đầy đủ thống kê và thao tác quản lý."}
       </p>
       <div className="mt-6 flex flex-wrap justify-center gap-3">
         {hasActiveFilters ? (
@@ -349,7 +289,7 @@ function EmptyState({
         <Button asChild type="button" size="lg" className="h-11 rounded-2xl">
           <Link href="/teacher/exams/create">
             <Plus className="mr-2 size-4" />
-            Tạo bài thi mới
+            Tạo đề thi
           </Link>
         </Button>
       </div>
@@ -372,7 +312,7 @@ function PaginationControls({
     <div className="flex flex-col gap-3 rounded-[24px] border border-outline/10 bg-surface-container-lowest px-4 py-4 shadow-[0_18px_50px_-42px_rgba(7,30,39,0.22)] sm:flex-row sm:items-center sm:justify-between">
       <p className="text-sm text-muted-foreground">
         Trang {pagination.page} / {pagination.total_pages} •{" "}
-        {formatExamNumber(pagination.total)} bài thi
+        {formatExamNumber(pagination.total)} đề thi
       </p>
       <div className="flex items-center gap-2">
         <Button
@@ -407,7 +347,6 @@ export function ExamList() {
     null,
   );
   const [publishingExamId, setPublishingExamId] = useState<number | null>(null);
-  const [deletingExamId, setDeletingExamId] = useState<number | null>(null);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   const formik = useFormik<TeacherExamFilterFormValues>({
@@ -437,14 +376,13 @@ export function ExamList() {
     sort_order: formik.values.sort_order,
   };
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR(
-    [TEACHER_EXAMS_KEY, query],
-    async ([, params]) => getTeacherSystemExams(params),
-    {
-      revalidateOnFocus: false,
-      keepPreviousData: true,
-    },
+  const { data, error, isFetching, isPending, refetch } = useTeacherExams(
+    query,
   );
+  const deleteExamMutation = useDeleteExam();
+  const isLoading = isPending && !data;
+  const isDeletingExam = deleteExamMutation.isPending;
+  const deletingExamId = isDeletingExam ? deleteCandidate?.id ?? null : null;
 
   const addToast = ({
     title,
@@ -498,18 +436,45 @@ export function ExamList() {
 
   const totalCount = filteredItems.length;
 
+  function handleDeleteRequest(exam: TeacherExam) {
+    if (isDeletingExam) {
+      return;
+    }
+
+    setDeleteCandidate(exam);
+  }
+
+  function handleDeleteDialogOpenChange(open: boolean) {
+    if (isDeletingExam) {
+      return;
+    }
+
+    if (!open) {
+      setDeleteCandidate(null);
+    }
+  }
+
+  function handleToastOpenChange(toastId: number, open: boolean) {
+    if (open) {
+      return;
+    }
+
+    setToasts((current) => current.filter((item) => item.id !== toastId));
+  }
+
   async function handleCopyLink(exam: TeacherExam) {
     try {
       await navigator.clipboard.writeText(buildStudentExamLink(exam.id));
       addToast({
         title: "Đã sao chép liên kết",
-        description: `Liên kết của "${exam.title}" đã được sao chép vào clipboard.`,
+        description: `Liên kết của "${exam.title}" đã được sao chép vào bộ nhớ tạm.`,
         variant: "success",
       });
     } catch {
       addToast({
         title: "Không thể sao chép liên kết",
-        description: "Trình duyệt đã chặn quyền clipboard. Hãy thử lại.",
+        description:
+          "Trình duyệt đã chặn quyền truy cập bộ nhớ tạm. Vui lòng thử lại.",
         variant: "error",
       });
     }
@@ -517,47 +482,28 @@ export function ExamList() {
 
   async function handleTogglePublish(exam: TeacherExam) {
     const nextPublished = !exam.is_published;
-    const optimisticUpdatedAt = new Date().toISOString();
 
     setPublishingExamId(exam.id);
 
     try {
-      await mutate(
-        async (current) => {
-          const message = await updateTeacherSystemExamPublishState(
-            exam.id,
-            nextPublished,
-          );
-
-          addToast({
-            title: nextPublished ? "Đã xuất bản bài thi" : "Đã bỏ xuất bản",
-            description: message,
-            variant: "success",
-          });
-
-          return patchExamInResult(current, exam.id, (item) => ({
-            ...item,
-            is_published: nextPublished,
-            updated_at: optimisticUpdatedAt,
-          }));
-        },
-        {
-          optimisticData: (current) =>
-            patchExamInResult(current, exam.id, (item) => ({
-              ...item,
-              is_published: nextPublished,
-              updated_at: optimisticUpdatedAt,
-            })),
-          rollbackOnError: true,
-          populateCache: true,
-          revalidate: false,
-        },
+      const message = await updateTeacherSystemExamPublishState(
+        exam.id,
+        nextPublished,
       );
-      void mutate();
+
+      addToast({
+        title: nextPublished
+          ? "Xuất bản đề thi thành công"
+          : "Ẩn đề thi thành công",
+        description: message,
+        variant: "success",
+      });
+
+      void refetch();
     } catch (mutationError) {
       addToast({
-        title: "Không thể cập nhật trạng thái xuất bản",
-        description: getErrorMessage(mutationError),
+        title: "Không thể cập nhật trạng thái đề thi",
+        description: getApiErrorMessage(mutationError),
         variant: "error",
       });
     } finally {
@@ -565,56 +511,44 @@ export function ExamList() {
     }
   }
 
-  async function handleDelete() {
+  async function handleDeleteExamConfirmation() {
     if (!deleteCandidate) {
       return;
     }
 
-    const exam = deleteCandidate;
+    const examToDelete = deleteCandidate;
     const shouldGoToPreviousPage = visibleItems.length === 1 && page > 1;
 
-    setDeletingExamId(exam.id);
-
     try {
-      await mutate(
-        async (current) => {
-          const message = await deleteTeacherSystemExam(exam.id);
+      const response = await deleteExamMutation.mutateAsync(examToDelete.id);
 
-          addToast({
-            title: "Đã xóa bài thi",
-            description: message || `Bài thi "${exam.title}" đã được xóa.`,
-            variant: "success",
-          });
+      addToast({
+        title: "Xóa đề thi thành công",
+        description:
+          response.message || `Đề thi "${examToDelete.title}" đã được xóa.`,
+        variant: "success",
+      });
 
-          return removeExamFromResult(current, exam.id);
-        },
-        {
-          optimisticData: (current) => removeExamFromResult(current, exam.id),
-          rollbackOnError: true,
-          populateCache: true,
-          revalidate: false,
-        },
-      );
+      if (selectedExam?.id === examToDelete.id) {
+        setSelectedExam(null);
+      }
 
       if (shouldGoToPreviousPage) {
         setPage((current) => Math.max(current - 1, 1));
       }
 
       setDeleteCandidate(null);
-      void mutate();
     } catch (mutationError) {
       addToast({
-        title: "Không thể xóa bài thi",
-        description: getErrorMessage(mutationError),
+        title: "Không thể xóa đề thi",
+        description: getApiErrorMessage(mutationError),
         variant: "error",
       });
-    } finally {
-      setDeletingExamId(null);
     }
   }
 
   const isEmpty = !isLoading && !error && visibleItems.length === 0;
-  const isRefreshing = isValidating && !isLoading;
+  const isRefreshing = isFetching && !isLoading;
 
   return (
     <ToastProvider duration={3500}>
@@ -623,16 +557,16 @@ export function ExamList() {
           <section className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Teacher Workspace
+                Khu vực giảng viên
               </p>
               <h1 className="mt-2 font-display text-3xl font-bold text-on-surface">
-                Quản lý bài thi
+                {EXAM_FLOW_MESSAGES.titles.management}
               </h1>
               <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 <span>
                   {isLoading
-                    ? "Đang tải danh sách bài thi..."
-                    : `${formatExamNumber(totalCount)} bài thi`}
+                    ? "Đang tải danh sách đề thi..."
+                    : `${formatExamNumber(totalCount)} đề thi`}
                 </span>
                 {isRefreshing ? (
                   <span className="inline-flex items-center rounded-full bg-secondary/12 px-2.5 py-1 text-xs font-semibold text-secondary">
@@ -646,7 +580,7 @@ export function ExamList() {
             <Button asChild size="lg" className="h-11 rounded-2xl px-5">
               <Link href="/teacher/exams/create">
                 <Plus className="mr-2 size-4" />
-                Tạo bài thi
+                {EXAM_FLOW_MESSAGES.titles.create}
               </Link>
             </Button>
           </section>
@@ -663,7 +597,7 @@ export function ExamList() {
           />
 
           {error ? (
-            <ErrorState onRetry={() => void mutate()} />
+            <ErrorState onRetry={() => void refetch()} />
           ) : isLoading ? (
             <LoadingState />
           ) : isEmpty ? (
@@ -682,7 +616,7 @@ export function ExamList() {
                       <thead>
                         <tr className="border-b border-outline/10">
                           {[
-                            "Bài thi",
+                            "Đề thi",
                             "Số liệu",
                             "Trạng thái",
                             "Thời gian",
@@ -727,8 +661,7 @@ export function ExamList() {
                                   />
                                   <TruncatedTooltipText
                                     text={
-                                      exam.description ||
-                                      "Bài thi chưa có mô tả."
+                                      exam.description || "Đề thi chưa có mô tả."
                                     }
                                     lines={2}
                                     className="max-w-xl text-sm text-muted-foreground"
@@ -791,10 +724,10 @@ export function ExamList() {
                                 <ExamStatusBadges exam={exam} />
                                 <div className="rounded-2xl border border-outline/10 bg-surface px-3 py-2.5">
                                   <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                                    Scope
+                                    {EXAM_FLOW_MESSAGES.labels.scope}
                                   </p>
                                   <p className="mt-1.5 line-clamp-1 text-sm font-semibold text-on-surface">
-                                    {exam.scope ?? "Bài thi"}
+                                    {getExamScopeLabel(exam.scope)}
                                   </p>
                                 </div>
                               </div>
@@ -852,7 +785,7 @@ export function ExamList() {
                                   isDeleting={deletingExamId === exam.id}
                                   isPublishing={publishingExamId === exam.id}
                                   onCopyLink={handleCopyLink}
-                                  onDeleteRequest={setDeleteCandidate}
+                                  onDeleteRequest={handleDeleteRequest}
                                   onTogglePublish={handleTogglePublish}
                                 />
                               </div>
@@ -873,7 +806,7 @@ export function ExamList() {
                     isDeleting={deletingExamId === exam.id}
                     isPublishing={publishingExamId === exam.id}
                     onCopyLink={handleCopyLink}
-                    onDeleteRequest={setDeleteCandidate}
+                    onDeleteRequest={handleDeleteRequest}
                     onTogglePublish={handleTogglePublish}
                     onViewDetail={setSelectedExam}
                   />
@@ -898,49 +831,13 @@ export function ExamList() {
           }}
         />
 
-        <AlertDialog
+        <DeleteExamDialog
+          examTitle={deleteCandidate?.title ?? null}
+          isDeleting={isDeletingExam}
           open={Boolean(deleteCandidate)}
-          onOpenChange={(open) => {
-            if (!open) {
-              setDeleteCandidate(null);
-            }
-          }}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Xác nhận xóa bài thi</AlertDialogTitle>
-              <AlertDialogDescription>
-                {deleteCandidate
-                  ? `Bài thi "${deleteCandidate.title}" sẽ bị xóa khỏi danh sách. Hành động này không thể hoàn tác.`
-                  : "Hành động này không thể hoàn tác."}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={Boolean(deletingExamId)}>
-                Hủy
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={(event) => {
-                  event.preventDefault();
-                  void handleDelete();
-                }}
-                disabled={Boolean(deletingExamId)}
-              >
-                {deletingExamId ? (
-                  <>
-                    <LoaderCircle className="mr-2 size-4 animate-spin" />
-                    Đang xóa...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="mr-2 size-4" />
-                    Xóa bài thi
-                  </>
-                )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          onConfirm={handleDeleteExamConfirmation}
+          onOpenChange={handleDeleteDialogOpenChange}
+        />
 
         {toasts.map((toast) => (
           <Toast
@@ -948,9 +845,7 @@ export function ExamList() {
             open={toast.open}
             variant={toast.variant}
             onOpenChange={(open) => {
-              setToasts((current) =>
-                open ? current : current.filter((item) => item.id !== toast.id),
-              );
+              handleToastOpenChange(toast.id, open);
             }}
           >
             <div className="pr-8">

@@ -33,6 +33,7 @@ import {
   formatExamDateTime,
   formatExamNumber,
   getActiveBadgeConfig,
+  getExamScopeLabel,
   getPublishedBadgeConfig,
 } from "./exam-utils";
 
@@ -114,7 +115,7 @@ export function ExamActionMenu({
           variant="ghost"
           size="icon"
           className="rounded-full text-muted-foreground hover:text-on-surface"
-          aria-label="Thêm hành động"
+          aria-label="Thêm thao tác"
         >
           <MoreHorizontal className="size-4" />
         </Button>
@@ -129,7 +130,7 @@ export function ExamActionMenu({
           onSelect={() => onTogglePublish(exam)}
         >
           <Rocket className="size-4" />
-          {exam.is_published ? "Bỏ xuất bản" : "Xuất bản"}
+          {exam.is_published ? "Ẩn đề thi" : "Xuất bản"}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -138,7 +139,7 @@ export function ExamActionMenu({
           onSelect={() => onDeleteRequest(exam)}
         >
           <Trash2 className="size-4" />
-          {isDeleting ? "Đang xóa..." : "Xóa bài thi"}
+          {isDeleting ? "Đang xóa..." : "Xóa đề thi"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -200,7 +201,7 @@ export function ExamCard({
         <div className="absolute inset-0 bg-linear-to-t from-slate-950/45 via-slate-950/5 to-transparent" />
         <div className="absolute top-4 left-4 right-4 flex items-start justify-between gap-3">
           <Badge className="border-white/30 bg-white/85 text-slate-900 shadow-sm backdrop-blur-sm dark:bg-slate-950/45 dark:text-white">
-            {exam.scope ?? "Bài thi"}
+            {getExamScopeLabel(exam.scope)}
           </Badge>
           <ExamActionMenu
             exam={exam}
@@ -224,7 +225,7 @@ export function ExamCard({
               className="font-display text-xl font-semibold leading-snug text-on-surface"
             />
             <TruncatedTooltipText
-              text={exam.description || "Bài thi chưa có mô tả."}
+              text={exam.description || "Đề thi chưa có mô tả."}
               lines={3}
               className="text-sm leading-relaxed text-muted-foreground"
             />

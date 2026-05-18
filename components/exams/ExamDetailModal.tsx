@@ -30,6 +30,7 @@ import {
   formatExamDateTime,
   formatExamNumber,
   getActiveBadgeConfig,
+  getExamScopeLabel,
   getPublishedBadgeConfig,
   getQuestionTypeLabel,
 } from "./exam-utils";
@@ -103,13 +104,14 @@ export function ExamDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[min(100%-1rem,72rem)] p-0">
+      <DialogContent className="w-[min(100%-1rem,72rem)] p-0 pb-5 h-full">
         <div className="max-h-[85vh] overflow-y-auto">
           <div className="border-b border-outline/10 px-6 pt-6 pb-5 sm:px-7">
             <DialogHeader>
-              <DialogTitle>Chi tiết bài thi</DialogTitle>
+              <DialogTitle>Chi tiết đề thi</DialogTitle>
               <DialogDescription>
-                Xem đầy đủ nội dung bài thi, câu hỏi, đáp án và trạng thái hiện tại.
+                Xem đầy đủ nội dung đề thi, câu hỏi, đáp án và trạng thái hiện
+                tại.
               </DialogDescription>
             </DialogHeader>
           </div>
@@ -120,10 +122,10 @@ export function ExamDetailModal({
             {!isLoading && error ? (
               <div className="rounded-[28px] border border-destructive/15 bg-destructive/6 p-6">
                 <p className="text-base font-semibold text-destructive">
-                  Không thể tải chi tiết bài thi
+                  Không thể tải dữ liệu đề thi
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  Vui lòng thử lại. Nếu lỗi vẫn tiếp tục, hãy kiểm tra lại endpoint chi tiết bài thi.
+                  Có lỗi xảy ra, vui lòng thử lại.
                 </p>
                 <Button
                   type="button"
@@ -132,7 +134,7 @@ export function ExamDetailModal({
                   onClick={() => void mutate()}
                   className="mt-4 h-11 rounded-2xl"
                 >
-                  Tải lại chi tiết
+                  Tải lại dữ liệu
                 </Button>
               </div>
             ) : null}
@@ -168,12 +170,22 @@ export function ExamDetailModal({
                           return (
                             <>
                               <Badge className="border-white/25 bg-white/90 text-slate-900 shadow-sm">
-                                {resolvedExam.scope ?? "Bài thi"}
+                                {getExamScopeLabel(resolvedExam.scope)}
                               </Badge>
-                              <Badge className={cn("shadow-sm", publishedBadge.className)}>
+                              <Badge
+                                className={cn(
+                                  "shadow-sm",
+                                  publishedBadge.className,
+                                )}
+                              >
                                 {publishedBadge.label}
                               </Badge>
-                              <Badge className={cn("shadow-sm", activeBadge.className)}>
+                              <Badge
+                                className={cn(
+                                  "shadow-sm",
+                                  activeBadge.className,
+                                )}
+                              >
                                 {activeBadge.label}
                               </Badge>
                             </>
@@ -185,7 +197,7 @@ export function ExamDetailModal({
                           {resolvedExam.title}
                         </h2>
                         <p className="max-w-4xl text-sm leading-relaxed text-white/85">
-                          {resolvedExam.description || "Bài thi chưa có mô tả."}
+                          {resolvedExam.description || "Đề thi chưa có mô tả."}
                         </p>
                       </div>
                     </div>
@@ -219,7 +231,7 @@ export function ExamDetailModal({
                   <DetailMetric
                     icon={<GraduationCap className="size-3.5" />}
                     label="Lớp học"
-                    value={resolvedExam.classroom_name || "Chưa gắn lớp"}
+                    value={resolvedExam.classroom_name || "Chưa gắn lớp học"}
                   />
                   <DetailMetric
                     icon={<CalendarClockIcon />}
@@ -251,7 +263,9 @@ export function ExamDetailModal({
                   <div className="space-y-4">
                     {(resolvedExam.questions ?? [])
                       .slice()
-                      .sort((left, right) => left.order_index - right.order_index)
+                      .sort(
+                        (left, right) => left.order_index - right.order_index,
+                      )
                       .map((question, index) => (
                         <article
                           key={question.id}
@@ -260,7 +274,9 @@ export function ExamDetailModal({
                           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
-                                <Badge variant="secondary">Câu {index + 1}</Badge>
+                                <Badge variant="secondary">
+                                  Câu {index + 1}
+                                </Badge>
                                 <Badge variant="outline">
                                   {getQuestionTypeLabel(question.question_type)}
                                 </Badge>
@@ -288,7 +304,30 @@ export function ExamDetailModal({
                             </div>
                           ) : null}
 
-                          {question.question_type === "single_choice" ? (
+                          {question.question_type === "text" ? (
+                            <div className="mt-5 rounded-[24px] border border-outline/10 bg-surface p-4">
+                              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                <FileText className="size-4" />
+                                Đáp án chấp nhận
+                              </div>
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {question.accepted_answers.length > 0 ? (
+                                  question.accepted_answers.map((answer) => (
+                                    <Badge
+                                      key={answer}
+                                      className="border-primary/15 bg-primary/8 text-primary"
+                                    >
+                                      {answer}
+                                    </Badge>
+                                  ))
+                                ) : (
+                                  <p className="text-sm text-muted-foreground">
+                                    Chưa có đáp án chấp nhận nào được khai báo.
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
                             <div className="mt-5 space-y-3">
                               {question.options.map((option) => (
                                 <div
@@ -331,34 +370,13 @@ export function ExamDetailModal({
                                       ) : null}
                                     </div>
                                     {option.is_correct ? (
-                                      <Badge variant="success">Đáp án đúng</Badge>
+                                      <Badge variant="success">
+                                        Đáp án đúng
+                                      </Badge>
                                     ) : null}
                                   </div>
                                 </div>
                               ))}
-                            </div>
-                          ) : (
-                            <div className="mt-5 rounded-[24px] border border-outline/10 bg-surface p-4">
-                              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                                <FileText className="size-4" />
-                                Đáp án chấp nhận
-                              </div>
-                              <div className="mt-3 flex flex-wrap gap-2">
-                                {question.accepted_answers.length > 0 ? (
-                                  question.accepted_answers.map((answer) => (
-                                    <Badge
-                                      key={answer}
-                                      className="border-primary/15 bg-primary/8 text-primary"
-                                    >
-                                      {answer}
-                                    </Badge>
-                                  ))
-                                ) : (
-                                  <p className="text-sm text-muted-foreground">
-                                    Chưa có đáp án chấp nhận nào được khai báo.
-                                  </p>
-                                )}
-                              </div>
                             </div>
                           )}
                         </article>
@@ -367,10 +385,10 @@ export function ExamDetailModal({
                     {resolvedExam.questions?.length || isLoading ? null : (
                       <div className="rounded-[28px] border border-outline/10 bg-surface p-6 text-center">
                         <p className="text-base font-semibold text-on-surface">
-                          Bài thi chưa có câu hỏi nào
+                          Chưa có câu hỏi nào
                         </p>
                         <p className="mt-2 text-sm text-muted-foreground">
-                          Endpoint chi tiết đã tải thành công nhưng chưa trả về danh sách câu hỏi.
+                          Hệ thống chưa trả về danh sách câu hỏi cho đề thi này.
                         </p>
                       </div>
                     )}

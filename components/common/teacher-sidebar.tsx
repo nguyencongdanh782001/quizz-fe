@@ -18,7 +18,7 @@ import {
 const teacherNav = [
   { href: "/teacher", label: "Tổng quan", icon: Home },
   { href: "/teacher/classes", label: "Quản lý lớp", icon: Users },
-  { href: "/teacher/exams", label: "Quản lý bài thi", icon: FileCheck },
+  { href: "/teacher/exams", label: "Quản lý đề thi", icon: FileCheck },
   { href: "/teacher/documents", label: "Tài liệu", icon: FileText },
   { href: "/teacher/profile", label: "Hồ sơ", icon: UserRound },
 ];

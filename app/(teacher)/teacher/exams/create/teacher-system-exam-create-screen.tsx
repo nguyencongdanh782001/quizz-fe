@@ -3,27 +3,38 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, RefreshCw, TriangleAlert } from "lucide-react";
+import { EXAM_FLOW_MESSAGES } from "@/components/exams/exam-flow-messages";
 import { ExamForm } from "@/components/features/teacher-exam-form/exam-form";
 import type { TeacherExamFormValues } from "@/components/features/teacher-exam-form/types";
 import {
   createInitialTeacherExamFormValues,
+  mapTeacherExamDetailToFormValues,
   mapTeacherExamFormToPayload,
+  mapTeacherExamFormToUpdatePayload,
 } from "@/components/features/teacher-exam-form/utils";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Toast,
+  ToastClose,
+  ToastDescription,
+  ToastProvider,
+  ToastTitle,
+  ToastViewport,
+} from "@/components/ui/toast";
+import { useTeacherSystemExamDetail } from "@/hooks/queries/useTeacherSystemExamDetail";
+import { useUpdateTeacherExam } from "@/hooks/queries/useUpdateTeacherExam";
+import { getApiErrorMessage } from "@/lib/api/error-message";
 import { createTeacherSystemExam } from "@/services/exam.service";
 
-function getErrorMessage(error: unknown): string {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof error.message === "string" &&
-    error.message.trim()
-  ) {
-    return error.message;
-  }
+type ToastVariant = "success" | "error";
 
-  return "Không thể tạo bài thi. Vui lòng thử lại.";
+interface ScreenToastState {
+  description?: string;
+  open: boolean;
+  title: string;
+  variant: ToastVariant;
 }
 
 function scrollTeacherContentToTop() {
@@ -34,12 +45,79 @@ function scrollTeacherContentToTop() {
   }
 }
 
-export function TeacherSystemExamCreateScreen() {
+function ExamEditorLoadingState() {
+  return (
+    <div className="space-y-8">
+      <p className="text-sm font-medium text-muted-foreground">
+        {EXAM_FLOW_MESSAGES.loading.detail}
+      </p>
+      <Skeleton className="h-5 w-48 rounded-full" />
+      <div className="space-y-3">
+        <Skeleton className="h-10 w-72 rounded-2xl" />
+        <Skeleton className="h-5 w-full max-w-3xl rounded-2xl" />
+        <Skeleton className="h-5 w-full max-w-2xl rounded-2xl" />
+      </div>
+
+      <div className="space-y-6">
+        <Skeleton className="h-80 rounded-[32px]" />
+        <Skeleton className="h-[34rem] rounded-[32px]" />
+      </div>
+    </div>
+  );
+}
+
+function ExamEditorErrorState({
+  onRetry,
+}: {
+  onRetry: () => void;
+}) {
+  return (
+    <div className="rounded-[30px] border border-destructive/15 bg-destructive/6 px-6 py-10 text-center shadow-[0_20px_60px_-48px_rgba(186,26,26,0.45)]">
+      <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-destructive/12 text-destructive">
+        <TriangleAlert className="size-7" />
+      </div>
+      <h2 className="mt-4 font-display text-2xl font-semibold text-on-surface">
+        {EXAM_FLOW_MESSAGES.errors.loadDetail}
+      </h2>
+      <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+        {EXAM_FLOW_MESSAGES.errors.generic}
+      </p>
+      <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <Button type="button" variant="outline" size="lg" onClick={onRetry}>
+          <RefreshCw className="mr-2 size-4" />
+          Tải lại dữ liệu
+        </Button>
+        <Button asChild type="button" size="lg">
+          <Link href="/teacher/exams">
+            {EXAM_FLOW_MESSAGES.buttons.back}
+          </Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function TeacherSystemExamCreateScreen({
+  editId,
+}: {
+  editId?: string | null;
+}) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [toast, setToast] = useState<ScreenToastState | null>(null);
   const redirectTimeoutRef = useRef<number | null>(null);
+  const normalizedEditId = editId?.trim() ? editId.trim() : null;
+  const isEditMode = normalizedEditId !== null;
+  const detailQuery = useTeacherSystemExamDetail(normalizedEditId, {
+    enabled: isEditMode,
+  });
+  const updateMutation = useUpdateTeacherExam();
+  const initialValues =
+    isEditMode && detailQuery.data
+      ? mapTeacherExamDetailToFormValues(detailQuery.data)
+      : createInitialTeacherExamFormValues();
+  const isSubmitting = isEditMode ? updateMutation.isPending : isCreating;
 
   useEffect(() => {
     return () => {
@@ -49,68 +127,155 @@ export function TeacherSystemExamCreateScreen() {
     };
   }, []);
 
+  function openToast(nextToast: Omit<ScreenToastState, "open">) {
+    setToast({
+      ...nextToast,
+      open: true,
+    });
+  }
+
   async function handleSubmit(values: TeacherExamFormValues) {
-    setIsSubmitting(true);
     setSubmitError(null);
-    setSuccessMessage(null);
+    setToast(null);
 
     try {
-      const payload = mapTeacherExamFormToPayload(values);
-      const { message } = await createTeacherSystemExam(payload);
+      let message = "";
+
+      if (isEditMode && normalizedEditId) {
+        message = await updateMutation.mutateAsync({
+          examId: normalizedEditId,
+          payload: mapTeacherExamFormToUpdatePayload(values),
+        });
+      } else {
+        setIsCreating(true);
+        const response = await createTeacherSystemExam(
+          mapTeacherExamFormToPayload(values),
+        );
+        message = response.message;
+      }
+
       if (redirectTimeoutRef.current !== null) {
         window.clearTimeout(redirectTimeoutRef.current);
       }
-      setSuccessMessage(
-        message || "Tạo bài thi thành công. Đang chuyển về danh sách...",
-      );
+
+      openToast({
+        title: isEditMode
+          ? EXAM_FLOW_MESSAGES.success.update
+          : EXAM_FLOW_MESSAGES.success.create,
+        description:
+          message ||
+          (isEditMode
+            ? "Đề thi đã được cập nhật. Đang chuyển về danh sách..."
+            : "Đề thi đã được tạo. Đang chuyển về danh sách..."),
+        variant: "success",
+      });
       scrollTeacherContentToTop();
       redirectTimeoutRef.current = window.setTimeout(() => {
         router.push("/teacher/exams");
       }, 1200);
     } catch (error) {
-      console.error("Failed to create system exam", error);
-      setSubmitError(getErrorMessage(error));
+      console.error(
+        isEditMode ? "Failed to update system exam" : "Failed to create system exam",
+        error,
+      );
+
+      const message = getApiErrorMessage(
+        error,
+        isEditMode
+          ? EXAM_FLOW_MESSAGES.errors.update
+          : EXAM_FLOW_MESSAGES.errors.generic,
+      );
+
+      setSubmitError(message);
+      openToast({
+        title: isEditMode
+          ? EXAM_FLOW_MESSAGES.errors.update
+          : EXAM_FLOW_MESSAGES.errors.generic,
+        description: message,
+        variant: "error",
+      });
       scrollTeacherContentToTop();
     } finally {
-      setIsSubmitting(false);
+      setIsCreating(false);
     }
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-8">
-      <Link
-        href="/teacher/exams"
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-on-surface"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Quay lại danh sách bài thi
-      </Link>
+    <ToastProvider>
+      <div className="mx-auto w-full max-w-7xl space-y-8">
+        <Link
+          href="/teacher/exams"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-on-surface"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Quay lại danh sách đề thi
+        </Link>
 
-      <div>
-        <h1 className="font-display text-3xl font-bold text-on-surface">
-          Tạo bài thi hệ thống
-        </h1>
-        <p className="mt-2 max-w-4xl text-sm leading-relaxed text-muted-foreground">
-          Hoàn thiện bài thi theo từng bước rõ ràng: nhập thông tin chung, xây
-          dựng câu hỏi, sau đó xem lại toàn bộ nội dung trước khi xuất bản.
-        </p>
+        <div>
+          <h1 className="font-display text-3xl font-bold text-on-surface">
+            {isEditMode
+              ? EXAM_FLOW_MESSAGES.titles.edit
+              : EXAM_FLOW_MESSAGES.titles.create}
+          </h1>
+          <p className="mt-2 max-w-4xl text-sm leading-relaxed text-muted-foreground">
+            {isEditMode
+              ? "Cập nhật đề thi theo từng bước rõ ràng: rà soát thông tin chung, chỉnh sửa câu hỏi và lưu lại phiên bản mới."
+              : "Hoàn thiện đề thi theo từng bước rõ ràng: nhập thông tin chung, xây dựng câu hỏi, sau đó xem lại toàn bộ nội dung trước khi lưu."}
+          </p>
+        </div>
+
+        {isEditMode && detailQuery.isLoading ? <ExamEditorLoadingState /> : null}
+
+        {isEditMode && detailQuery.isError ? (
+          <ExamEditorErrorState
+            onRetry={() => {
+              void detailQuery.refetch();
+            }}
+          />
+        ) : null}
+
+        {!isEditMode || detailQuery.data ? (
+          <ExamForm
+            initialValues={initialValues}
+            onSubmit={handleSubmit}
+            cancelHref="/teacher/exams"
+            isSubmitting={isSubmitting}
+            submitLabel={
+              isEditMode
+                ? EXAM_FLOW_MESSAGES.buttons.update
+                : EXAM_FLOW_MESSAGES.buttons.save
+            }
+            submitError={submitError}
+            submitContextLabel="hệ thống"
+            submittingLabel={
+              isEditMode
+                ? EXAM_FLOW_MESSAGES.loading.update
+                : EXAM_FLOW_MESSAGES.loading.save
+            }
+          />
+        ) : null}
       </div>
 
-      {successMessage ? (
-        <div className="rounded-2xl border border-green-200/70 bg-green-50/80 p-4 text-sm text-green-700 dark:border-green-800/40 dark:bg-green-950/20 dark:text-green-300">
-          {successMessage}
-        </div>
+      {toast ? (
+        <Toast
+          open={toast.open}
+          variant={toast.variant}
+          onOpenChange={(open) => {
+            setToast((current) => (current ? { ...current, open } : current));
+          }}
+        >
+          <div className="pr-8">
+            <ToastTitle>{toast.title}</ToastTitle>
+            {toast.description ? (
+              <ToastDescription className="mt-1">
+                {toast.description}
+              </ToastDescription>
+            ) : null}
+          </div>
+          <ToastClose />
+        </Toast>
       ) : null}
-
-      <ExamForm
-        initialValues={createInitialTeacherExamFormValues()}
-        onSubmit={handleSubmit}
-        cancelHref="/teacher/exams"
-        isSubmitting={isSubmitting}
-        submitLabel="Tạo bài thi"
-        submitError={submitError}
-        submitContextLabel="hệ thống"
-      />
-    </div>
+      <ToastViewport />
+    </ToastProvider>
   );
 }

@@ -2,38 +2,65 @@
 
 import { getIn, useFormikContext } from "formik";
 import { useEffect, useRef } from "react";
+import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import {
-  ArrowDown,
-  ArrowUp,
-  CircleHelp,
-  ListChecks,
-  Plus,
-  Trash2,
-} from "lucide-react";
+  EXAM_FLOW_MESSAGES,
+  getTeacherExamQuestionTypeLabel,
+} from "@/components/exams/exam-flow-messages";
 import { InputField } from "@/components/common/form/input-field";
 import { SelectField } from "@/components/common/form/select-field";
 import { TextareaField } from "@/components/common/form/textarea-field";
 import { Button } from "@/components/ui/button";
-import { RadioGroup } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
-import type { TeacherExamFormValues } from "./types";
-import { createEmptyOption, normalizeTeacherExamQuestionType } from "./utils";
-import { OptionItem } from "./option-item";
+import type {
+  TeacherExamFormValues,
+  TeacherExamQuestionType,
+} from "./types";
+import { ChoiceOptionsSection } from "./choice-options-section";
+import { TextAnswerSection } from "./text-answer-section";
+import {
+  applyTeacherExamQuestionType,
+  createEmptyOption,
+  normalizeTeacherExamQuestionType,
+  normalizeChoiceOptions,
+  reindexTeacherExamOptions,
+} from "./utils";
 
-function normalizeOptionsForSingleChoice(
-  options: TeacherExamFormValues["questions"][number]["options"],
-) {
-  const nextOptions =
-    options.length >= 2
-      ? options
-      : [createEmptyOption(true), createEmptyOption(false)];
-  const hasCorrect = nextOptions.some((option) => option.is_correct);
+const QUESTION_TYPE_OPTIONS: Array<{
+  label: string;
+  value: TeacherExamQuestionType;
+}> = [
+  {
+    value: "single_choice",
+    label: EXAM_FLOW_MESSAGES.questionTypes.single,
+  },
+  {
+    value: "multiple_choice",
+    label: EXAM_FLOW_MESSAGES.questionTypes.multiple,
+  },
+  {
+    value: "text",
+    label: EXAM_FLOW_MESSAGES.questionTypes.text,
+  },
+];
 
-  return nextOptions.map((option, index) => ({
-    ...option,
-    is_correct: hasCorrect ? option.is_correct : index === 0,
-  }));
-}
+const QUESTION_TYPE_BADGE_CONFIG: Record<
+  TeacherExamQuestionType,
+  { badgeClassName: string; label: string }
+> = {
+  single_choice: {
+    badgeClassName: "bg-primary/10 text-primary",
+    label: getTeacherExamQuestionTypeLabel("single_choice"),
+  },
+  multiple_choice: {
+    badgeClassName: "bg-tertiary/12 text-tertiary",
+    label: getTeacherExamQuestionTypeLabel("multiple_choice"),
+  },
+  text: {
+    badgeClassName: "bg-secondary/15 text-secondary",
+    label: getTeacherExamQuestionTypeLabel("text"),
+  },
+};
 
 export function QuestionItem({
   questionIndex,
@@ -64,7 +91,7 @@ export function QuestionItem({
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const question = values.questions[questionIndex];
   const questionType = normalizeTeacherExamQuestionType(question.question_type);
-  const isSingleChoiceQuestion = questionType === "single_choice";
+  const badgeConfig = QUESTION_TYPE_BADGE_CONFIG[questionType];
   const questionTypeError = getIn(
     errors,
     `questions.${questionIndex}.question_type`,
@@ -79,15 +106,6 @@ export function QuestionItem({
   const imageTouched = getIn(touched, `questions.${questionIndex}.image_url`);
   const pointsError = getIn(errors, `questions.${questionIndex}.points`);
   const pointsTouched = getIn(touched, `questions.${questionIndex}.points`);
-  const acceptedAnswersError = getIn(
-    errors,
-    `questions.${questionIndex}.accepted_answers`,
-  );
-  const acceptedAnswersTouched = getIn(
-    touched,
-    `questions.${questionIndex}.accepted_answers`,
-  );
-  const optionsError = getIn(errors, `questions.${questionIndex}.options`);
   const questionStateError = getIn(errors, `questions.${questionIndex}`);
   const questionStateTouched = getIn(touched, `questions.${questionIndex}`);
   const shouldShowError = (fieldTouched: unknown, fieldError: unknown) =>
@@ -97,8 +115,6 @@ export function QuestionItem({
   const shouldHighlightQuestionError =
     Boolean(questionStateError) &&
     (submitCount > 0 || Boolean(questionStateTouched));
-  const correctOptionId =
-    question.options.find((option) => option.is_correct)?.client_id ?? "";
 
   useEffect(() => {
     if (!shouldAutoFocus) {
@@ -124,50 +140,72 @@ export function QuestionItem({
     const nextQuestionType = normalizeTeacherExamQuestionType(value);
 
     void setFieldValue(
-      `questions.${questionIndex}.question_type`,
-      nextQuestionType,
-    );
-
-    if (nextQuestionType === "single_choice") {
-      void setFieldValue(
-        `questions.${questionIndex}.options`,
-        normalizeOptionsForSingleChoice(question.options),
-      );
-    }
-  }
-
-  function handleCorrectOptionChange(selectedOptionId: string) {
-    void setFieldValue(
-      `questions.${questionIndex}.options`,
-      question.options.map((option) => ({
-        ...option,
-        is_correct: option.client_id === selectedOptionId,
-      })),
+      `questions.${questionIndex}`,
+      applyTeacherExamQuestionType(question, nextQuestionType),
     );
   }
 
   function handleAddOption() {
-    void setFieldValue(
-      `questions.${questionIndex}.options`,
-      normalizeOptionsForSingleChoice([
-        ...question.options,
-        createEmptyOption(false),
-      ]),
-    );
+    if (questionType === "text") {
+      return;
+    }
+
+    const nextOptions =
+      questionType === "single_choice"
+        ? normalizeChoiceOptions(questionType, [
+            ...question.options,
+            createEmptyOption(false),
+          ])
+        : reindexTeacherExamOptions([...question.options, createEmptyOption(false)]);
+
+    void setFieldValue(`questions.${questionIndex}.options`, nextOptions);
   }
 
   function handleRemoveOption(optionIndex: number) {
     const nextOptions = question.options.filter(
       (_, currentIndex) => currentIndex !== optionIndex,
     );
-    const hasCorrect = nextOptions.some((option) => option.is_correct);
+
+    if (questionType === "single_choice") {
+      void setFieldValue(
+        `questions.${questionIndex}.options`,
+        normalizeChoiceOptions(questionType, nextOptions),
+      );
+      return;
+    }
 
     void setFieldValue(
       `questions.${questionIndex}.options`,
-      nextOptions.map((option, index) => ({
-        ...option,
-        is_correct: hasCorrect ? option.is_correct : index === 0,
-      })),
+      reindexTeacherExamOptions(nextOptions),
+    );
+  }
+
+  function handleSingleCorrectOptionChange(selectedOptionId: string) {
+    void setFieldValue(
+      `questions.${questionIndex}.options`,
+      normalizeChoiceOptions(
+        "single_choice",
+        question.options.map((option) => ({
+          ...option,
+          is_correct: option.client_id === selectedOptionId,
+        })),
+      ),
+    );
+  }
+
+  function handleMultipleCorrectOptionChange(
+    selectedOptionId: string,
+    checked: boolean,
+  ) {
+    void setFieldValue(
+      `questions.${questionIndex}.options`,
+      reindexTeacherExamOptions(
+        question.options.map((option) =>
+          option.client_id === selectedOptionId
+            ? { ...option, is_correct: checked }
+            : option,
+        ),
+      ),
     );
   }
 
@@ -192,17 +230,15 @@ export function QuestionItem({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-base font-semibold text-on-surface">
-                Câu hỏi {questionIndex + 1}
+                {EXAM_FLOW_MESSAGES.labels.question} {questionIndex + 1}
               </p>
               <span
                 className={cn(
                   "inline-flex items-center rounded-full px-2.5 py-1 text-[0.7rem] font-semibold",
-                  isSingleChoiceQuestion
-                    ? "bg-primary/10 text-primary"
-                    : "bg-secondary/15 text-secondary",
+                  badgeConfig.badgeClassName,
                 )}
               >
-                {isSingleChoiceQuestion ? "Trắc nghiệm" : "Tự luận"}
+                {badgeConfig.label}
               </span>
             </div>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
@@ -251,7 +287,7 @@ export function QuestionItem({
         <TextareaField
           ref={promptRef}
           id={`question-${question.client_id}-prompt`}
-          label="Nội dung câu hỏi"
+          label={EXAM_FLOW_MESSAGES.labels.question}
           required
           value={question.prompt}
           onChange={(event) =>
@@ -261,35 +297,26 @@ export function QuestionItem({
             )
           }
           error={shouldShowError(questionTouched, questionError)}
-          placeholder="Nhập nội dung câu hỏi"
+          placeholder={EXAM_FLOW_MESSAGES.placeholders.question}
           rows={4}
           helperText="Viết rõ yêu cầu để học sinh có thể trả lời mà không cần đoán ý."
         />
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,220px)_minmax(0,140px)_minmax(0,1fr)]">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,240px)_minmax(0,140px)_minmax(0,1fr)]">
           <SelectField
-            label="Loại câu hỏi"
+            label={EXAM_FLOW_MESSAGES.labels.questionType}
             name={`questions.${questionIndex}.question_type`}
             required
             value={questionType}
             onValueChange={handleQuestionTypeChange}
             error={shouldShowError(questionTypeTouched, questionTypeError)}
-            placeholder="Chọn loại câu hỏi"
-            options={[
-              {
-                value: "single_choice",
-                label: "Trắc nghiệm một đáp án",
-              },
-              {
-                value: "text",
-                label: "Tự luận ngắn",
-              },
-            ]}
+            placeholder={EXAM_FLOW_MESSAGES.labels.questionType}
+            options={QUESTION_TYPE_OPTIONS}
           />
 
           <InputField
             id={`question-${question.client_id}-points`}
-            label="Điểm"
+            label={EXAM_FLOW_MESSAGES.labels.points}
             required
             type="number"
             min={1}
@@ -306,7 +333,7 @@ export function QuestionItem({
 
           <InputField
             id={`question-${question.client_id}-image`}
-            label="Hình minh họa (tùy chọn)"
+            label="Ảnh câu hỏi (tùy chọn)"
             value={question.image_url}
             onChange={(event) =>
               void setFieldValue(
@@ -319,111 +346,17 @@ export function QuestionItem({
           />
         </div>
 
-        {isSingleChoiceQuestion ? (
-          <div className="space-y-4 rounded-[26px] border border-outline/10 bg-surface/50 p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <ListChecks className="h-4 w-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-on-surface">
-                    Danh sách đáp án
-                  </p>
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    Hệ thống luôn giữ tối thiểu 2 đáp án và yêu cầu chọn đúng 1
-                    đáp án chính xác.
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAddOption}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Thêm đáp án
-              </Button>
-            </div>
-
-            {typeof optionsError === "string" &&
-            (submitCount > 0 || Boolean(questionStateTouched)) ? (
-              <p className="rounded-2xl border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-                {optionsError}
-              </p>
-            ) : null}
-
-            <RadioGroup
-              value={correctOptionId}
-              onValueChange={handleCorrectOptionChange}
-              className="space-y-3"
-            >
-              {question.options.map((option, optionIndex) => (
-                <OptionItem
-                  key={option.client_id}
-                  questionIndex={questionIndex}
-                  optionIndex={optionIndex}
-                  optionId={option.client_id}
-                  isCorrect={option.is_correct}
-                  canRemove={question.options.length > 2}
-                  onRemove={() => handleRemoveOption(optionIndex)}
-                />
-              ))}
-            </RadioGroup>
-          </div>
+        {questionType === "text" ? (
+          <TextAnswerSection questionIndex={questionIndex} />
         ) : (
-          <div className="rounded-[26px] border border-outline/10 bg-surface/50 p-4">
-            <div className="mb-4 flex items-start gap-3">
-              <div className="mt-0.5 flex size-10 items-center justify-center rounded-2xl bg-secondary/15 text-secondary">
-                <CircleHelp className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-on-surface">
-                  Đáp án tự luận
-                </p>
-                <p className="text-xs leading-relaxed text-muted-foreground">
-                  Nhập câu trả lời mẫu để giáo viên hoặc hệ thống đối chiếu khi
-                  chấm bài.
-                </p>
-              </div>
-            </div>
-
-            <TextareaField
-              id={`question-${question.client_id}-accepted-answers`}
-              label="Đáp án"
-              required
-              value={question.accepted_answers}
-              onChange={(event) =>
-                void setFieldValue(
-                  `questions.${questionIndex}.accepted_answers`,
-                  event.target.value,
-                )
-              }
-              error={shouldShowError(
-                acceptedAnswersTouched,
-                acceptedAnswersError,
-              )}
-              placeholder="Nhập mỗi đáp án chấp nhận trên một dòng hoặc phân tách bằng dấu phẩy."
-              helperText="Nếu có nhiều cách trả lời đúng, hãy nhập mỗi cách trên một dòng riêng."
-              rows={4}
-            />
-          </div>
+          <ChoiceOptionsSection
+            questionIndex={questionIndex}
+            onAddOption={handleAddOption}
+            onRemoveOption={handleRemoveOption}
+            onSelectSingleCorrectOption={handleSingleCorrectOptionChange}
+            onToggleMultipleCorrectOption={handleMultipleCorrectOptionChange}
+          />
         )}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={handleAddOption}
-          className={cn(
-            "flex w-full items-center justify-center gap-2 rounded-[28px] border border-dashed border-outline/30 bg-surface px-4 py-5 text-sm font-medium text-on-surface transition-all",
-            "hover:border-primary/35 hover:bg-primary/5 hover:text-primary",
-          )}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Thêm đáp án
-        </Button>
       </div>
     </div>
   );

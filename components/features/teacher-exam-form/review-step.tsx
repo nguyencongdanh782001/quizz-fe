@@ -18,8 +18,14 @@ import {
 import { cn } from "@/lib/utils";
 import type { TeacherExamFormValues } from "./types";
 import {
+  EXAM_FLOW_MESSAGES,
+  getExamClassroomLabel,
+  getExamScopeLabel,
+  getTeacherExamQuestionTypeLabel,
+} from "@/components/exams/exam-flow-messages";
+import {
+  normalizeAcceptedAnswers,
   normalizeTeacherExamQuestionType,
-  parseAcceptedAnswers,
 } from "./utils";
 
 function getTotalPoints(values: TeacherExamFormValues): number {
@@ -50,11 +56,11 @@ export function ReviewStep() {
             </div>
             <div>
               <CardTitle className="font-display text-2xl text-on-surface">
-                Bước 3. Xem lại và gửi bài thi
+                Bước 3. Xem lại và lưu đề thi
               </CardTitle>
               <CardDescription className="mt-2 max-w-3xl text-sm leading-relaxed">
                 Kiểm tra nhanh toàn bộ nội dung, xem trước đáp án đúng và xác
-                nhận thông tin trước khi tạo bài thi cho lớp.
+                nhận thông tin trước khi lưu đề thi.
               </CardDescription>
             </div>
           </div>
@@ -96,10 +102,14 @@ export function ReviewStep() {
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                  {values.is_published ? "Published" : "riêng tư"}
+                  {values.is_published
+                    ? EXAM_FLOW_MESSAGES.states.public
+                    : EXAM_FLOW_MESSAGES.states.private}
                 </span>
                 <span className="inline-flex items-center rounded-full bg-secondary/12 px-2.5 py-1 text-xs font-semibold text-secondary">
-                  {values.is_active ? "Đang hoạt động" : "Tạm ẩn"}
+                  {values.is_active
+                    ? EXAM_FLOW_MESSAGES.states.active
+                    : EXAM_FLOW_MESSAGES.states.hidden}
                 </span>
               </div>
             </div>
@@ -113,7 +123,7 @@ export function ReviewStep() {
                 </p>
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                   Đây là phần mô tả tóm tắt mà học sinh sẽ nhìn thấy trước khi
-                  bắt đầu làm bài.
+                  bắt đầu làm bài hoặc khi bạn xem lại đề thi sau này.
                 </p>
               </div>
 
@@ -126,38 +136,53 @@ export function ReviewStep() {
             <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
               <div>
                 <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                  Tiêu đề
+                  {EXAM_FLOW_MESSAGES.labels.title}
                 </p>
                 <p className="mt-2 text-xl font-semibold text-on-surface">
-                  {values.title.trim() || "Chưa nhập tiêu đề"}
+                  {values.title.trim() || "Chưa nhập tên đề thi"}
                 </p>
 
                 <p className="mt-5 text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                  Mô tả
+                  {EXAM_FLOW_MESSAGES.labels.description}
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
-                  {values.description.trim() ||
-                    "Chưa có mô tả cho bài thi này."}
+                  {values.description.trim() || "Đề thi chưa có mô tả."}
                 </p>
               </div>
 
               <div className="space-y-3 rounded-[24px] border border-outline/10 bg-surface-container-low p-4">
                 <div>
                   <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                    Ảnh bìa
+                    {EXAM_FLOW_MESSAGES.labels.image}
                   </p>
                   <p className="mt-2 break-all text-sm text-on-surface-variant">
-                    {values.image_url.trim() || "Không sử dụng ảnh bìa"}
+                    {values.image_url.trim() || "Không sử dụng ảnh đề thi"}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                    Hiển thị
+                    {EXAM_FLOW_MESSAGES.labels.published}
                   </p>
                   <p className="mt-2 text-sm text-on-surface-variant">
                     {values.is_published
-                      ? "Bài thi sẽ được hiển thị dưới dạng published."
-                      : "Bài thi sẽ được tạo ở trạng thái riêng tư."}
+                      ? "Đề thi sẽ được hiển thị ở trạng thái công khai."
+                      : "Đề thi sẽ được lưu ở trạng thái riêng tư."}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                    {EXAM_FLOW_MESSAGES.labels.scope}
+                  </p>
+                  <p className="mt-2 text-sm text-on-surface-variant">
+                    {getExamScopeLabel(values.scope)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                    {EXAM_FLOW_MESSAGES.labels.classroom}
+                  </p>
+                  <p className="mt-2 text-sm text-on-surface-variant">
+                    {getExamClassroomLabel(values.classroom_id)}
                   </p>
                 </div>
               </div>
@@ -175,7 +200,7 @@ export function ReviewStep() {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Kiểm tra nhanh từng câu hỏi, điểm số và đáp án đúng trước khi
-                  gửi bài thi.
+                  lưu đề thi.
                 </p>
               </div>
             </div>
@@ -185,7 +210,7 @@ export function ReviewStep() {
                 const questionType = normalizeTeacherExamQuestionType(
                   question.question_type,
                 );
-                const acceptedAnswers = parseAcceptedAnswers(
+                const acceptedAnswers = normalizeAcceptedAnswers(
                   question.accepted_answers,
                 );
                 const correctOptions = getCorrectOptions(question);
@@ -203,9 +228,7 @@ export function ReviewStep() {
                               Câu hỏi {questionIndex + 1}
                             </span>
                             <span className="inline-flex items-center rounded-full bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant">
-                              {questionType === "single_choice"
-                                ? "Trắc nghiệm"
-                                : "Tự luận"}
+                              {getTeacherExamQuestionTypeLabel(questionType)}
                             </span>
                           </div>
                           <CardTitle className="mt-3 text-lg text-on-surface">
@@ -233,12 +256,33 @@ export function ReviewStep() {
                         </div>
                       ) : null}
 
-                      {questionType === "single_choice" ? (
+                      {questionType === "text" ? (
                         <div className="space-y-3">
                           <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                            Đáp án và đáp án đúng
+                            Đáp án chấp nhận
                           </p>
-
+                          <div className="space-y-2">
+                            {acceptedAnswers.length > 0 ? (
+                              acceptedAnswers.map((answer) => (
+                                <div
+                                  key={`${question.client_id}-${answer}`}
+                                  className="rounded-2xl border border-secondary/16 bg-secondary/8 px-4 py-3 text-sm text-on-surface"
+                                >
+                                  {answer}
+                                </div>
+                              ))
+                            ) : (
+                              <div className="rounded-2xl border border-destructive/12 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                                Chưa nhập đáp án cho câu hỏi tự luận này.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                            Đáp án
+                          </p>
                           <div className="space-y-2">
                             {question.options.map((option, optionIndex) => (
                               <div
@@ -284,28 +328,6 @@ export function ReviewStep() {
                                 : "Chưa chọn đáp án đúng"}
                             </span>
                           </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                            Đáp án chấp nhận
-                          </p>
-                          <div className="space-y-2">
-                            {acceptedAnswers.length > 0 ? (
-                              acceptedAnswers.map((answer) => (
-                                <div
-                                  key={`${question.client_id}-${answer}`}
-                                  className="rounded-2xl border border-secondary/16 bg-secondary/8 px-4 py-3 text-sm text-on-surface"
-                                >
-                                  {answer}
-                                </div>
-                              ))
-                            ) : (
-                              <div className="rounded-2xl border border-destructive/12 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-                                Chưa nhập đáp án cho câu hỏi tự luận này.
-                              </div>
-                            )}
-                          </div>
                         </div>
                       )}
                     </CardContent>

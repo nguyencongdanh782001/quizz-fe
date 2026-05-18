@@ -1,4 +1,7 @@
-export type TeacherExamQuestionType = "single_choice" | "text";
+export type TeacherExamQuestionType =
+  | "single_choice"
+  | "multiple_choice"
+  | "text";
 
 export type TeacherExamSortKey =
   | "created_at"

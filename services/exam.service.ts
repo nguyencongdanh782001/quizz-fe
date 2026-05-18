@@ -6,6 +6,7 @@ import type {
   TeacherExamOptionSchema,
   TeacherExamQuestionSchema,
   TeacherExamSummarySchema,
+  TeacherUpdateExamRequest,
   TeacherSystemExamDetailResponse,
   TeacherSystemExamListResponse,
 } from "@/lib/api/types";
@@ -79,7 +80,11 @@ function toBooleanValue(value: unknown, fallback = false): boolean {
 }
 
 function toQuestionType(value: unknown): TeacherExamQuestionType {
-  return value === "text" ? "text" : "single_choice";
+  if (value === "text" || value === "multiple_choice") {
+    return value;
+  }
+
+  return "single_choice";
 }
 
 function mapExamOption(
@@ -88,7 +93,10 @@ function mapExamOption(
 ): TeacherExamOption {
   return {
     id: toNumberValue(option.id, index + 1),
-    option_key: toStringValue(option.option_key, String.fromCharCode(65 + index)),
+    option_key: toStringValue(
+      option.option_key,
+      String.fromCharCode(65 + index),
+    ),
     option_text: toStringValue(option.option_text),
     image_url: toNullableString(option.image_url),
     is_correct: toBooleanValue(option.is_correct),
@@ -141,11 +149,15 @@ function mapTeacherExam(exam: TeacherExamDetailPayload): TeacherExam {
     is_active: toBooleanValue(exam.is_active),
     created_at: toStringValue(exam.created_at),
     updated_at: toStringValue(exam.updated_at),
-    questions: rawQuestions?.map(mapExamQuestion),
+    questions: rawQuestions
+      ?.map(mapExamQuestion)
+      .sort((left, right) => left.order_index - right.order_index),
   };
 }
 
-function toApiParams(query: TeacherExamQuery): Record<string, string | number | boolean> {
+function toApiParams(
+  query: TeacherExamQuery,
+): Record<string, string | number | boolean> {
   const params: Record<string, string | number | boolean> = {};
 
   if (query.search?.trim()) {
@@ -190,7 +202,7 @@ export async function getTeacherSystemExamDetail(
   examId: number | string,
 ): Promise<TeacherExam> {
   const response = await client.get<TeacherSystemExamDetailResponse>(
-    `/teacher/system/exams/${examId}`,
+    `/teacher/exams/${examId}`,
   );
 
   return mapTeacherExam(response.data);
@@ -232,4 +244,16 @@ export async function createTeacherSystemExam(
     message: response.data.message,
     exam: mapTeacherExam(response.data.exam),
   };
+}
+
+export async function updateTeacherExam(
+  examId: number | string,
+  data: TeacherUpdateExamRequest,
+): Promise<string> {
+  const response = await client.put<MessageResponse | { message?: string }>(
+    `/teacher/exams/${examId}`,
+    data,
+  );
+
+  return response.data.message ?? "Cập nhật bài thi thành công.";
 }

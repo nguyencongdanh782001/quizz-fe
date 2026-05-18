@@ -36,14 +36,14 @@ export function ExamStepLayout({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-primary">
-                Quy trình tạo bài thi
+                Quy trình tạo đề thi
               </span>
               <h2 className="mt-3 font-display text-2xl font-semibold text-on-surface sm:text-3xl">
-                Hoàn thiện bài thi theo 3 bước rõ ràng
+                Hoàn thiện đề thi theo 3 bước rõ ràng
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
                 Mỗi bước tập trung vào một phần công việc riêng để giáo viên dễ
-                nhập liệu, dễ kiểm tra và dễ gửi bài thi hơn.
+                nhập liệu, dễ kiểm tra và dễ lưu đề thi hơn.
               </p>
             </div>
 

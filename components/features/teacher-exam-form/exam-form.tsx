@@ -17,9 +17,11 @@ import {
   Clock3,
   FileCheck2,
   ListChecks,
+  LoaderCircle,
   Sparkles,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { EXAM_FLOW_MESSAGES } from "@/components/exams/exam-flow-messages";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -33,7 +35,9 @@ import { ExamStepLayout, type ExamStepDefinition } from "./exam-step-layout";
 import { QuestionBuilderStep } from "./question-builder-step";
 import { ReviewStep } from "./review-step";
 import type { TeacherExamFormValues } from "./types";
+import { UnsavedChangesGuard } from "./unsaved-changes-guard";
 import {
+  normalizeAcceptedAnswers,
   normalizeTeacherExamQuestionType,
   teacherExamFormSchema,
 } from "./utils";
@@ -41,8 +45,8 @@ import {
 const EXAM_STEPS: ExamStepDefinition[] = [
   {
     id: "info",
-    title: "Thông tin bài thi",
-    description: "Thiết lập tiêu đề, mô tả và các thuộc tính cơ bản.",
+    title: "Thông tin đề thi",
+    description: "Thiết lập tên đề thi, mô tả và thông tin cơ bản.",
   },
   {
     id: "questions",
@@ -51,8 +55,8 @@ const EXAM_STEPS: ExamStepDefinition[] = [
   },
   {
     id: "review",
-    title: "Xem lại & gửi",
-    description: "Kiểm tra toàn bộ nội dung trước khi tạo bài thi.",
+    title: "Xem lại & lưu",
+    description: "Kiểm tra toàn bộ nội dung trước khi lưu đề thi.",
   },
 ];
 
@@ -87,7 +91,7 @@ function getCompletedQuestionCount(values: TeacherExamFormValues): number {
     }
 
     if (questionType === "text") {
-      return question.accepted_answers.trim().length > 0;
+      return normalizeAcceptedAnswers(question.accepted_answers).length > 0;
     }
 
     const hasEnoughOptions = question.options.length >= 2;
@@ -98,7 +102,13 @@ function getCompletedQuestionCount(values: TeacherExamFormValues): number {
       (option) => option.is_correct,
     ).length;
 
-    return hasEnoughOptions && hasOptionText && correctOptionCount === 1;
+    return (
+      hasEnoughOptions &&
+      hasOptionText &&
+      (questionType === "single_choice"
+        ? correctOptionCount === 1
+        : correctOptionCount >= 1)
+    );
   }).length;
 }
 
@@ -116,8 +126,9 @@ function buildQuestionTouchedState(
     question_type: true,
     prompt: true,
     image_url: true,
+    order_index: true,
     points: true,
-    accepted_answers: true,
+    accepted_answers: question.accepted_answers.length > 0,
     options: question.options.map(() => ({
       option_text: true,
       image_url: true,
@@ -174,12 +185,14 @@ function ExamFormBody({
   cancelHref,
   isSubmitting,
   submitLabel,
+  submittingLabel,
   submitError,
   submitContextLabel,
 }: {
   cancelHref: string;
   isSubmitting: boolean;
   submitLabel: string;
+  submittingLabel: string;
   submitError?: string | null;
   submitContextLabel: string;
 }) {
@@ -201,7 +214,15 @@ function ExamFormBody({
       normalizeTeacherExamQuestionType(question.question_type) ===
       "single_choice",
   ).length;
-  const textQuestionCount = questionCount - singleChoiceCount;
+  const multipleChoiceCount = values.questions.filter(
+    (question) =>
+      normalizeTeacherExamQuestionType(question.question_type) ===
+      "multiple_choice",
+  ).length;
+  const textQuestionCount = values.questions.filter(
+    (question) =>
+      normalizeTeacherExamQuestionType(question.question_type) === "text",
+  ).length;
 
   useEffect(() => {
     scrollCreateExamContentToTop();
@@ -216,17 +237,17 @@ function ExamFormBody({
               Tóm tắt bước 1
             </CardTitle>
             <CardDescription className="text-sm leading-relaxed">
-              Hoàn thiện các trường chính để bài thi có thông tin rõ ràng trước
+              Hoàn thiện các trường chính để đề thi có thông tin rõ ràng trước
               khi bạn thêm câu hỏi.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-[24px] border border-outline/10 bg-surface p-4">
               <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                Tiêu đề hiện tại
+                {EXAM_FLOW_MESSAGES.labels.title}
               </p>
               <p className="mt-2 text-base font-semibold text-on-surface">
-                {values.title.trim() || "Chưa nhập tiêu đề bài thi"}
+                {values.title.trim() || "Chưa nhập tên đề thi"}
               </p>
             </div>
 
@@ -242,18 +263,22 @@ function ExamFormBody({
               </div>
 
               <div className="rounded-[24px] border border-outline/10 bg-surface p-4">
-                <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                  Trạng thái
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                    {values.is_published ? "Công Khai" : "Riêng tư"}
-                  </span>
-                  <span className="inline-flex items-center rounded-full bg-secondary/12 px-2.5 py-1 text-xs font-semibold text-secondary">
-                    {values.is_active ? "Đang hoạt động" : "Tạm ẩn"}
-                  </span>
+                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                    Trạng thái
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                      {values.is_published
+                        ? EXAM_FLOW_MESSAGES.states.public
+                        : EXAM_FLOW_MESSAGES.states.private}
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-secondary/12 px-2.5 py-1 text-xs font-semibold text-secondary">
+                      {values.is_active
+                        ? EXAM_FLOW_MESSAGES.states.active
+                        : EXAM_FLOW_MESSAGES.states.hidden}
+                    </span>
+                  </div>
                 </div>
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -298,7 +323,10 @@ function ExamFormBody({
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                  {singleChoiceCount} trắc nghiệm
+                  {singleChoiceCount} một đáp án
+                </span>
+                <span className="inline-flex items-center rounded-full bg-tertiary/12 px-2.5 py-1 text-xs font-semibold text-tertiary">
+                  {multipleChoiceCount} nhiều đáp án
                 </span>
                 <span className="inline-flex items-center rounded-full bg-secondary/12 px-2.5 py-1 text-xs font-semibold text-secondary">
                   {textQuestionCount} tự luận
@@ -340,10 +368,10 @@ function ExamFormBody({
             </div>
             <div>
               <CardTitle className="font-display text-2xl text-white">
-                Sẵn sàng gửi bài thi
+                Sẵn sàng lưu đề thi
               </CardTitle>
               <CardDescription className="mt-2 text-sm leading-relaxed text-white/70">
-                Kiểm tra lại các chỉ số cuối cùng rồi tạo bài thi cho{" "}
+                Kiểm tra lại các chỉ số cuối cùng rồi lưu đề thi cho{" "}
                 {submitContextLabel}.
               </CardDescription>
             </div>
@@ -385,8 +413,8 @@ function ExamFormBody({
                 </p>
                 <p className="mt-1 text-xs leading-relaxed text-white/65">
                   {isValid
-                    ? "Bạn có thể tạo bài thi ngay ở bước này."
-                    : "Nếu nút gửi còn bị khóa, hãy quay lại các bước trước để hoàn thiện trường còn thiếu."}
+                    ? "Bạn có thể lưu đề thi ngay ở bước này."
+                    : "Nếu nút lưu còn bị khóa, hãy quay lại các bước trước để hoàn thiện trường còn thiếu."}
                 </p>
               </div>
             </div>
@@ -406,6 +434,7 @@ function ExamFormBody({
     currentStep.id,
     formErrorCount,
     isValid,
+    multipleChoiceCount,
     questionCount,
     singleChoiceCount,
     submitContextLabel,
@@ -476,7 +505,7 @@ function ExamFormBody({
               {currentStep.id === "review" ? (
                 <span className="inline-flex items-center gap-2">
                   <FileCheck2 className="h-4 w-4 text-primary" />
-                  Xác nhận lần cuối trước khi tạo bài thi.
+                  Xác nhận lần cuối trước khi lưu đề thi.
                 </span>
               ) : currentStep.id === "questions" ? (
                 <span className="inline-flex items-center gap-2">
@@ -500,11 +529,11 @@ function ExamFormBody({
                   onClick={handlePreviousStep}
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  Quay lại
+                  {EXAM_FLOW_MESSAGES.buttons.back}
                 </Button>
               ) : (
                 <Button asChild type="button" variant="outline" size="lg">
-                  <Link href={cancelHref}>Hủy</Link>
+                  <Link href={cancelHref}>{EXAM_FLOW_MESSAGES.buttons.cancel}</Link>
                 </Button>
               )}
 
@@ -514,8 +543,12 @@ function ExamFormBody({
                 disabled={isSubmitting || !isValid}
                 className={`${currentStep.id !== "review" ? "hidden" : ""}`}
               >
-                <FileCheck2 className="mr-2 h-4 w-4" />
-                {isSubmitting ? "Đang tạo bài thi..." : submitLabel}
+                {isSubmitting ? (
+                  <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <FileCheck2 className="mr-2 h-4 w-4" />
+                )}
+                {isSubmitting ? submittingLabel : submitLabel}
               </Button>
 
               {currentStep.id !== "review" && (
@@ -544,7 +577,8 @@ export function ExamForm({
   onSubmit,
   cancelHref,
   isSubmitting,
-  submitLabel = "Tạo bài thi",
+  submitLabel = EXAM_FLOW_MESSAGES.buttons.save,
+  submittingLabel = EXAM_FLOW_MESSAGES.loading.save,
   submitError,
   submitContextLabel = "lớp học",
 }: {
@@ -553,6 +587,7 @@ export function ExamForm({
   cancelHref: string;
   isSubmitting: boolean;
   submitLabel?: string;
+  submittingLabel?: string;
   submitError?: string | null;
   submitContextLabel?: string;
 }) {
@@ -565,13 +600,19 @@ export function ExamForm({
         await onSubmit(values);
       }}
     >
-      <ExamFormBody
-        cancelHref={cancelHref}
-        isSubmitting={isSubmitting}
-        submitLabel={submitLabel}
-        submitError={submitError}
-        submitContextLabel={submitContextLabel}
-      />
+      <>
+        <UnsavedChangesGuard
+          message={EXAM_FLOW_MESSAGES.confirmations.leavePage}
+        />
+        <ExamFormBody
+          cancelHref={cancelHref}
+          isSubmitting={isSubmitting}
+          submitLabel={submitLabel}
+          submittingLabel={submittingLabel}
+          submitError={submitError}
+          submitContextLabel={submitContextLabel}
+        />
+      </>
     </Formik>
   );
 }

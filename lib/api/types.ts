@@ -285,7 +285,7 @@ export interface TeacherExamOptionSchema {
 
 export interface TeacherExamQuestionSchema {
   id: number;
-  question_type: "single_choice" | "text";
+  question_type: "single_choice" | "multiple_choice" | "text";
   prompt: string;
   image_url: string | null;
   order_index: number;
@@ -335,13 +335,13 @@ export interface TeacherCreateExamOptionRequest {
 }
 
 export interface TeacherCreateExamQuestionRequest {
-  question_type: "single_choice" | "text";
+  question_type: "single_choice" | "multiple_choice" | "text";
   prompt: string;
   image_url?: string | null;
   order_index: number;
   points: number;
   options: TeacherCreateExamOptionRequest[];
-  accepted_answers?: string[];
+  accepted_answers: string[];
 }
 
 export interface TeacherCreateExamRequest {
@@ -352,6 +352,11 @@ export interface TeacherCreateExamRequest {
   is_published: boolean;
   is_active: boolean;
   questions: TeacherCreateExamQuestionRequest[];
+}
+
+export interface TeacherUpdateExamRequest extends TeacherCreateExamRequest {
+  scope: string;
+  classroom_id: number | null;
 }
 
 export interface TeacherCreateClassExamResponse {
