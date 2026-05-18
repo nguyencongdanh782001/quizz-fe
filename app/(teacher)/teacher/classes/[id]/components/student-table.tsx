@@ -5,19 +5,19 @@ import { RemoveStudentButton } from "./remove-student-button";
 
 export function StudentTable({
   students,
-  removingStudentId,
+  isRemovingStudent,
   onRemoveStudent,
 }: {
   students: ClassStudent[];
-  removingStudentId: string | null;
+  isRemovingStudent: boolean;
   onRemoveStudent: (student: ClassStudent) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl bg-surface-container-lowest shadow-[0_8px_24px_rgba(7,30,39,0.05)]">
-      <table className="w-full">
+    <div className="overflow-x-auto rounded-2xl bg-surface-container-lowest shadow-[0_8px_24px_rgba(7,30,39,0.05)]">
+      <table className="min-w-[720px] w-full">
         <thead>
           <tr className="border-b border-outline/10">
-            {["Học sinh", "Email", "Ngày tham gia", "Hành động"].map(
+            {["Học sinh", "Email / Mã học sinh", "Ngày tham gia", "Hành động"].map(
               (heading) => (
                 <th
                   key={heading}
@@ -48,21 +48,26 @@ export function StudentTable({
                 </div>
               </td>
               <td className="px-5 py-4 text-sm text-muted-foreground">
-                {student.email ? (
-                  <span className="inline-flex items-center gap-2">
-                    <Mail className="h-3.5 w-3.5" />
-                    {student.email}
-                  </span>
-                ) : (
-                  "Chưa có email"
-                )}
+                <div className="space-y-1">
+                  {student.email ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Mail className="h-3.5 w-3.5" />
+                      {student.email}
+                    </span>
+                  ) : (
+                    <span>Chưa có email</span>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Mã học sinh: {student.studentCode}
+                  </p>
+                </div>
               </td>
               <td className="px-5 py-4 text-sm text-muted-foreground">
                 {formatDate(student.joinedAt)}
               </td>
               <td className="px-5 py-4">
                 <RemoveStudentButton
-                  isLoading={removingStudentId === student.id}
+                  disabled={isRemovingStudent}
                   onClick={() => onRemoveStudent(student)}
                 />
               </td>

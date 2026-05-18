@@ -242,6 +242,10 @@ export interface TeacherCreateClassResponse {
   classroom: TeacherClassSchema;
 }
 
+export type TeacherUpdateClassRequest = TeacherCreateClassRequest;
+
+export type TeacherUpdateClassResponse = TeacherCreateClassResponse;
+
 export interface TeacherClassStudentSchema {
   id: number;
   full_name: string;
@@ -273,6 +277,20 @@ export interface TeacherClassDocumentSchema {
 
 export interface TeacherClassDocumentListResponse {
   items: TeacherClassDocumentSchema[];
+}
+
+export type TeacherSystemDocumentSchema = TeacherClassDocumentSchema;
+
+export interface TeacherCreateDocumentRequest {
+  title: string;
+  summary: string;
+  content: string;
+  is_published: boolean;
+}
+
+export interface TeacherCreateSystemDocumentResponse {
+  message: string;
+  document?: TeacherSystemDocumentSchema;
 }
 
 export interface TeacherExamOptionSchema {
@@ -323,6 +341,11 @@ export interface TeacherSystemExamDetailResponse
 
 export type TeacherClassExamSchema = TeacherExamSummarySchema;
 
+export interface TeacherClassExamDetailResponse
+  extends TeacherExamSummarySchema {
+  questions?: TeacherExamQuestionSchema[] | null;
+}
+
 export interface TeacherClassExamListResponse {
   items: TeacherClassExamSchema[];
 }
@@ -354,6 +377,8 @@ export interface TeacherCreateExamRequest {
   questions: TeacherCreateExamQuestionRequest[];
 }
 
+export type TeacherUpdateClassExamRequest = TeacherCreateExamRequest;
+
 export interface TeacherUpdateExamRequest extends TeacherCreateExamRequest {
   scope: string;
   classroom_id: number | null;
@@ -362,6 +387,11 @@ export interface TeacherUpdateExamRequest extends TeacherCreateExamRequest {
 export interface TeacherCreateClassExamResponse {
   message: string;
   exam?: TeacherClassExamSchema;
+}
+
+export interface TeacherUpdateClassExamResponse {
+  message: string;
+  exam: TeacherClassExamDetailResponse;
 }
 
 export interface TeacherCreateSystemExamResponse {

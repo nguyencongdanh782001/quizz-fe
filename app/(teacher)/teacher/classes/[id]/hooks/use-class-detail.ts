@@ -1,266 +1,301 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { getApiErrorMessage } from "@/lib/api/error-message";
+import {
+  deleteTeacherClassroom,
   getTeacherClassById,
   getTeacherClassDocuments,
   getTeacherClassExams,
   getTeacherClassStudents,
   removeTeacherClassStudent,
+  updateTeacherClassroom,
 } from "@/lib/teacher-classes";
+import type { ApiError, TeacherUpdateClassRequest } from "@/lib/api/types";
 import type { ClassStudent, ClassInfo } from "@/types/class.types";
 import type { Document } from "@/types/document.types";
 import type { Exam } from "@/types/exam.types";
-import { getErrorMessage } from "../utils";
+import { teacherClassDetailQueryKeys } from "../query-keys";
 
 export type TeacherClassTab = "students" | "exams" | "documents";
+export type RemoveStudentResult =
+  | {
+      status: "success";
+      message: string;
+    }
+  | {
+      status: "error";
+      message: string;
+    };
+export type UpdateClassroomResult =
+  | {
+      status: "success";
+      message: string;
+    }
+  | {
+      status: "error";
+      message: string;
+    };
+export type DeleteClassroomResult =
+  | {
+      status: "success";
+      message: string;
+      redirectToList?: boolean;
+    }
+  | {
+      status: "error";
+      message: string;
+      redirectToList?: boolean;
+    };
+
+const CLASS_ERROR_MESSAGE = "Không thể tải thông tin lớp học. Vui lòng thử lại.";
+const STUDENTS_ERROR_MESSAGE =
+  "Không thể tải danh sách học sinh. Vui lòng thử lại.";
+const EXAMS_ERROR_MESSAGE = "Không thể tải danh sách bài thi. Vui lòng thử lại.";
+const DOCUMENTS_ERROR_MESSAGE =
+  "Không thể tải tài liệu của lớp. Vui lòng thử lại.";
+const REMOVE_STUDENT_SUCCESS_MESSAGE = "Mời học sinh ra khỏi lớp thành công";
+const REMOVE_STUDENT_ERROR_MESSAGE = "Không thể mời học sinh ra khỏi lớp";
+const UPDATE_CLASSROOM_SUCCESS_MESSAGE = "Cập nhật lớp học thành công";
+const UPDATE_CLASSROOM_ERROR_MESSAGE = "Không thể cập nhật lớp học";
+const DELETE_CLASSROOM_SUCCESS_MESSAGE = "Xóa lớp học thành công";
+const DELETE_CLASSROOM_ERROR_MESSAGE = "Không thể xóa lớp học";
+const CLASSROOM_NOT_FOUND_MESSAGE = "Lớp học không tồn tại";
 
 export function useClassDetail(classId: string) {
-  const [cls, setCls] = useState<ClassInfo | null>(null);
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TeacherClassTab>("students");
-  const [students, setStudents] = useState<ClassStudent[]>([]);
-  const [exams, setExams] = useState<Exam[]>([]);
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
-  const [isLoadingStudents, setIsLoadingStudents] = useState(true);
-  const [isLoadingExams, setIsLoadingExams] = useState(true);
-  const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
-  const [classError, setClassError] = useState<string | null>(null);
-  const [studentsError, setStudentsError] = useState<string | null>(null);
-  const [studentActionError, setStudentActionError] = useState<string | null>(
-    null,
-  );
-  const [studentActionSuccess, setStudentActionSuccess] = useState<
-    string | null
-  >(null);
+  const [isDeletingClassroom, setIsDeletingClassroom] = useState(false);
+  const [isUpdatingClassroom, setIsUpdatingClassroom] = useState(false);
   const [removingStudentId, setRemovingStudentId] = useState<string | null>(
     null,
   );
-  const [examsError, setExamsError] = useState<string | null>(null);
-  const [documentsError, setDocumentsError] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const classDetailQuery = useQuery({
+    queryKey: teacherClassDetailQueryKeys.detail(classId),
+    queryFn: async () => getTeacherClassById(classId),
+  });
+  const studentsQuery = useQuery({
+    queryKey: teacherClassDetailQueryKeys.students(classId),
+    queryFn: async () => getTeacherClassStudents(classId),
+  });
+  const examsQuery = useQuery({
+    queryKey: teacherClassDetailQueryKeys.exams(classId),
+    queryFn: async () => getTeacherClassExams(classId),
+    enabled: activeTab === "exams",
+  });
+  const documentsQuery = useQuery({
+    queryKey: teacherClassDetailQueryKeys.documents(classId),
+    queryFn: async () => getTeacherClassDocuments(classId),
+    enabled: activeTab === "documents",
+  });
+  const removeStudentMutation = useMutation({
+    mutationFn: async ({ studentId }: { studentId: string }) =>
+      removeTeacherClassStudent(classId, studentId),
+    onSuccess: (_message, variables) => {
+      queryClient.setQueryData<ClassStudent[] | undefined>(
+        teacherClassDetailQueryKeys.students(classId),
+        (current) =>
+          current?.filter((student) => student.id !== variables.studentId),
+      );
+      queryClient.setQueryData<ClassInfo | null | undefined>(
+        teacherClassDetailQueryKeys.detail(classId),
+        (current) =>
+          current
+            ? {
+                ...current,
+                studentCount: Math.max((current.studentCount ?? 0) - 1, 0),
+              }
+            : current,
+      );
 
-  useEffect(() => {
-    let isMounted = true;
+      void queryClient.invalidateQueries({
+        queryKey: teacherClassDetailQueryKeys.detail(classId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: teacherClassDetailQueryKeys.students(classId),
+      });
+    },
+  });
+  const updateClassroomMutation = useMutation({
+    mutationFn: async (payload: TeacherUpdateClassRequest) =>
+      updateTeacherClassroom(classId, payload),
+    onSuccess: ({ classroom }) => {
+      queryClient.setQueryData(
+        teacherClassDetailQueryKeys.detail(classId),
+        classroom,
+      );
 
-    async function loadInitialData() {
-      setIsLoadingInitialData(true);
-      setClassError(null);
-      setStudentsError(null);
-      setExamsError(null);
-      setDocumentsError(null);
-      setIsLoadingStudents(true);
-      setIsLoadingExams(true);
-      setIsLoadingDocuments(true);
+      void queryClient.invalidateQueries({
+        queryKey: teacherClassDetailQueryKeys.detail(classId),
+      });
+    },
+  });
+  const deleteClassroomMutation = useMutation({
+    mutationFn: async () => deleteTeacherClassroom(classId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["teacher-classrooms"],
+      });
+      queryClient.removeQueries({
+        queryKey: teacherClassDetailQueryKeys.detail(classId),
+      });
+      queryClient.removeQueries({
+        queryKey: teacherClassDetailQueryKeys.students(classId),
+      });
+      queryClient.removeQueries({
+        queryKey: teacherClassDetailQueryKeys.exams(classId),
+      });
+      queryClient.removeQueries({
+        queryKey: teacherClassDetailQueryKeys.documents(classId),
+      });
+    },
+  });
 
-      const [classResult, studentsResult, examsResult, documentsResult] =
-        await Promise.allSettled([
-          getTeacherClassById(classId),
-          getTeacherClassStudents(classId),
-          getTeacherClassExams(classId),
-          getTeacherClassDocuments(classId),
-        ]);
-
-      if (!isMounted) {
-        return;
-      }
-
-      if (classResult.status === "fulfilled") {
-        setCls(classResult.value);
-      } else {
-        console.error(`Failed to fetch teacher class ${classId}`, classResult.reason);
-        setCls(null);
-        setClassError(
-          getErrorMessage(
-            classResult.reason,
-            "Không thể tải thông tin lớp học. Vui lòng thử lại.",
-          ),
-        );
-      }
-
-      if (studentsResult.status === "fulfilled") {
-        setStudents(studentsResult.value);
-      } else {
-        console.error(
-          `Failed to fetch students for class ${classId}`,
-          studentsResult.reason,
-        );
-        setStudents([]);
-        setStudentsError(
-          getErrorMessage(
-            studentsResult.reason,
-            "Không thể tải danh sách học sinh. Vui lòng thử lại.",
-          ),
-        );
-      }
-
-      if (examsResult.status === "fulfilled") {
-        setExams(examsResult.value);
-      } else {
-        console.error(`Failed to fetch exams for class ${classId}`, examsResult.reason);
-        setExams([]);
-        setExamsError(
-          getErrorMessage(
-            examsResult.reason,
-            "Không thể tải danh sách bài thi. Vui lòng thử lại.",
-          ),
-        );
-      }
-
-      if (documentsResult.status === "fulfilled") {
-        setDocuments(documentsResult.value);
-      } else {
-        console.error(
-          `Failed to fetch documents for class ${classId}`,
-          documentsResult.reason,
-        );
-        setDocuments([]);
-        setDocumentsError(
-          getErrorMessage(
-            documentsResult.reason,
-            "Không thể tải tài liệu của lớp. Vui lòng thử lại.",
-          ),
-        );
-      }
-
-      setIsLoadingStudents(false);
-      setIsLoadingExams(false);
-      setIsLoadingDocuments(false);
-      setIsLoadingInitialData(false);
-    }
-
-    void loadInitialData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [classId, refreshKey]);
+  const cls = classDetailQuery.data ?? null;
+  const students = studentsQuery.data ?? [];
+  const exams = examsQuery.data ?? [];
+  const documents = documentsQuery.data ?? [];
 
   async function retryClassDetail() {
-    setRefreshKey((current) => current + 1);
+    await Promise.all([classDetailQuery.refetch(), studentsQuery.refetch()]);
   }
 
   async function retryActiveTab() {
     switch (activeTab) {
-      case "students": {
-        setIsLoadingStudents(true);
-        setStudentsError(null);
-
-        try {
-          const items = await getTeacherClassStudents(classId);
-          setStudents(items);
-        } catch (error) {
-          console.error(`Failed to fetch students for class ${classId}`, error);
-          setStudents([]);
-          setStudentsError(
-            getErrorMessage(
-              error,
-              "Không thể tải danh sách học sinh. Vui lòng thử lại.",
-            ),
-          );
-        } finally {
-          setIsLoadingStudents(false);
-        }
-
+      case "students":
+        await studentsQuery.refetch();
         return;
-      }
-
-      case "exams": {
-        setIsLoadingExams(true);
-        setExamsError(null);
-
-        try {
-          const items = await getTeacherClassExams(classId);
-          setExams(items);
-        } catch (error) {
-          console.error(`Failed to fetch exams for class ${classId}`, error);
-          setExams([]);
-          setExamsError(
-            getErrorMessage(
-              error,
-              "Không thể tải danh sách bài thi. Vui lòng thử lại.",
-            ),
-          );
-        } finally {
-          setIsLoadingExams(false);
-        }
-
+      case "exams":
+        await examsQuery.refetch();
         return;
-      }
-
-      case "documents": {
-        setIsLoadingDocuments(true);
-        setDocumentsError(null);
-
-        try {
-          const items = await getTeacherClassDocuments(classId);
-          setDocuments(items);
-        } catch (error) {
-          console.error(`Failed to fetch documents for class ${classId}`, error);
-          setDocuments([]);
-          setDocumentsError(
-            getErrorMessage(
-              error,
-              "Không thể tải tài liệu của lớp. Vui lòng thử lại.",
-            ),
-          );
-        } finally {
-          setIsLoadingDocuments(false);
-        }
-
+      case "documents":
+        await documentsQuery.refetch();
         return;
-      }
     }
   }
 
-  async function handleRemoveStudent(student: ClassStudent) {
-    const isConfirmed = window.confirm(
-      "Are you sure you want to remove this student from the class?",
-    );
-
-    if (!isConfirmed) {
-      return;
-    }
-
-    setStudentActionError(null);
-    setStudentActionSuccess(null);
+  async function handleRemoveStudent(
+    student: ClassStudent,
+  ): Promise<RemoveStudentResult> {
     setRemovingStudentId(student.id);
-    setIsLoadingStudents(true);
 
     try {
-      const message = await removeTeacherClassStudent(classId, student.id);
-      const [nextStudents, nextClass] = await Promise.all([
-        getTeacherClassStudents(classId),
-        getTeacherClassById(classId),
-      ]);
+      const message = await removeStudentMutation.mutateAsync({
+        studentId: student.id,
+      });
 
-      setStudents(nextStudents);
-      setCls(nextClass);
-      setStudentActionSuccess(message || "Student removed successfully");
+      return {
+        status: "success",
+        message: message || REMOVE_STUDENT_SUCCESS_MESSAGE,
+      };
     } catch (error) {
       console.error(
         `Failed to remove student ${student.id} from class ${classId}`,
         error,
       );
-      setStudentActionError(
-        getErrorMessage(
-          error,
-          "Không thể xóa học sinh khỏi lớp. Vui lòng thử lại.",
-        ),
-      );
+
+      return {
+        status: "error",
+        message: getApiErrorMessage(error, REMOVE_STUDENT_ERROR_MESSAGE),
+      };
     } finally {
-      setIsLoadingStudents(false);
       setRemovingStudentId(null);
     }
   }
 
-  const counts = useMemo(() => {
-    return {
-      students: isLoadingStudents ? (cls?.studentCount ?? 0) : students.length,
-      exams: isLoadingExams ? (cls?.examCount ?? 0) : exams.length,
-      documents: isLoadingDocuments ? (cls?.documentCount ?? 0) : documents.length,
-    };
-  }, [cls, documents.length, exams.length, isLoadingDocuments, isLoadingExams, isLoadingStudents, students.length]);
+  async function handleUpdateClassroom(
+    payload: TeacherUpdateClassRequest,
+  ): Promise<UpdateClassroomResult> {
+    setIsUpdatingClassroom(true);
+
+    try {
+      const result = await updateClassroomMutation.mutateAsync(payload);
+
+      return {
+        status: "success",
+        message: result.message || UPDATE_CLASSROOM_SUCCESS_MESSAGE,
+      };
+    } catch (error) {
+      console.error(`Failed to update class ${classId}`, error);
+
+      return {
+        status: "error",
+        message: getApiErrorMessage(error, UPDATE_CLASSROOM_ERROR_MESSAGE),
+      };
+    } finally {
+      setIsUpdatingClassroom(false);
+    }
+  }
+
+  async function handleDeleteClassroom(): Promise<DeleteClassroomResult> {
+    setIsDeletingClassroom(true);
+
+    try {
+      const message = await deleteClassroomMutation.mutateAsync();
+
+      return {
+        status: "success",
+        message: message || DELETE_CLASSROOM_SUCCESS_MESSAGE,
+      };
+    } catch (error) {
+      console.error(`Failed to delete class ${classId}`, error);
+
+      const apiError = error as ApiError;
+      const message = getApiErrorMessage(error, DELETE_CLASSROOM_ERROR_MESSAGE);
+      const shouldRedirectToList =
+        apiError.status === 404 || message === CLASSROOM_NOT_FOUND_MESSAGE;
+
+      return {
+        status: "error",
+        message,
+        redirectToList: shouldRedirectToList,
+      };
+    } finally {
+      setIsDeletingClassroom(false);
+    }
+  }
+
+  const isLoadingInitialData =
+    classDetailQuery.isPending ||
+    (studentsQuery.isPending && studentsQuery.data === undefined);
+  const isLoadingStudents =
+    studentsQuery.isPending && studentsQuery.data === undefined;
+  const isLoadingExams =
+    activeTab === "exams" &&
+    examsQuery.isPending &&
+    examsQuery.data === undefined;
+  const isLoadingDocuments =
+    activeTab === "documents" &&
+    documentsQuery.isPending &&
+    documentsQuery.data === undefined;
+
+  const classError =
+    classDetailQuery.isError && classDetailQuery.data === undefined
+      ? getApiErrorMessage(classDetailQuery.error, CLASS_ERROR_MESSAGE)
+      : null;
+  const studentsError =
+    studentsQuery.isError && studentsQuery.data === undefined
+      ? getApiErrorMessage(studentsQuery.error, STUDENTS_ERROR_MESSAGE)
+      : null;
+  const examsError =
+    examsQuery.isError && examsQuery.data === undefined
+      ? getApiErrorMessage(examsQuery.error, EXAMS_ERROR_MESSAGE)
+      : null;
+  const documentsError =
+    documentsQuery.isError && documentsQuery.data === undefined
+      ? getApiErrorMessage(documentsQuery.error, DOCUMENTS_ERROR_MESSAGE)
+      : null;
+
+  const counts = {
+    students: studentsQuery.data ? students.length : cls?.studentCount ?? 0,
+    exams: examsQuery.data ? exams.length : cls?.examCount ?? 0,
+    documents: documentsQuery.data ? documents.length : cls?.documentCount ?? 0,
+  };
 
   return {
     cls,
@@ -278,11 +313,13 @@ export function useClassDetail(classId: string) {
     studentsError,
     examsError,
     documentsError,
-    studentActionError,
-    studentActionSuccess,
+    isDeletingClassroom,
+    isUpdatingClassroom,
     removingStudentId,
     retryClassDetail,
     retryActiveTab,
+    handleDeleteClassroom,
     handleRemoveStudent,
+    handleUpdateClassroom,
   };
 }

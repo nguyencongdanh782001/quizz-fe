@@ -2,6 +2,8 @@ export interface ClassStudent {
   id: string;
   name: string;
   email: string;
+  studentCode: string;
+  avatarUrl: string | null;
   joinedAt: string;
 }
 

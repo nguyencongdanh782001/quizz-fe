@@ -6,10 +6,19 @@ import type {
   TeacherClassStudentSchema,
   TeacherCreateClassRequest,
   TeacherCreateExamRequest,
+  TeacherUpdateClassExamRequest,
+  TeacherUpdateClassRequest,
 } from '@/lib/api/types';
+import { mapTeacherExam } from '@/lib/teacher-exam-mapper';
 import type { ClassInfo, ClassStudent } from '@/types/class.types';
 import type { Document } from '@/types/document.types';
+import type { TeacherExam } from '@/types/exam';
 import type { Exam, ExamDifficulty } from '@/types/exam.types';
+
+export interface UpdateTeacherClassroomResult {
+  message: string;
+  classroom: ClassInfo;
+}
 
 const CLASS_COVER_COLORS = [
   '#00464a',
@@ -67,6 +76,8 @@ function mapTeacherClassStudent(item: TeacherClassStudentSchema): ClassStudent {
     id: String(item.id),
     name: item.full_name || item.username,
     email: item.email ?? "",
+    studentCode: item.username,
+    avatarUrl: item.avatar_url,
     joinedAt: item.joined_at,
   };
 }
@@ -190,6 +201,29 @@ export async function createTeacherClassExam(
   return response.data.message;
 }
 
+export async function getTeacherClassroomExamDetail(
+  classId: string,
+  examId: string,
+): Promise<TeacherExam> {
+  const response = await teacherApi.teacher.classes.examDetail(classId, examId);
+
+  return mapTeacherExam(response.data);
+}
+
+export async function updateTeacherClassroomExam(
+  classId: string,
+  examId: string,
+  data: TeacherUpdateClassExamRequest,
+): Promise<string> {
+  const response = await teacherApi.teacher.classes.updateExam(
+    classId,
+    examId,
+    data,
+  );
+
+  return response.data.message || 'Cập nhật bài thi thành công';
+}
+
 export async function removeTeacherClassStudent(
   classId: string,
   studentId: string,
@@ -202,19 +236,44 @@ export async function removeTeacherClassStudent(
   return response.data.message;
 }
 
+export async function deleteTeacherClassroom(classId: string): Promise<string> {
+  const response = await teacherApi.teacher.classes.delete(classId);
+  return response.data.message;
+}
+
 function normalizeJoinCode(joinCode: string): string {
   return joinCode.trim().toUpperCase();
+}
+
+function normalizeTeacherClassPayload<T extends { name: string; description: string; join_code: string }>(
+  data: T,
+): T {
+  return {
+    ...data,
+    name: data.name.trim(),
+    description: data.description.trim(),
+    join_code: normalizeJoinCode(data.join_code),
+  };
 }
 
 export async function createTeacherClass(
   data: TeacherCreateClassRequest,
 ): Promise<ClassInfo> {
-  const payload: TeacherCreateClassRequest = {
-    name: data.name.trim(),
-    description: data.description.trim(),
-    join_code: normalizeJoinCode(data.join_code),
-  };
+  const payload = normalizeTeacherClassPayload(data);
 
   const response = await teacherApi.teacher.classes.create(payload);
   return mapTeacherClass(response.data.classroom);
+}
+
+export async function updateTeacherClassroom(
+  classId: string,
+  data: TeacherUpdateClassRequest,
+): Promise<UpdateTeacherClassroomResult> {
+  const payload = normalizeTeacherClassPayload(data);
+  const response = await teacherApi.teacher.classes.update(classId, payload);
+
+  return {
+    message: response.data.message,
+    classroom: mapTeacherClass(response.data.classroom),
+  };
 }

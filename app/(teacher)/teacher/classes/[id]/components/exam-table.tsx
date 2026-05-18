@@ -4,7 +4,13 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Exam } from "@/types/exam.types";
 
-export function ExamTable({ exams }: { exams: Exam[] }) {
+export function ExamTable({
+  classId,
+  exams,
+}: {
+  classId: string;
+  exams: Exam[];
+}) {
   return (
     <div className="overflow-hidden rounded-2xl bg-surface-container-lowest shadow-[0_8px_24px_rgba(7,30,39,0.05)]">
       <table className="w-full">
@@ -60,7 +66,7 @@ export function ExamTable({ exams }: { exams: Exam[] }) {
               </td>
               <td className="px-5 py-4">
                 <Button asChild type="button" variant="ghost" size="sm">
-                  <Link href={`/teacher/exams/create?edit=${exam.id}`}>
+                  <Link href={`/teacher/classes/${classId}/exams/create?edit=${exam.id}`}>
                     <Pencil className="mr-2 h-4 w-4" />
                     Chỉnh sửa
                   </Link>

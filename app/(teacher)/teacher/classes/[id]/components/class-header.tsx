@@ -1,8 +1,15 @@
+import type { ReactNode } from "react";
 import { BookOpen, CalendarDays, FileText, Hash, Users } from "lucide-react";
 import type { ClassInfo } from "@/types/class.types";
 import { formatDate } from "../utils";
 
-export function ClassHeader({ cls }: { cls: ClassInfo }) {
+export function ClassHeader({
+  cls,
+  actions,
+}: {
+  cls: ClassInfo;
+  actions?: ReactNode;
+}) {
   return (
     <section className="overflow-hidden rounded-3xl bg-surface-container-lowest shadow-[0_18px_60px_rgba(7,30,39,0.08)]">
       <div className="bg-linear-to-r from-primary/10 via-surface-container-lowest to-secondary/10 p-6 sm:p-8">
@@ -27,6 +34,7 @@ export function ClassHeader({ cls }: { cls: ClassInfo }) {
                     {cls.description}
                   </p>
                 ) : null}
+                {actions ? <div className="mt-4">{actions}</div> : null}
               </div>
             </div>
           </div>

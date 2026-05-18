@@ -26,7 +26,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { TeacherExam } from "@/types/exam";
 import {
@@ -66,12 +70,16 @@ export function TruncatedTooltipText({
   lines?: 1 | 2 | 3;
 }) {
   const clampClassName =
-    lines === 1 ? "line-clamp-1" : lines === 2 ? "line-clamp-2" : "line-clamp-3";
+    lines === 1
+      ? "line-clamp-1"
+      : lines === 2
+        ? "line-clamp-2"
+        : "line-clamp-3";
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <p className={cn("min-w-0 break-words", clampClassName, className)}>
+        <p className={cn("min-w-0 wrap-break-word", clampClassName, className)}>
           {text}
         </p>
       </TooltipTrigger>
@@ -103,10 +111,8 @@ export function ExamStatusBadges({ exam }: { exam: TeacherExam }) {
 export function ExamActionMenu({
   exam,
   isDeleting,
-  isPublishing,
   onCopyLink,
   onDeleteRequest,
-  onTogglePublish,
 }: ExamActionMenuProps) {
   return (
     <DropdownMenu>
@@ -125,13 +131,13 @@ export function ExamActionMenu({
           <Copy className="size-4" />
           Sao chép liên kết
         </DropdownMenuItem>
-        <DropdownMenuItem
+        {/* <DropdownMenuItem
           disabled={isPublishing}
           onSelect={() => onTogglePublish(exam)}
         >
           <Rocket className="size-4" />
           {exam.is_published ? "Ẩn đề thi" : "Xuất bản"}
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           destructive

@@ -1,16 +1,32 @@
+"use client";
+
+import { useState } from "react";
 import { Users } from "lucide-react";
+import {
+  Toast,
+  ToastClose,
+  ToastProvider,
+  ToastTitle,
+  ToastViewport,
+} from "@/components/ui/toast";
 import type { ClassStudent } from "@/types/class.types";
+import type { RemoveStudentResult } from "../hooks/use-class-detail";
 import { EmptyState } from "./empty-state";
 import { ErrorState } from "./error-state";
 import { LoadingState } from "./loading-state";
+import { RemoveStudentDialog } from "./remove-student-dialog";
 import { StudentTable } from "./student-table";
+
+type StudentToastState = {
+  message: string;
+  open: boolean;
+  variant: "error" | "success";
+};
 
 export function StudentsTab({
   students,
   isLoading,
   error,
-  successMessage,
-  actionError,
   removingStudentId,
   onRetry,
   onRemoveStudent,
@@ -18,47 +34,102 @@ export function StudentsTab({
   students: ClassStudent[];
   isLoading: boolean;
   error: string | null;
-  successMessage: string | null;
-  actionError: string | null;
   removingStudentId: string | null;
   onRetry: () => void | Promise<void>;
-  onRemoveStudent: (student: ClassStudent) => void;
+  onRemoveStudent: (student: ClassStudent) => Promise<RemoveStudentResult>;
 }) {
+  const [selectedStudent, setSelectedStudent] = useState<ClassStudent | null>(
+    null,
+  );
+  const [toast, setToast] = useState<StudentToastState | null>(null);
+
+  const isRemovingStudent = removingStudentId !== null;
+  const isDialogOpen = selectedStudent !== null;
+
+  async function handleConfirmRemoveStudent() {
+    if (!selectedStudent) {
+      return;
+    }
+
+    const result = await onRemoveStudent(selectedStudent);
+
+    setToast({
+      message: result.message,
+      open: true,
+      variant: result.status,
+    });
+
+    if (result.status === "success") {
+      setSelectedStudent(null);
+    }
+  }
+
+  function handleDialogOpenChange(open: boolean) {
+    if (isRemovingStudent) {
+      return;
+    }
+
+    if (!open) {
+      setSelectedStudent(null);
+    }
+  }
+
+  function handleToastOpenChange(open: boolean) {
+    if (!open) {
+      setToast(null);
+      return;
+    }
+
+    setToast((current) => (current ? { ...current, open } : current));
+  }
+
   return (
-    <div className="space-y-4">
-      {successMessage ? (
-        <div className="rounded-2xl border border-green-200/70 bg-green-50/80 p-4 text-sm text-green-700 dark:border-green-800/40 dark:bg-green-950/20 dark:text-green-300">
-          {successMessage}
-        </div>
+    <ToastProvider duration={3500}>
+      <div className="space-y-4">
+        {isLoading ? (
+          <LoadingState label="danh sách học sinh" />
+        ) : error ? (
+          <ErrorState
+            title="Không thể tải học sinh"
+            message={error}
+            onRetry={onRetry}
+          />
+        ) : students.length === 0 ? (
+          <EmptyState
+            icon={Users}
+            title="Chưa có học sinh nào trong lớp"
+            description="Danh sách học sinh sẽ xuất hiện tại đây khi các em tham gia lớp bằng mã lớp."
+          />
+        ) : (
+          <StudentTable
+            students={students}
+            isRemovingStudent={isRemovingStudent}
+            onRemoveStudent={setSelectedStudent}
+          />
+        )}
+      </div>
+
+      <RemoveStudentDialog
+        isLoading={isRemovingStudent}
+        open={isDialogOpen}
+        onConfirm={handleConfirmRemoveStudent}
+        onOpenChange={handleDialogOpenChange}
+      />
+
+      {toast ? (
+        <Toast
+          open={toast.open}
+          variant={toast.variant}
+          onOpenChange={handleToastOpenChange}
+        >
+          <div className="pr-6">
+            <ToastTitle>{toast.message}</ToastTitle>
+          </div>
+          <ToastClose />
+        </Toast>
       ) : null}
 
-      {actionError ? (
-        <div className="rounded-2xl border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
-          {actionError}
-        </div>
-      ) : null}
-
-      {isLoading ? (
-        <LoadingState label="danh sách học sinh" />
-      ) : error ? (
-        <ErrorState
-          title="Không thể tải học sinh"
-          message={error}
-          onRetry={onRetry}
-        />
-      ) : students.length === 0 ? (
-        <EmptyState
-          icon={Users}
-          title="Chưa có học sinh nào trong lớp"
-          description="Danh sách học sinh sẽ xuất hiện tại đây khi các em tham gia lớp bằng mã lớp."
-        />
-      ) : (
-        <StudentTable
-          students={students}
-          removingStudentId={removingStudentId}
-          onRemoveStudent={onRemoveStudent}
-        />
-      )}
-    </div>
+      <ToastViewport />
+    </ToastProvider>
   );
 }

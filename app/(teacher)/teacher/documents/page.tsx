@@ -1,8 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { Plus, Download, Trash2, Pencil } from "lucide-react";
 import { mockDocuments } from "@/data/mock/mock-documents";
-import { DocumentCard } from "@/components/features/document/document-card";
 
 export default function TeacherDocumentsPage() {
   return (
@@ -16,10 +16,13 @@ export default function TeacherDocumentsPage() {
             {mockDocuments.length} tài liệu đã tải lên
           </p>
         </div>
-        <button className="cursor-pointer flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors">
+        <Link
+          href="/teacher/documents/create"
+          className="cursor-pointer flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+        >
           <Plus className="w-4 h-4" />
           Tải lên tài liệu
-        </button>
+        </Link>
       </div>
 
       <div className="bg-surface-container-lowest rounded-xl overflow-hidden">
@@ -37,7 +40,7 @@ export default function TeacherDocumentsPage() {
             </tr>
           </thead>
           <tbody>
-            {mockDocuments.map((doc, i) => (
+            {mockDocuments.map((doc) => (
               <tr
                 key={doc.id}
                 className="border-b border-outline/10 last:border-0 hover:bg-surface-container-low transition-colors"

@@ -381,6 +381,9 @@ export const teacherExamFormSchema = Yup.object({
             schema
               .of(
                 Yup.object({
+                  option_key: Yup.string()
+                    .trim()
+                    .required("Ký hiệu đáp án là bắt buộc"),
                   option_text: Yup.string()
                     .trim()
                     .required("Nội dung đáp án là bắt buộc"),
@@ -392,6 +395,20 @@ export const teacherExamFormSchema = Yup.object({
                 }),
               )
               .min(2, EXAM_FLOW_MESSAGES.validation.minOptions)
+              .test(
+                "unique-option-keys",
+                EXAM_FLOW_MESSAGES.validation.duplicateOptionKeys,
+                (options) => {
+                  const normalizedOptionKeys = (options ?? [])
+                    .map((option) => option.option_key.trim().toUpperCase())
+                    .filter(Boolean);
+
+                  return (
+                    new Set(normalizedOptionKeys).size ===
+                    normalizedOptionKeys.length
+                  );
+                },
+              )
               .test(
                 "single-question-only-one-correct",
                 EXAM_FLOW_MESSAGES.validation.singleQuestionOnlyOneCorrect,

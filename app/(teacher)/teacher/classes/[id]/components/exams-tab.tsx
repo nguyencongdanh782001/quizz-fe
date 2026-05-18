@@ -62,7 +62,7 @@ export function ExamsTab({
           }
         />
       ) : (
-        <ExamTable exams={exams} />
+        <ExamTable classId={classId} exams={exams} />
       )}
     </div>
   );

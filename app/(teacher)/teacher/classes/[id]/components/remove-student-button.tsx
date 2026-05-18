@@ -1,24 +1,25 @@
-import { Trash2 } from "lucide-react";
+import { UserMinus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function RemoveStudentButton({
-  isLoading,
+  disabled,
   onClick,
 }: {
-  isLoading: boolean;
+  disabled?: boolean;
   onClick: () => void;
 }) {
   return (
     <Button
       type="button"
-      variant="destructive"
+      variant="ghost"
       size="sm"
-      aria-label="Remove student"
-      disabled={isLoading}
+      aria-label="Mời học sinh khỏi lớp"
+      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+      disabled={disabled}
       onClick={onClick}
     >
-      <Trash2 className="h-3.5 w-3.5" />
-      {isLoading ? "Đang đuổi..." : "Đuổi"}
+      <UserMinus className="h-3.5 w-3.5" />
+      Mời khỏi lớp
     </Button>
   );
 }

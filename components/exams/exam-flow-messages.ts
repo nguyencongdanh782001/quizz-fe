@@ -60,6 +60,7 @@ export const EXAM_FLOW_MESSAGES = {
     loadDetail: "Không thể tải dữ liệu đề thi",
     generic: "Có lỗi xảy ra, vui lòng thử lại",
     update: "Không thể cập nhật đề thi",
+    notFound: "Không tìm thấy bài thi",
   },
   validation: {
     examTitleRequired: "Tên đề thi là bắt buộc",
@@ -72,6 +73,7 @@ export const EXAM_FLOW_MESSAGES = {
     singleQuestionOnlyOneCorrect:
       "Câu hỏi một đáp án chỉ được có 1 đáp án đúng",
     minAcceptedAnswers: "Phải có ít nhất 1 đáp án chấp nhận",
+    duplicateOptionKeys: "Ký hiệu đáp án không được trùng lặp",
   },
   confirmations: {
     deleteQuestion: "Bạn có chắc chắn muốn xóa câu hỏi này không?",

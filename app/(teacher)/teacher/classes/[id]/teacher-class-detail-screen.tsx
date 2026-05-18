@@ -5,8 +5,10 @@ import { ArrowLeft, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ClassHeader } from "./components/class-header";
 import { ClassTabs } from "./components/class-tabs";
+import { DeleteClassroomDialog } from "./components/delete-classroom-dialog";
 import { DocumentsTab } from "./components/documents-tab";
 import { EmptyState } from "./components/empty-state";
+import { EditClassroomDialog } from "./components/edit-classroom-dialog";
 import { ErrorState } from "./components/error-state";
 import { ExamsTab } from "./components/exams-tab";
 import { LoadingState } from "./components/loading-state";
@@ -30,12 +32,14 @@ export function TeacherClassDetailScreen({ classId }: { classId: string }) {
     studentsError,
     examsError,
     documentsError,
-    studentActionError,
-    studentActionSuccess,
+    isDeletingClassroom,
+    isUpdatingClassroom,
     removingStudentId,
     retryClassDetail,
     retryActiveTab,
+    handleDeleteClassroom,
     handleRemoveStudent,
+    handleUpdateClassroom,
   } = useClassDetail(classId);
 
   if (isLoadingInitialData) {
@@ -101,7 +105,23 @@ export function TeacherClassDetailScreen({ classId }: { classId: string }) {
         Quay lại danh sách lớp
       </Link>
 
-      <ClassHeader cls={cls} />
+      <ClassHeader
+        cls={cls}
+        actions={
+          <div className="flex flex-wrap gap-3">
+            <EditClassroomDialog
+              classroom={cls}
+              isSubmitting={isUpdatingClassroom}
+              onSubmit={handleUpdateClassroom}
+            />
+            <DeleteClassroomDialog
+              classroomName={cls.name}
+              isDeleting={isDeletingClassroom}
+              onConfirm={handleDeleteClassroom}
+            />
+          </div>
+        }
+      />
 
       <section className="space-y-4">
         <ClassTabs
@@ -115,11 +135,9 @@ export function TeacherClassDetailScreen({ classId }: { classId: string }) {
             students={students}
             isLoading={isLoadingStudents}
             error={studentsError}
-            successMessage={studentActionSuccess}
-            actionError={studentActionError}
             removingStudentId={removingStudentId}
             onRetry={retryActiveTab}
-            onRemoveStudent={(student) => void handleRemoveStudent(student)}
+            onRemoveStudent={handleRemoveStudent}
           />
         ) : null}
 
