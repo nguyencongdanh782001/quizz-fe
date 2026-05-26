@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Reveal } from '@/components/features/landing/landing-motion';
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Reveal } from "@/components/features/landing/landing-motion";
 
 const ctaPoints = [
-  'Khởi tạo lớp học trong vài phút',
-  'Tạo bài thi và chia sẻ tài liệu ngay',
-  'Theo dõi tiến độ học tập trên dashboard trực quan',
+  "Khởi tạo lớp học trong vài phút",
+  "Tạo bài thi và chia sẻ tài liệu ngay",
+  "Theo dõi tiến độ học tập trên dashboard trực quan",
 ] as const;
 
 export function LandingCTA() {
@@ -39,7 +39,7 @@ export function LandingCTA() {
             >
               <Button
                 size="lg"
-                className="h-12 rounded-full bg-white px-6 text-primary hover:bg-white/90"
+                className="h-12 rounded-full bg-white px-6 text-primary hover:bg-white/90 text-white"
                 asChild
               >
                 <Link href="/register">
@@ -59,7 +59,9 @@ export function LandingCTA() {
           </div>
 
           <div className="rounded-[1.8rem] border border-white/15 bg-white/10 p-5 backdrop-blur-sm">
-            <p className="text-sm font-medium text-white/75">Những gì bạn nhận được</p>
+            <p className="text-sm font-medium text-white/75">
+              Những gì bạn nhận được
+            </p>
             <div className="mt-5 space-y-4">
               {ctaPoints.map((point) => (
                 <div key={point} className="flex items-start gap-3">
