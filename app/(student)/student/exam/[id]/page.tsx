@@ -170,7 +170,9 @@ export default function ExamDetailPage({
   }
 
   const { exam, questions, inProgressAttemptId } = examDetail;
-  const actionLabel = inProgressAttemptId ? "Tiếp tục làm bài" : "Bắt đầu làm bài";
+  const actionLabel = inProgressAttemptId
+    ? "Tiếp tục làm bài"
+    : "Bắt đầu làm bài";
   const actionIcon = inProgressAttemptId ? RotateCcw : PlayCircle;
   const ActionIcon = actionIcon;
 
@@ -206,7 +208,7 @@ export default function ExamDetailPage({
       </Link>
 
       <section className="overflow-hidden rounded-3xl border border-outline/10 bg-surface-container-lowest shadow-[0_18px_44px_-32px_rgba(7,30,39,0.18)]">
-        <div className="bg-gradient-to-r from-primary/8 via-secondary/10 to-surface px-6 py-8 md:px-8">
+        <div className="bg-linear-to-r from-primary/8 via-secondary/10 to-surface px-6 py-8 md:px-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-3xl">
               <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -225,7 +227,8 @@ export default function ExamDetailPage({
               </h1>
 
               <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
-                {exam.description || "Xem trước cấu trúc đề thi trước khi bắt đầu làm bài."}
+                {exam.description ||
+                  "Xem trước cấu trúc đề thi trước khi bắt đầu làm bài."}
               </p>
             </div>
 

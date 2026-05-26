@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookOpen, Search, SlidersHorizontal, Sparkles, Trophy } from "lucide-react";
+import {
+  BookOpen,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+  Trophy,
+} from "lucide-react";
 import { ExamCard } from "@/components/features/exam/exam-card";
 import { getStudentSystemExams } from "@/lib/student-system-exams";
 import { Exam, ExamDifficulty } from "@/types/exam.types";
@@ -95,7 +101,9 @@ export default function ExamsPage() {
     return true;
   });
 
-  const activeFilterCount = [classroom, grade, difficulty].filter(Boolean).length;
+  const activeFilterCount = [classroom, grade, difficulty].filter(
+    Boolean,
+  ).length;
 
   return (
     <div className="space-y-6">
@@ -127,11 +135,7 @@ export default function ExamsPage() {
         ]}
       />
 
-      <SurfacePanel
-        id="bo-loc-de-thi"
-        tone="muted"
-        className="flex flex-col gap-3 lg:flex-row"
-      >
+      <SurfacePanel tone="muted" className="flex flex-col gap-3 lg:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -163,7 +167,10 @@ export default function ExamsPage() {
       </SurfacePanel>
 
       {showFilters ? (
-        <SurfacePanel tone="muted" className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <SurfacePanel
+          tone="muted"
+          className="grid grid-cols-1 gap-4 sm:grid-cols-3"
+        >
           <div>
             <Label className="mb-2 block text-xs font-medium text-on-surface-variant">
               Lớp học

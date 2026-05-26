@@ -203,7 +203,7 @@ export default function ClassesPage() {
             setGrade(value === ALL_GRADES ? "" : Number(value))
           }
         >
-          <SelectTrigger className="h-12 w-[180px] rounded-2xl border-outline/15 bg-surface-container-lowest shadow-none">
+          <SelectTrigger className="h-12 w-45 rounded-2xl border-outline/15 bg-surface-container-lowest shadow-none">
             <SelectValue placeholder="Tất cả khối" />
           </SelectTrigger>
           <SelectContent position="popper">

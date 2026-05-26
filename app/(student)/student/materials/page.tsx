@@ -137,7 +137,7 @@ export default function DocumentsPage() {
         ]}
       />
 
-      <SurfacePanel id="bo-loc-tai-lieu" tone="muted" className="relative">
+      <SurfacePanel tone="muted" className="relative">
         <Search className="absolute left-9 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="text"
@@ -148,7 +148,10 @@ export default function DocumentsPage() {
         />
       </SurfacePanel>
 
-      <SurfacePanel tone="muted" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <SurfacePanel
+        tone="muted"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+      >
         <Select
           value={classroom || ALL_CLASSROOMS}
           onValueChange={(value) =>
