@@ -1,34 +1,34 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
-import { GraduationCap, Search, Sparkles, Users } from 'lucide-react';
-import { ClassCard } from '@/components/features/class/class-card';
-import { getStudentClasses, joinStudentClass } from '@/lib/student-classes';
-import type { ClassInfo } from '@/types/class.types';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { useEffect, useMemo, useState } from "react";
+import { GraduationCap, Search, Sparkles, Users } from "lucide-react";
+import { ClassCard } from "@/components/features/class/class-card";
+import { getStudentClasses, joinStudentClass } from "@/lib/student-classes";
+import type { ClassInfo } from "@/types/class.types";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { PageHero } from '@/components/shared/page-hero';
-import { SurfacePanel } from '@/components/shared/surface-panel';
-import { AppEmptyState } from '@/components/shared/empty-state';
+} from "@/components/ui/select";
+import { PageHero } from "@/components/shared/page-hero";
+import { SurfacePanel } from "@/components/shared/surface-panel";
+import { AppEmptyState } from "@/components/shared/empty-state";
 
-const ALL_GRADES = '__all_grades__';
+const ALL_GRADES = "__all_grades__";
 
 export default function ClassesPage() {
   const [classes, setClasses] = useState<ClassInfo[]>([]);
   const [isLoadingClasses, setIsLoadingClasses] = useState(true);
-  const [joinCode, setJoinCode] = useState('');
+  const [joinCode, setJoinCode] = useState("");
   const [isJoiningClass, setIsJoiningClass] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [joinSuccess, setJoinSuccess] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
-  const [grade, setGrade] = useState<number | ''>('');
+  const [search, setSearch] = useState("");
+  const [grade, setGrade] = useState<number | "">("");
 
   useEffect(() => {
     let isMounted = true;
@@ -58,14 +58,15 @@ export default function ClassesPage() {
 
   const gradeOptions = useMemo(
     () =>
-      Array.from(new Set(classes.map((cls) => cls.grade).filter((g) => g > 0))).sort(
-        (a, b) => a - b,
-      ),
+      Array.from(
+        new Set(classes.map((cls) => cls.grade).filter((g) => g > 0)),
+      ).sort((a, b) => a - b),
     [classes],
   );
 
   const filtered = classes.filter((cls) => {
-    if (search && !cls.name.toLowerCase().includes(search.toLowerCase())) return false;
+    if (search && !cls.name.toLowerCase().includes(search.toLowerCase()))
+      return false;
     if (grade && cls.grade !== grade) return false;
     return true;
   });
@@ -76,7 +77,7 @@ export default function ClassesPage() {
     const normalizedJoinCode = joinCode.trim().toUpperCase();
 
     if (!normalizedJoinCode) {
-      setJoinError('Vui lòng nhập mã vào lớp.');
+      setJoinError("Vui lòng nhập mã vào lớp.");
       setJoinSuccess(null);
       return;
     }
@@ -89,19 +90,21 @@ export default function ClassesPage() {
       const joinedClass = await joinStudentClass(normalizedJoinCode);
 
       setClasses((current) => {
-        const withoutDuplicate = current.filter((cls) => cls.id !== joinedClass.id);
+        const withoutDuplicate = current.filter(
+          (cls) => cls.id !== joinedClass.id,
+        );
         return [joinedClass, ...withoutDuplicate];
       });
-      setJoinCode('');
+      setJoinCode("");
       setJoinSuccess(`Đã tham gia lớp ${joinedClass.name}.`);
     } catch (error) {
       const message =
-        typeof error === 'object' &&
+        typeof error === "object" &&
         error !== null &&
-        'message' in error &&
-        typeof error.message === 'string'
+        "message" in error &&
+        typeof error.message === "string"
           ? error.message
-          : 'Không thể tham gia lớp học. Vui lòng thử lại.';
+          : "Không thể tham gia lớp học. Vui lòng thử lại.";
 
       setJoinError(message);
     } finally {
@@ -123,23 +126,23 @@ export default function ClassesPage() {
         }
         metrics={[
           {
-            label: 'Lớp đã tham gia',
-            value: isLoadingClasses ? '--' : classes.length,
-            description: 'Các lớp học bạn đang theo dõi trên hệ thống.',
+            label: "Lớp đã tham gia",
+            value: isLoadingClasses ? "--" : classes.length,
+            description: "Các lớp học bạn đang theo dõi trên hệ thống.",
             icon: GraduationCap,
-            tone: 'primary',
+            tone: "primary",
           },
           {
-            label: 'Khối lớp hiện có',
-            value: gradeOptions.length || '--',
-            description: 'Số nhóm khối lớp xuất hiện trong danh sách của bạn.',
+            label: "Khối lớp hiện có",
+            value: gradeOptions.length || "--",
+            description: "Số nhóm khối lớp xuất hiện trong danh sách của bạn.",
             icon: Users,
-            tone: 'secondary',
+            tone: "secondary",
           },
         ]}
       />
 
-      <SurfacePanel id="tham-gia-lop" className="p-5 sm:p-6">
+      <SurfacePanel className="p-5 sm:p-6">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <Users className="h-5 w-5" />
@@ -149,8 +152,8 @@ export default function ClassesPage() {
               Tham gia lớp bằng mã
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Nhập mã lớp do giáo viên cung cấp để thêm lớp học vào tài khoản của
-              bạn.
+              Nhập mã lớp do giáo viên cung cấp để thêm lớp học vào tài khoản
+              của bạn.
             </p>
 
             <form
@@ -161,12 +164,14 @@ export default function ClassesPage() {
                 type="text"
                 placeholder="Ví dụ: IT01"
                 value={joinCode}
-                onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
+                onChange={(event) =>
+                  setJoinCode(event.target.value.toUpperCase())
+                }
                 className="h-12 rounded-2xl border-outline/15 bg-background sm:flex-1"
                 maxLength={30}
               />
               <Button type="submit" size="lg" disabled={isJoiningClass}>
-                {isJoiningClass ? 'Đang tham gia...' : 'Tham gia lớp'}
+                {isJoiningClass ? "Đang tham gia..." : "Tham gia lớp"}
               </Button>
             </form>
 
@@ -188,20 +193,22 @@ export default function ClassesPage() {
             type="text"
             placeholder="Tìm kiếm lớp học..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
             className="h-12 rounded-2xl border-outline/15 bg-surface-container-lowest pl-10 pr-4 shadow-none"
           />
         </div>
         <Select
-          value={grade === '' ? ALL_GRADES : String(grade)}
-          onValueChange={value => setGrade(value === ALL_GRADES ? '' : Number(value))}
+          value={grade === "" ? ALL_GRADES : String(grade)}
+          onValueChange={(value) =>
+            setGrade(value === ALL_GRADES ? "" : Number(value))
+          }
         >
           <SelectTrigger className="h-12 w-[180px] rounded-2xl border-outline/15 bg-surface-container-lowest shadow-none">
             <SelectValue placeholder="Tất cả khối" />
           </SelectTrigger>
           <SelectContent position="popper">
             <SelectItem value={ALL_GRADES}>Tất cả khối</SelectItem>
-            {gradeOptions.map(g => (
+            {gradeOptions.map((g) => (
               <SelectItem key={g} value={String(g)}>
                 Lớp {g}
               </SelectItem>
@@ -219,13 +226,13 @@ export default function ClassesPage() {
           icon={GraduationCap}
           title={
             classes.length === 0
-              ? 'Bạn chưa tham gia lớp học nào'
-              : 'Không tìm thấy lớp học nào'
+              ? "Bạn chưa tham gia lớp học nào"
+              : "Không tìm thấy lớp học nào"
           }
           description={
             classes.length === 0
-              ? 'Hãy nhập mã lớp để bắt đầu theo dõi hoạt động học tập cùng giáo viên.'
-              : 'Thử thay đổi từ khóa hoặc bộ lọc để tìm lớp học phù hợp.'
+              ? "Hãy nhập mã lớp để bắt đầu theo dõi hoạt động học tập cùng giáo viên."
+              : "Thử thay đổi từ khóa hoặc bộ lọc để tìm lớp học phù hợp."
           }
         />
       ) : (
