@@ -6,14 +6,14 @@ import type {
 import type { ClassInfo } from '@/types/class.types';
 
 const CLASS_COVER_COLORS = [
-  '#00464a',
-  '#29695b',
-  '#663000',
-  '#4a0040',
-  '#1a4a00',
-  '#004a4a',
-  '#6b3200',
-  '#320064',
+  '#4f46e5',
+  '#06b6d4',
+  '#7c3aed',
+  '#0f766e',
+  '#2563eb',
+  '#9333ea',
+  '#0891b2',
+  '#4338ca',
 ] as const;
 
 function inferGradeFromClassName(className: string): number {

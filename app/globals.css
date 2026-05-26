@@ -6,55 +6,55 @@
 
 /* M3 Surface System Tokens */
 :root {
-  --primary: #00464a;
-  --primary-foreground: oklch(0.98 0.01 180);
-  --primary-container: #006064;
-  --on-primary-container: #8fd8dc;
-  --primary-fixed: #a6eff3;
-  --primary-fixed-dim: #8ad3d7;
+  --primary: #4f46e5;
+  --primary-foreground: #eef2ff;
+  --primary-container: #e0e7ff;
+  --on-primary-container: #312e81;
+  --primary-fixed: #c7d2fe;
+  --primary-fixed-dim: #a5b4fc;
 
-  --secondary: #29695b;
-  --secondary-foreground: oklch(0.98 0.01 180);
-  --secondary-container: #acedda;
-  --on-secondary-container: #2e6d5f;
+  --secondary: #0891b2;
+  --secondary-foreground: #ecfeff;
+  --secondary-container: #cffafe;
+  --on-secondary-container: #164e63;
 
-  --tertiary: #663000;
-  --tertiary-foreground: oklch(0.98 0.01 180);
-  --tertiary-container: #894400;
-  --on-tertiary-container: #ffbe93;
-  --tertiary-fixed: #ffdcc6;
+  --tertiary: #7c3aed;
+  --tertiary-foreground: #f5f3ff;
+  --tertiary-container: #ede9fe;
+  --on-tertiary-container: #5b21b6;
+  --tertiary-fixed: #ddd6fe;
 
-  --background: #f3faff;
-  --foreground: #071e27;
+  --background: #f5f7ff;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --card-foreground: #071e27;
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: #071e27;
+  --popover-foreground: #0f172a;
 
-  --muted: #e6f6ff;
-  --muted-foreground: #3f4949;
-  --accent: #e6f6ff;
-  --accent-foreground: #071e27;
+  --muted: #eef2ff;
+  --muted-foreground: #64748b;
+  --accent: #ecfeff;
+  --accent-foreground: #0f172a;
 
   --destructive: #ba1a1a;
   --destructive-foreground: oklch(0.98 0 0);
 
-  --border: #6f7979;
-  --input: #bec8c9;
-  --ring: #00464a;
+  --border: #cbd5e1;
+  --input: #dbe4f3;
+  --ring: #4f46e5;
 
   /* Surface hierarchy */
-  --surface: #f3faff;
-  --surface-container: #dbf1fe;
-  --surface-container-low: #e6f6ff;
+  --surface: #f5f7ff;
+  --surface-container: #edf2ff;
+  --surface-container-low: #f3f6ff;
   --surface-container-lowest: #ffffff;
-  --surface-container-high: #d5ecf8;
-  --surface-container-highest: #cfe6f2;
-  --surface-dim: #c7dde9;
-  --on-surface: #071e27;
-  --on-surface-variant: #3f4949;
-  --outline: #6f7979;
-  --outline-variant: #bec8c9;
+  --surface-container-high: #e4ebfb;
+  --surface-container-highest: #dce5f7;
+  --surface-dim: #d7e0f4;
+  --on-surface: #0f172a;
+  --on-surface-variant: #64748b;
+  --outline: #94a3b8;
+  --outline-variant: #d7deef;
 
   --radius: 0.625rem;
 
@@ -68,54 +68,54 @@
 
 /* Dark mode */
 .dark {
-  --background: #071e27;
-  --foreground: #e6f6ff;
-  --primary: #acedda;
-  --primary-foreground: #003338;
-  --primary-container: #00464a;
-  --on-primary-container: #8fd8dc;
-  --primary-fixed: #a6eff3;
-  --primary-fixed-dim: #8ad3d7;
+  --background: #060b1a;
+  --foreground: #eef2ff;
+  --primary: #a5b4fc;
+  --primary-foreground: #1e1b4b;
+  --primary-container: #312e81;
+  --on-primary-container: #e0e7ff;
+  --primary-fixed: #c7d2fe;
+  --primary-fixed-dim: #a5b4fc;
 
-  --secondary: #5ddbbc;
-  --secondary-foreground: #003d31;
-  --secondary-container: #1a4d40;
-  --on-secondary-container: #acedda;
+  --secondary: #67e8f9;
+  --secondary-foreground: #083344;
+  --secondary-container: #164e63;
+  --on-secondary-container: #cffafe;
 
-  --tertiary: #e6b98a;
-  --tertiary-foreground: #3a2200;
-  --tertiary-container: #663000;
-  --on-tertiary-container: #ffbe93;
-  --tertiary-fixed: #ffdcc6;
+  --tertiary: #c4b5fd;
+  --tertiary-foreground: #2e1065;
+  --tertiary-container: #5b21b6;
+  --on-tertiary-container: #ede9fe;
+  --tertiary-fixed: #ddd6fe;
 
-  --card: #112833;
-  --card-foreground: #cfe6f2;
-  --popover: #112833;
-  --popover-foreground: #cfe6f2;
+  --card: #0f172a;
+  --card-foreground: #e2e8f0;
+  --popover: #0f172a;
+  --popover-foreground: #e2e8f0;
 
-  --muted: #1a3540;
-  --muted-foreground: #8da3a3;
-  --accent: #1a3540;
-  --accent-foreground: #cfe6f2;
+  --muted: #131c33;
+  --muted-foreground: #94a3b8;
+  --accent: #102239;
+  --accent-foreground: #e2e8f0;
 
   --destructive: #ffb4ab;
   --destructive-foreground: #690005;
 
-  --border: #3f4949;
-  --input: #3f4949;
-  --ring: #acedda;
+  --border: #25314c;
+  --input: #334155;
+  --ring: #a5b4fc;
 
-  --surface: #071e27;
-  --surface-container: #112833;
-  --surface-container-low: #0f222c;
-  --surface-container-lowest: #0a1a23;
-  --surface-container-high: #1a3540;
-  --surface-container-highest: #25404d;
-  --surface-dim: #071e27;
-  --on-surface: #cfe6f2;
-  --on-surface-variant: #bec8c9;
-  --outline: #6f7979;
-  --outline-variant: #3f4949;
+  --surface: #060b1a;
+  --surface-container: #0f172a;
+  --surface-container-low: #111c33;
+  --surface-container-lowest: #0a1022;
+  --surface-container-high: #16213c;
+  --surface-container-highest: #1d2847;
+  --surface-dim: #060b1a;
+  --on-surface: #e2e8f0;
+  --on-surface-variant: #94a3b8;
+  --outline: #475569;
+  --outline-variant: #2b3958;
 
   --chart-1: oklch(0.7 0.15 180);
   --chart-2: oklch(0.65 0.12 160);
@@ -207,7 +207,7 @@
 
 /* Custom gradient utility */
 .bg-gradient-hero {
-  background: linear-gradient(135deg, #00464a 0%, #006064 100%);
+  background: linear-gradient(135deg, #4338ca 0%, #6366f1 52%, #06b6d4 100%);
 }
 
 /* Progress orb animations */
@@ -227,13 +227,13 @@
 
 /* Glass surface utility */
 .glass {
-  background: rgba(243, 250, 255, 0.8);
+  background: rgba(255, 255, 255, 0.74);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
 
 .dark .glass {
-  background: rgba(7, 30, 39, 0.8);
+  background: rgba(6, 11, 26, 0.8);
 }
 
 .font-display {
@@ -246,8 +246,8 @@
 
 .landing-grid {
   background-image:
-    linear-gradient(to right, rgba(7, 30, 39, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(7, 30, 39, 0.05) 1px, transparent 1px);
+    linear-gradient(to right, rgba(79, 70, 229, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(79, 70, 229, 0.06) 1px, transparent 1px);
   background-size: 32px 32px;
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.95), transparent);
 }
@@ -257,6 +257,52 @@
   border-radius: 9999px;
   filter: blur(72px);
   opacity: 0.9;
+}
+
+.app-grid {
+  background-image:
+    linear-gradient(to right, rgba(79, 70, 229, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(8, 145, 178, 0.04) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.95), transparent);
+}
+
+.app-glow {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(82px);
+  opacity: 0.95;
+}
+
+.surface-panel {
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 24px 80px -40px rgba(15, 23, 42, 0.28);
+}
+
+.surface-panel-muted {
+  border: 1px solid rgba(215, 222, 239, 0.9);
+  background: rgba(243, 246, 255, 0.86);
+  box-shadow: 0 18px 60px -42px rgba(15, 23, 42, 0.2);
+}
+
+.dark .surface-panel {
+  border-color: rgba(71, 85, 105, 0.38);
+  background: rgba(10, 16, 34, 0.82);
+}
+
+.dark .surface-panel-muted {
+  border-color: rgba(71, 85, 105, 0.34);
+  background: rgba(17, 28, 51, 0.84);
+}
+
+.text-gradient-brand {
+  background: linear-gradient(120deg, #4338ca 0%, #7c3aed 50%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 @keyframes landing-float {

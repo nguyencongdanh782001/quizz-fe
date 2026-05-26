@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "@/lib/auth-server";
-import { TeacherSidebar } from "@/components/common/teacher-sidebar";
-import { Header } from "@/components/common/Header";
 import { AuthHydrator } from "@/components/common/AuthHydrator";
+import { AppShell } from "@/components/shared/app-shell";
 
 export default async function TeacherLayout({
   children,
@@ -25,19 +24,7 @@ export default async function TeacherLayout({
 
   return (
     <AuthHydrator>
-      <div className="flex bg-surface">
-        {/* Sidebar */}
-        <TeacherSidebar />
-
-        {/* Right content */}
-        <div className="flex min-w-0 flex-1 flex-col">
-          <Header />
-          {/* Scroll area */}
-          <main className="flex-1 overflow-y-auto overflow-x-hidden flex-col overflow-hidden">
-            <div className="min-w-0 p-6">{children}</div>
-          </main>
-        </div>
-      </div>
+      <AppShell role="teacher">{children}</AppShell>
     </AuthHydrator>
   );
 }

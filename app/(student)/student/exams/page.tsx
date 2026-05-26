@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { BookOpen, Search, SlidersHorizontal, Sparkles, Trophy } from "lucide-react";
 import { ExamCard } from "@/components/features/exam/exam-card";
 import { getStudentSystemExams } from "@/lib/student-system-exams";
 import { Exam, ExamDifficulty } from "@/types/exam.types";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -14,6 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PageHero } from "@/components/shared/page-hero";
+import { SurfacePanel } from "@/components/shared/surface-panel";
+import { AppEmptyState } from "@/components/shared/empty-state";
 import { cn } from "@/lib/utils";
 
 const difficultyOptions: { value: ExamDifficulty | ""; label: string }[] = [
@@ -79,8 +83,9 @@ export default function ExamsPage() {
 
     if (
       keyword &&
-      ![exam.title, exam.description, exam.classroomName ?? ""]
-        .some((value) => value.toLowerCase().includes(keyword))
+      ![exam.title, exam.description, exam.classroomName ?? ""].some((value) =>
+        value.toLowerCase().includes(keyword),
+      )
     ) {
       return false;
     }
@@ -90,38 +95,57 @@ export default function ExamsPage() {
     return true;
   });
 
-  const activeFilterCount = [classroom, grade, difficulty].filter(Boolean)
-    .length;
+  const activeFilterCount = [classroom, grade, difficulty].filter(Boolean).length;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display font-bold text-2xl text-on-surface mb-1">
-          Thư viện đề thi
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {isLoadingExams
-            ? "Đang tải đề thi hệ thống..."
-            : `${exams.length} đề thi hệ thống — tìm kiếm và làm bài ngay`}
-        </p>
-      </div>
+      <PageHero
+        eyebrow="Thư viện đề thi"
+        title="Khám phá đề thi phù hợp với nhịp học của bạn"
+        description="Tìm kiếm nhanh theo lớp, mức độ và chủ đề để bước vào bài thi phù hợp ngay mà không cần rời khỏi luồng học tập."
+        icon={Sparkles}
+        actions={
+          <Button asChild variant="outline" size="lg">
+            <a href="#bo-loc-de-thi">Đi đến bộ lọc</a>
+          </Button>
+        }
+        metrics={[
+          {
+            label: "Tổng đề thi",
+            value: isLoadingExams ? "--" : exams.length,
+            description: "Đề thi hệ thống sẵn sàng để bắt đầu ngay.",
+            icon: BookOpen,
+            tone: "primary",
+          },
+          {
+            label: "Mức độ hiển thị",
+            value: isLoadingExams ? "--" : difficultyOptions.length - 1,
+            description: "Các nhóm độ khó để bạn chọn nhịp ôn luyện phù hợp.",
+            icon: Trophy,
+            tone: "secondary",
+          },
+        ]}
+      />
 
-      {/* Search + Filter toggle */}
-      <div className="flex gap-3">
+      <SurfacePanel
+        id="bo-loc-de-thi"
+        tone="muted"
+        className="flex flex-col gap-3 lg:flex-row"
+      >
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="text"
             placeholder="Tìm kiếm đề thi..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
             className="h-12 rounded-2xl border-outline/15 bg-surface-container-lowest pl-10 pr-4 shadow-none"
           />
         </div>
         <button
-          onClick={() => setShowFilters((v) => !v)}
+          onClick={() => setShowFilters((value) => !value)}
           className={cn(
-            "cursor-pointer flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium",
+            "cursor-pointer flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium",
             "border transition-colors shrink-0",
             showFilters || activeFilterCount > 0
               ? "bg-primary text-white border-primary"
@@ -130,17 +154,16 @@ export default function ExamsPage() {
         >
           <SlidersHorizontal className="w-4 h-4" />
           Bộ lọc
-          {activeFilterCount > 0 && (
-            <span className="w-5 h-5 rounded-full bg-white/20 text-xs flex items-center justify-center">
+          {activeFilterCount > 0 ? (
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-xs">
               {activeFilterCount}
             </span>
-          )}
+          ) : null}
         </button>
-      </div>
+      </SurfacePanel>
 
-      {/* Filter panel */}
-      {showFilters && (
-        <div className="grid grid-cols-1 gap-4 rounded-2xl border border-outline/10 bg-surface-container-lowest p-4 shadow-[0_18px_44px_-32px_rgba(7,30,39,0.18)] sm:grid-cols-3">
+      {showFilters ? (
+        <SurfacePanel tone="muted" className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
             <Label className="mb-2 block text-xs font-medium text-on-surface-variant">
               Lớp học
@@ -180,9 +203,9 @@ export default function ExamsPage() {
               </SelectTrigger>
               <SelectContent position="popper">
                 <SelectItem value={ALL_GRADES}>Tất cả khối</SelectItem>
-                {gradeOptions.map((g) => (
-                  <SelectItem key={g} value={String(g)}>
-                    Lớp {g}
+                {gradeOptions.map((gradeOption) => (
+                  <SelectItem key={gradeOption} value={String(gradeOption)}>
+                    Lớp {gradeOption}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -205,41 +228,40 @@ export default function ExamsPage() {
                 <SelectValue placeholder="Tất cả mức" />
               </SelectTrigger>
               <SelectContent position="popper">
-                {difficultyOptions.map((opt) => (
+                {difficultyOptions.map((option) => (
                   <SelectItem
-                    key={opt.value || ALL_DIFFICULTIES}
-                    value={opt.value || ALL_DIFFICULTIES}
+                    key={option.value || ALL_DIFFICULTIES}
+                    value={option.value || ALL_DIFFICULTIES}
                   >
-                    {opt.label}
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-        </div>
-      )}
+        </SurfacePanel>
+      ) : null}
 
-      {/* Results */}
       {isLoadingExams ? (
-        <div className="text-center py-16 text-muted-foreground">
+        <SurfacePanel className="py-12 text-center text-muted-foreground">
           <Search className="w-10 h-10 mx-auto mb-3 opacity-40" />
           <p className="font-medium">Đang tải đề thi</p>
           <p className="text-sm mt-1">Vui lòng chờ trong giây lát</p>
-        </div>
+        </SurfacePanel>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <Search className="w-10 h-10 mx-auto mb-3 opacity-40" />
-          <p className="font-medium">
-            {exams.length === 0
+        <AppEmptyState
+          icon={BookOpen}
+          title={
+            exams.length === 0
               ? "Chưa có đề thi hệ thống nào"
-              : "Không tìm thấy đề thi nào"}
-          </p>
-          <p className="text-sm mt-1">
-            {exams.length === 0
-              ? "Hãy quay lại sau khi hệ thống cập nhật thêm đề thi"
-              : "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"}
-          </p>
-        </div>
+              : "Không tìm thấy đề thi nào"
+          }
+          description={
+            exams.length === 0
+              ? "Hệ thống sẽ hiển thị đề thi mới tại đây ngay khi có dữ liệu."
+              : "Thử thay đổi bộ lọc hoặc từ khóa để khám phá thêm đề thi phù hợp."
+          }
+        />
       ) : (
         <>
           <p className="text-sm text-muted-foreground">

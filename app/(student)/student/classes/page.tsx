@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Search, Users } from 'lucide-react';
+import { GraduationCap, Search, Sparkles, Users } from 'lucide-react';
 import { ClassCard } from '@/components/features/class/class-card';
 import { getStudentClasses, joinStudentClass } from '@/lib/student-classes';
 import type { ClassInfo } from '@/types/class.types';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -13,6 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { PageHero } from '@/components/shared/page-hero';
+import { SurfacePanel } from '@/components/shared/surface-panel';
+import { AppEmptyState } from '@/components/shared/empty-state';
 
 const ALL_GRADES = '__all_grades__';
 
@@ -107,16 +111,35 @@ export default function ClassesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display font-bold text-2xl text-on-surface mb-1">
-          Lớp học của tôi
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {classes.length} lớp đã tham gia
-        </p>
-      </div>
+      <PageHero
+        eyebrow="Không gian lớp học"
+        title="Lớp học của tôi"
+        description="Theo dõi lớp học đang tham gia, nhập mã lớp mới và tìm nhanh những không gian học tập phù hợp với bạn."
+        icon={Sparkles}
+        actions={
+          <Button asChild variant="outline" size="lg">
+            <a href="#tham-gia-lop">Nhập mã lớp ngay</a>
+          </Button>
+        }
+        metrics={[
+          {
+            label: 'Lớp đã tham gia',
+            value: isLoadingClasses ? '--' : classes.length,
+            description: 'Các lớp học bạn đang theo dõi trên hệ thống.',
+            icon: GraduationCap,
+            tone: 'primary',
+          },
+          {
+            label: 'Khối lớp hiện có',
+            value: gradeOptions.length || '--',
+            description: 'Số nhóm khối lớp xuất hiện trong danh sách của bạn.',
+            icon: Users,
+            tone: 'secondary',
+          },
+        ]}
+      />
 
-      <section className="rounded-2xl border border-outline/10 bg-surface-container-lowest p-5">
+      <SurfacePanel id="tham-gia-lop" className="p-5 sm:p-6">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <Users className="h-5 w-5" />
@@ -142,13 +165,9 @@ export default function ClassesPage() {
                 className="h-12 rounded-2xl border-outline/15 bg-background sm:flex-1"
                 maxLength={30}
               />
-              <button
-                type="submit"
-                disabled={isJoiningClass}
-                className="h-12 rounded-2xl bg-primary px-5 text-sm font-semibold text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
-              >
+              <Button type="submit" size="lg" disabled={isJoiningClass}>
                 {isJoiningClass ? 'Đang tham gia...' : 'Tham gia lớp'}
-              </button>
+              </Button>
             </form>
 
             {joinError && (
@@ -160,9 +179,9 @@ export default function ClassesPage() {
             )}
           </div>
         </div>
-      </section>
+      </SurfacePanel>
 
-      <div className="flex gap-3">
+      <SurfacePanel tone="muted" className="flex flex-col gap-3 lg:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -189,21 +208,26 @@ export default function ClassesPage() {
             ))}
           </SelectContent>
         </Select>
-      </div>
+      </SurfacePanel>
 
       {isLoadingClasses ? (
-        <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest p-6 text-sm text-muted-foreground">
+        <SurfacePanel className="text-sm text-muted-foreground">
           Đang tải lớp học...
-        </div>
+        </SurfacePanel>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <Search className="w-10 h-10 mx-auto mb-3 opacity-40" />
-          <p className="font-medium">
-            {classes.length === 0
+        <AppEmptyState
+          icon={GraduationCap}
+          title={
+            classes.length === 0
               ? 'Bạn chưa tham gia lớp học nào'
-              : 'Không tìm thấy lớp học nào'}
-          </p>
-        </div>
+              : 'Không tìm thấy lớp học nào'
+          }
+          description={
+            classes.length === 0
+              ? 'Hãy nhập mã lớp để bắt đầu theo dõi hoạt động học tập cùng giáo viên.'
+              : 'Thử thay đổi từ khóa hoặc bộ lọc để tìm lớp học phù hợp.'
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((cls) => (

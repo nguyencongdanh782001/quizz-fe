@@ -47,10 +47,9 @@ export function DocumentCard({ doc }: DocumentCardProps) {
   return (
     <div
       className={cn(
-        'bg-surface-container-lowest rounded-xl overflow-hidden',
-        'shadow-[0_4px_24px_rgba(7,30,39,0.06)]',
-        'transition-all duration-200 hover:shadow-[0_8px_32px_rgba(7,30,39,0.12)]',
-        'hover:-translate-y-0.5 flex flex-col'
+        'flex flex-col overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/82',
+        'shadow-[0_22px_80px_-42px_rgba(15,23,42,0.24)] backdrop-blur-xl',
+        'transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_90px_-40px_rgba(15,23,42,0.28)]'
       )}
     >
       {doc.thumbnailUrl && doc.type === 'video' && (
@@ -68,11 +67,11 @@ export function DocumentCard({ doc }: DocumentCardProps) {
         </div>
       )}
 
-      <div className="p-4 flex flex-col flex-1">
+      <div className="flex flex-1 flex-col p-5">
         <div className="flex items-start justify-between gap-2 mb-2">
           <span
             className={cn(
-              'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
+              'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium shadow-sm',
               typeColor[doc.type]
             )}
           >
@@ -90,23 +89,23 @@ export function DocumentCard({ doc }: DocumentCardProps) {
           ) : null}
         </div>
 
-        <h3 className="font-display font-semibold text-on-surface text-sm leading-snug mb-2 line-clamp-2 flex-1">
+        <h3 className="font-display font-semibold text-on-surface text-base leading-snug mb-2 line-clamp-2 flex-1">
           {doc.title}
         </h3>
 
-        <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+        <p className="text-sm leading-7 text-muted-foreground line-clamp-2 mb-4">
           {doc.description}
         </p>
 
-        <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+        <div className="mb-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
           {doc.fileSize && (
-            <span className="flex items-center gap-1">
+            <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-low px-3 py-1.5">
               <FileText className="w-3 h-3" />
               {formatFileSize(doc.fileSize)}
             </span>
           )}
           {doc.downloadCount > 0 && (
-            <span className="flex items-center gap-1">
+            <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-low px-3 py-1.5">
               <Download className="w-3 h-3" />
               {doc.downloadCount}
             </span>
@@ -116,8 +115,8 @@ export function DocumentCard({ doc }: DocumentCardProps) {
         <a
           href={doc.url}
           className={cn(
-            'flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium',
-            'bg-primary text-white transition-colors hover:bg-primary/90'
+            'mt-auto flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold',
+            'bg-linear-to-r from-primary to-tertiary text-white shadow-[0_18px_36px_-20px_rgba(79,70,229,0.52)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_42px_-18px_rgba(79,70,229,0.42)]'
           )}
         >
           <Download className="w-4 h-4" />

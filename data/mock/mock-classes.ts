@@ -14,7 +14,7 @@ export const mockClasses: ClassInfo[] = [
     examCount: 12,
     createdAt: "2024-09-01T00:00:00Z",
     inviteCode: "CVAN-10A1",
-    coverColor: "#00464a",
+    coverColor: "#4f46e5",
     students: [
       {
         id: "st-001",
@@ -54,7 +54,7 @@ export const mockClasses: ClassInfo[] = [
     examCount: 8,
     createdAt: "2024-09-05T00:00:00Z",
     inviteCode: "NTRAI-10B2",
-    coverColor: "#29695b",
+    coverColor: "#06b6d4",
     students: [
       {
         id: "st-004",
@@ -86,7 +86,7 @@ export const mockClasses: ClassInfo[] = [
     examCount: 15,
     createdAt: "2024-08-20T00:00:00Z",
     inviteCode: "LLOI-12C3",
-    coverColor: "#663000",
+    coverColor: "#7c3aed",
     students: [
       {
         id: "st-006",
@@ -126,7 +126,7 @@ export const mockClasses: ClassInfo[] = [
     examCount: 6,
     createdAt: "2024-09-01T00:00:00Z",
     inviteCode: "NQ-8A5",
-    coverColor: "#663000",
+    coverColor: "#2563eb",
     students: [
       {
         id: "st-009",
