@@ -6,6 +6,7 @@ import type {
   TeacherClassExamListResponse,
   TeacherClassListResponse,
   TeacherCreateDocumentRequest,
+  TeacherDocumentListResponse,
   TeacherCreateSystemDocumentResponse,
   TeacherCreateClassExamResponse,
   TeacherCreateExamRequest,
@@ -21,6 +22,10 @@ import type {
 export const api = {
   teacher: {
     documents: {
+      list: (params?: Record<string, string | number | boolean>) =>
+        client.get<TeacherDocumentListResponse>("/teacher/documents", {
+          params,
+        }),
       create: (data: TeacherCreateDocumentRequest) =>
         client.post<TeacherCreateSystemDocumentResponse>(
           "/teacher/documents",

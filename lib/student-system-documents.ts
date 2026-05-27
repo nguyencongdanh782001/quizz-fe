@@ -36,7 +36,7 @@ function mapStudentDocument(item: StudentSystemDocumentSchema): Document {
     downloadCount: 0,
     tags: item.scope ? [item.scope] : [],
     content: item.content,
-    scope: item.scope,
+    scope: item.scope === 'classroom' ? 'classroom' : 'system',
     classroomId: item.classroom_id ? String(item.classroom_id) : null,
     classroomName: item.classroom_name,
     actionLabel: 'Xem tài liệu',

@@ -109,12 +109,14 @@ function mapTeacherClassDocument(item: TeacherClassDocumentSchema): Document {
     uploadedBy: 'teacher',
     uploadedByName: 'Giáo viên',
     createdAt: item.created_at,
+    updatedAt: item.updated_at,
     downloadCount: 0,
     tags: [item.scope, item.is_published ? 'published' : 'draft'].filter(Boolean),
     content: item.content,
-    scope: item.scope,
+    scope: item.scope === 'classroom' ? 'classroom' : 'system',
     classroomId: item.classroom_id ? String(item.classroom_id) : null,
     classroomName: item.classroom_name,
+    isPublished: item.is_published,
     actionLabel: item.is_published ? 'Xem tài liệu' : 'Chỉnh sửa tài liệu',
   };
 }

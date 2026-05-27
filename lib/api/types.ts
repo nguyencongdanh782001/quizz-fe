@@ -279,6 +279,12 @@ export interface TeacherClassDocumentListResponse {
   items: TeacherClassDocumentSchema[];
 }
 
+export type TeacherDocumentSchema = TeacherClassDocumentSchema;
+
+export interface TeacherDocumentListResponse {
+  items: TeacherDocumentSchema[];
+}
+
 export type TeacherSystemDocumentSchema = TeacherClassDocumentSchema;
 
 export interface TeacherCreateDocumentRequest {

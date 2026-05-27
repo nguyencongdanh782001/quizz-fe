@@ -39,7 +39,7 @@ export function LandingCTA() {
             >
               <Button
                 size="lg"
-                className="h-12 rounded-full bg-white px-6 text-primary hover:bg-white/90 text-white"
+                className="h-12 rounded-full bg-white px-6 hover:bg-white/90 text-white"
                 asChild
               >
                 <Link href="/register">

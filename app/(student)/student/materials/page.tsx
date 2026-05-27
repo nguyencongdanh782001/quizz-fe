@@ -5,7 +5,7 @@ import { Download, FileText, Search, Sparkles } from "lucide-react";
 import { DocumentCard } from "@/components/features/document/document-card";
 import { getStudentSystemDocuments } from "@/lib/student-system-documents";
 import type { Document } from "@/types/document.types";
-import { DocumentType } from "@/types/document.types";
+// import { DocumentType } from "@/types/document.types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,12 +18,12 @@ import {
 import { PageHero } from "@/components/shared/page-hero";
 import { SurfacePanel } from "@/components/shared/surface-panel";
 import { AppEmptyState } from "@/components/shared/empty-state";
-import { cn } from "@/lib/utils";
+// import { cn } from "@/lib/utils";
 
-const typeFilters: { value: DocumentType | ""; label: string }[] = [
-  { value: "", label: "Tất cả" },
-  { value: "doc", label: "DOC" },
-];
+// const typeFilters: { value: DocumentType | ""; label: string }[] = [
+//   { value: "", label: "Tất cả" },
+//   { value: "doc", label: "DOC" },
+// ];
 
 const ALL_CLASSROOMS = "__all_classrooms__";
 const ALL_GRADES = "__all_grades__";
@@ -34,7 +34,7 @@ export default function DocumentsPage() {
   const [search, setSearch] = useState("");
   const [classroom, setClassroom] = useState("");
   const [grade, setGrade] = useState<number | "">("");
-  const [type, setType] = useState<DocumentType | "">("");
+  // const [type, setType] = useState<DocumentType | "">("");
 
   useEffect(() => {
     let isMounted = true;
@@ -103,7 +103,7 @@ export default function DocumentsPage() {
     }
     if (classroom && document.classroomName !== classroom) return false;
     if (grade && document.grade !== grade) return false;
-    if (type && document.type !== type) return false;
+    // if (type && document.type !== type) return false;
     return true;
   });
 
@@ -150,7 +150,7 @@ export default function DocumentsPage() {
 
       <SurfacePanel
         tone="muted"
-        className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2"
       >
         <Select
           value={classroom || ALL_CLASSROOMS}
@@ -190,7 +190,7 @@ export default function DocumentsPage() {
           </SelectContent>
         </Select>
 
-        <div className="flex gap-2">
+        {/* <div className="flex gap-2">
           {typeFilters.map((filter) => (
             <button
               key={filter.value}
@@ -205,7 +205,7 @@ export default function DocumentsPage() {
               {filter.label}
             </button>
           ))}
-        </div>
+        </div> */}
       </SurfacePanel>
 
       {isLoadingDocuments ? (
