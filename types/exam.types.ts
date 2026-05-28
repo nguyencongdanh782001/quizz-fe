@@ -18,6 +18,15 @@ export interface Question {
   explanation?: string;
 }
 
+export interface StudentAnswer {
+  question_id: string;
+  radio_answer?: string;
+  checkbox_answer?: string[];
+  text_answer?: string;
+}
+
+export type StudentAnswersByQuestion = Record<string, StudentAnswer>;
+
 export interface Exam {
   id: string;
   title: string;
@@ -46,7 +55,7 @@ export interface ExamAttempt {
   id: string;
   examId: string;
   userId: string;
-  answers: Record<string, string[]>; // questionId → selected option ids or a single text answer
+  answers: StudentAnswersByQuestion;
   score: number;
   totalPoints: number;
   percentage: number;
@@ -67,7 +76,7 @@ export interface ExamSession {
   examId: string;
   attemptId: string;
   currentIndex: number;
-  answers: Record<string, string[]>; // questionId → selected option ids or a single text answer
+  answers: StudentAnswersByQuestion;
   timeLeft: number; // seconds
   startedAt: string;
 }

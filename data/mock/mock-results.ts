@@ -6,8 +6,14 @@ export const mockResults: ExamAttempt[] = [
     examId: 'exam-002',
     userId: 'st-001',
     answers: {
-      'q-002-01': ['a', 'b', 'c'],
-      'q-002-02': ['b'],
+      'q-002-01': {
+        question_id: 'q-002-01',
+        checkbox_answer: ['a', 'b', 'c'],
+      },
+      'q-002-02': {
+        question_id: 'q-002-02',
+        radio_answer: 'b',
+      },
     },
     score: 18,
     totalPoints: 30,
@@ -22,11 +28,26 @@ export const mockResults: ExamAttempt[] = [
     examId: 'exam-003',
     userId: 'st-001',
     answers: {
-      'q-003-01': ['a'],
-      'q-003-02': ['b'],
-      'q-003-03': ['a', 'b', 'd'],
-      'q-003-04': ['b'],
-      'q-003-05': ['a'],
+      'q-003-01': {
+        question_id: 'q-003-01',
+        radio_answer: 'a',
+      },
+      'q-003-02': {
+        question_id: 'q-003-02',
+        radio_answer: 'b',
+      },
+      'q-003-03': {
+        question_id: 'q-003-03',
+        checkbox_answer: ['a', 'b', 'd'],
+      },
+      'q-003-04': {
+        question_id: 'q-003-04',
+        radio_answer: 'b',
+      },
+      'q-003-05': {
+        question_id: 'q-003-05',
+        radio_answer: 'a',
+      },
     },
     score: 22,
     totalPoints: 22,

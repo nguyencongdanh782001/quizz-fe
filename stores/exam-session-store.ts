@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { Exam, Question, ExamAttempt } from '@/types/exam.types';
+import {
+  Exam,
+  Question,
+  ExamAttempt,
+  StudentAnswersByQuestion,
+} from '@/types/exam.types';
+import {
+  createChoiceStudentAnswer,
+  createTextStudentAnswer,
+  getSelectedOptionIds,
+} from '@/lib/student-exam-answers';
 
 export type ExamPhase = 'not-started' | 'in-progress' | 'submitted';
 
@@ -9,7 +19,7 @@ interface ExamSessionState {
   questions: Question[];
   phase: ExamPhase;
   currentIndex: number;
-  answers: Record<string, string[]>; // questionId → selected option ids or a single text answer
+  answers: StudentAnswersByQuestion;
   startedAt: string | null;
   submittedAt: string | null;
   attemptId: string;
@@ -17,7 +27,8 @@ interface ExamSessionState {
 
 interface ExamSessionActions {
   startExam: (exam: Exam, questions: Question[]) => void;
-  setAnswer: (questionId: string, optionIds: string[]) => void;
+  setAnswer: (question: Question, optionIds: string[]) => void;
+  setTextAnswer: (questionId: string, value: string) => void;
   goToQuestion: (index: number) => void;
   nextQuestion: () => void;
   prevQuestion: () => void;
@@ -38,13 +49,16 @@ export function clearExamSessionCookie(): void {
   document.cookie = `${SESSION_COOKIE}=; path=/; max-age=0`;
 }
 
-function computeScore(questions: Question[], answers: Record<string, string[]>): ExamAttempt {
+function computeScore(
+  questions: Question[],
+  answers: StudentAnswersByQuestion,
+): ExamAttempt {
   let score = 0;
   let totalPoints = 0;
 
   for (const q of questions) {
     totalPoints += q.points;
-    const selected = answers[q.id] ?? [];
+    const selected = getSelectedOptionIds(q, answers[q.id]);
     const correctIds = q.options.filter(o => o.isCorrect).map(o => o.id);
 
     if (q.type === 'single' || q.type === 'multiple_choice' || q.type === 'true_false') {
@@ -113,9 +127,21 @@ export const useExamSessionStore = create<ExamSessionState & ExamSessionActions>
         setExamSessionCookie();
       },
 
-      setAnswer: (questionId, optionIds) => {
+      setAnswer: (question, optionIds) => {
         set(state => ({
-          answers: { ...state.answers, [questionId]: optionIds },
+          answers: {
+            ...state.answers,
+            [question.id]: createChoiceStudentAnswer(question, optionIds),
+          },
+        }));
+      },
+
+      setTextAnswer: (questionId, value) => {
+        set(state => ({
+          answers: {
+            ...state.answers,
+            [questionId]: createTextStudentAnswer(questionId, value),
+          },
         }));
       },
 

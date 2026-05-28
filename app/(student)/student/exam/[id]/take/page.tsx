@@ -8,16 +8,25 @@ import { useExamTimer } from "@/hooks/use-exam-timer";
 import {
   getStudentExamDetail,
   writeCachedStudentAttemptResult,
+  saveStudentAttemptAnswerBatch,
   saveStudentAttemptAnswers,
   submitStudentAttempt,
   StudentExamDetailData,
 } from "@/lib/student-system-exams";
+import {
+  findFirstUnansweredTextQuestionIndex,
+  getAnsweredQuestionIds,
+  getTextAnswerValidationErrors,
+  hasStudentAnswer,
+  TEXT_ANSWER_REQUIRED_MESSAGE,
+} from "@/lib/student-exam-answers";
 import { cn } from "@/lib/utils";
 import { useExamSessionStore } from "@/stores/exam-session-store";
+import type { Question } from "@/types/exam.types";
 import { AlertTriangle, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { use, useCallback, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useMemo, useState } from "react";
 
 function ExamTakeContent({
   id,
@@ -34,6 +43,7 @@ function ExamTakeContent({
     answers,
     startExam,
     setAnswer,
+    setTextAnswer,
     goToQuestion,
     nextQuestion,
     prevQuestion,
@@ -44,6 +54,7 @@ function ExamTakeContent({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingAnswer, setIsSavingAnswer] = useState(false);
   const [saveAnswerError, setSaveAnswerError] = useState<string | null>(null);
+  const [answerErrors, setAnswerErrors] = useState<Record<string, string>>({});
   const exam = examDetail.exam;
   const questions = examDetail.questions;
   const activeAttemptId =
@@ -75,10 +86,60 @@ function ExamTakeContent({
   }, [exam, questions, resetSession, startExam]);
 
   const currentQuestion = questions[currentIndex];
-  const answeredIds = new Set(
-    Object.keys(answers).filter((k) => answers[k].length > 0),
+  const answeredIds = useMemo(
+    () => getAnsweredQuestionIds(questions, answers),
+    [answers, questions],
   );
   const answeredCount = answeredIds.size;
+
+  const validateRequiredTextAnswers = useCallback(() => {
+    const textAnswerErrors = getTextAnswerValidationErrors(questions, answers);
+    const firstUnansweredTextIndex = findFirstUnansweredTextQuestionIndex(
+      questions,
+      answers,
+    );
+
+    setAnswerErrors(textAnswerErrors);
+
+    if (firstUnansweredTextIndex === -1) {
+      return true;
+    }
+
+    goToQuestion(firstUnansweredTextIndex);
+    setShowSubmitConfirm(false);
+    setSaveAnswerError(TEXT_ANSWER_REQUIRED_MESSAGE);
+    return false;
+  }, [answers, goToQuestion, questions]);
+
+  const handleSelectAnswer = useCallback(
+    (question: Question, optionIds: string[]) => {
+      setAnswer(question, optionIds);
+    },
+    [setAnswer],
+  );
+
+  const handleChangeTextAnswer = useCallback(
+    (questionId: string, value: string) => {
+      setTextAnswer(questionId, value);
+
+      if (value.trim()) {
+        setAnswerErrors((currentErrors) => {
+          if (!currentErrors[questionId]) {
+            return currentErrors;
+          }
+
+          const nextErrors = { ...currentErrors };
+          delete nextErrors[questionId];
+          return nextErrors;
+        });
+
+        setSaveAnswerError((currentError) =>
+          currentError === TEXT_ANSWER_REQUIRED_MESSAGE ? null : currentError,
+        );
+      }
+    },
+    [setTextAnswer],
+  );
 
   const persistQuestionAnswer = useCallback(async () => {
     if (!currentQuestion) {
@@ -87,9 +148,9 @@ function ExamTakeContent({
 
     setSaveAnswerError(null);
 
-    const selectedIds = answers[currentQuestion.id] ?? [];
+    const currentAnswer = answers[currentQuestion.id];
 
-    if (selectedIds.length === 0) {
+    if (!hasStudentAnswer(currentQuestion, currentAnswer)) {
       return true;
     }
 
@@ -106,7 +167,7 @@ function ExamTakeContent({
       await saveStudentAttemptAnswers(
         activeAttemptId,
         currentQuestion,
-        selectedIds,
+        currentAnswer,
       );
       return true;
     } catch (error) {
@@ -125,6 +186,44 @@ function ExamTakeContent({
     }
   }, [activeAttemptId, answers, currentQuestion]);
 
+  const persistAllAnsweredAnswers = useCallback(async () => {
+    const hasAnyAnswer = questions.some((question) =>
+      hasStudentAnswer(question, answers[question.id]),
+    );
+
+    if (!hasAnyAnswer) {
+      return true;
+    }
+
+    if (!activeAttemptId) {
+      setSaveAnswerError(
+        "Không tìm thấy lượt làm bài hiện tại. Hãy quay lại trang chi tiết đề thi và bắt đầu lại.",
+      );
+      return false;
+    }
+
+    setIsSavingAnswer(true);
+    setSaveAnswerError(null);
+
+    try {
+      await saveStudentAttemptAnswerBatch(activeAttemptId, questions, answers);
+      return true;
+    } catch (error) {
+      const message =
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        typeof error.message === "string"
+          ? error.message
+          : "Không thể lưu câu trả lời. Vui lòng thử lại.";
+
+      setSaveAnswerError(message);
+      return false;
+    } finally {
+      setIsSavingAnswer(false);
+    }
+  }, [activeAttemptId, answers, questions]);
+
   const handleNextQuestion = useCallback(async () => {
     const isSaved = await persistQuestionAnswer();
 
@@ -133,7 +232,42 @@ function ExamTakeContent({
     }
   }, [nextQuestion, persistQuestionAnswer]);
 
+  const handlePrevQuestion = useCallback(async () => {
+    const isSaved = await persistQuestionAnswer();
+
+    if (isSaved) {
+      prevQuestion();
+    }
+  }, [persistQuestionAnswer, prevQuestion]);
+
+  const handleJumpToQuestion = useCallback(
+    async (index: number) => {
+      if (index === currentIndex) {
+        return;
+      }
+
+      const isSaved = await persistQuestionAnswer();
+
+      if (isSaved) {
+        goToQuestion(index);
+      }
+    },
+    [currentIndex, goToQuestion, persistQuestionAnswer],
+  );
+
+  const handleOpenSubmitConfirm = useCallback(() => {
+    setSaveAnswerError(null);
+
+    if (validateRequiredTextAnswers()) {
+      setShowSubmitConfirm(true);
+    }
+  }, [validateRequiredTextAnswers]);
+
   const handleSubmit = useCallback(async () => {
+    if (!validateRequiredTextAnswers()) {
+      return;
+    }
+
     if (!activeAttemptId) {
       setSaveAnswerError(
         "Không tìm thấy lượt làm bài hiện tại. Hãy quay lại trang chi tiết đề thi và bắt đầu lại.",
@@ -145,7 +279,7 @@ function ExamTakeContent({
     setSaveAnswerError(null);
 
     try {
-      const isSaved = await persistQuestionAnswer();
+      const isSaved = await persistAllAnsweredAnswers();
 
       if (!isSaved) {
         setIsSubmitting(false);
@@ -170,7 +304,14 @@ function ExamTakeContent({
       setSaveAnswerError(message);
       setIsSubmitting(false);
     }
-  }, [activeAttemptId, id, persistQuestionAnswer, resetSession, router]);
+  }, [
+    activeAttemptId,
+    id,
+    persistAllAnsweredAnswers,
+    resetSession,
+    router,
+    validateRequiredTextAnswers,
+  ]);
 
   const { timeLeft } = useExamTimer(
     exam?.duration ? exam.duration * 60 : 0,
@@ -219,7 +360,7 @@ function ExamTakeContent({
             currentIndex={currentIndex}
             answeredIds={answeredIds}
             questionIds={questions.map((q) => q.id)}
-            onJumpTo={goToQuestion}
+            onJumpTo={(index) => void handleJumpToQuestion(index)}
           />
         </div>
 
@@ -230,8 +371,10 @@ function ExamTakeContent({
               question={currentQuestion}
               index={currentIndex}
               total={questions.length}
-              selectedIds={answers[currentQuestion.id] ?? []}
-              onSelect={(qId, optionIds) => setAnswer(qId, optionIds)}
+              answer={answers[currentQuestion.id]}
+              answerError={answerErrors[currentQuestion.id]}
+              onSelect={handleSelectAnswer}
+              onTextAnswerChange={handleChangeTextAnswer}
             />
           </div>
         )}
@@ -240,9 +383,9 @@ function ExamTakeContent({
         <ExamNavigation
           currentIndex={currentIndex}
           total={questions.length}
-          onPrev={prevQuestion}
+          onPrev={() => void handlePrevQuestion()}
           onNext={() => void handleNextQuestion()}
-          onSubmit={() => setShowSubmitConfirm(true)}
+          onSubmit={handleOpenSubmitConfirm}
           isNextDisabled={isSavingAnswer}
           nextLabel={isSavingAnswer ? "Đang lưu..." : "Câu tiếp"}
         />

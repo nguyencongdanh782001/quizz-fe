@@ -8,7 +8,19 @@ import type {
   StudentSubmitAttemptResultSchema,
   StudentSystemExamSchema,
 } from '@/lib/api/types';
-import type { Exam, ExamDifficulty, Question, QuestionType } from '@/types/exam.types';
+import type {
+  Exam,
+  ExamDifficulty,
+  Question,
+  QuestionType,
+  StudentAnswersByQuestion,
+} from '@/types/exam.types';
+import {
+  getSelectedOptionIds,
+  hasStudentAnswer,
+  normalizeStudentAnswer,
+  type StudentAnswerStateValue,
+} from '@/lib/student-exam-answers';
 
 interface StudentFetchOptions {
   throwOnError?: boolean;
@@ -97,7 +109,7 @@ function mapStudentExamQuestions(
       text: question.prompt,
       type: mapStudentQuestionType(question.question_type),
       points: question.points,
-      options: question.options.map((option) => ({
+      options: (question.options ?? []).map((option) => ({
         id: String(option.id),
         text: option.option_text,
       })),
@@ -351,9 +363,11 @@ export async function startStudentExamAttempt(
 
 function buildAttemptAnswerPayload(
   question: Question,
-  selectedIds: string[],
+  answer: StudentAnswerStateValue | undefined,
 ): StudentAttemptAnswerPayloadItem[] {
-  if (selectedIds.length === 0) {
+  const normalizedAnswer = normalizeStudentAnswer(question, answer);
+
+  if (!normalizedAnswer || !hasStudentAnswer(question, normalizedAnswer)) {
     return [];
   }
 
@@ -362,10 +376,12 @@ function buildAttemptAnswerPayload(
       {
         question_id: Number(question.id),
         selected_option_id: null,
-        answer_text: selectedIds[0] ?? '',
+        answer_text: normalizedAnswer.text_answer?.trim() ?? '',
       },
     ];
   }
+
+  const selectedIds = getSelectedOptionIds(question, normalizedAnswer);
 
   return selectedIds.map((selectedId) => ({
     question_id: Number(question.id),
@@ -374,12 +390,39 @@ function buildAttemptAnswerPayload(
   }));
 }
 
+export function buildStudentAttemptAnswersPayload(
+  questions: Question[],
+  answersByQuestion: StudentAnswersByQuestion,
+): StudentAttemptAnswerPayloadItem[] {
+  return questions.flatMap((question) =>
+    buildAttemptAnswerPayload(question, answersByQuestion[question.id]),
+  );
+}
+
 export async function saveStudentAttemptAnswers(
   attemptId: string,
   question: Question,
-  selectedIds: string[],
+  answer: StudentAnswerStateValue | undefined,
 ): Promise<StudentExamAttemptData | null> {
-  const answers = buildAttemptAnswerPayload(question, selectedIds);
+  const answers = buildAttemptAnswerPayload(question, answer);
+
+  if (answers.length === 0) {
+    return null;
+  }
+
+  const response = await studentApi.student.attempts.saveAnswers(attemptId, {
+    answers,
+  });
+
+  return mapStudentExamAttempt(response.data.attempt);
+}
+
+export async function saveStudentAttemptAnswerBatch(
+  attemptId: string,
+  questions: Question[],
+  answersByQuestion: StudentAnswersByQuestion,
+): Promise<StudentExamAttemptData | null> {
+  const answers = buildStudentAttemptAnswersPayload(questions, answersByQuestion);
 
   if (answers.length === 0) {
     return null;

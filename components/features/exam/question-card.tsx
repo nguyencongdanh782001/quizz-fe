@@ -1,16 +1,84 @@
 'use client';
 
+import { useCallback, useEffect, useRef, type ChangeEvent } from 'react';
 import { Flag, CheckCircle } from 'lucide-react';
-import { Question } from '@/types/exam.types';
+import type { Question, StudentAnswer } from '@/types/exam.types';
 import { AnswerOption } from './answer-option';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  getSelectedOptionIds,
+  getTextAnswerValue,
+  isSingleChoiceQuestionType,
+} from '@/lib/student-exam-answers';
+
+function resizeTextarea(textarea: HTMLTextAreaElement): void {
+  textarea.style.height = 'auto';
+  textarea.style.height = `${textarea.scrollHeight}px`;
+}
+
+function TextQuestion({
+  questionId,
+  value,
+  error,
+  onChange,
+}: {
+  questionId: string;
+  value: string;
+  error?: string;
+  onChange: (questionId: string, value: string) => void;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      resizeTextarea(textareaRef.current);
+    }
+  }, [value]);
+
+  const handleChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      onChange(questionId, event.target.value);
+      resizeTextarea(event.currentTarget);
+    },
+    [onChange, questionId],
+  );
+
+  return (
+    <div className="space-y-2">
+      <Textarea
+        ref={textareaRef}
+        rows={4}
+        value={value}
+        onChange={handleChange}
+        placeholder="Nhập câu trả lời của bạn..."
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? `${questionId}-text-answer-error` : undefined}
+        className="min-h-40 resize-none overflow-hidden px-4 py-3 leading-6 tracking-normal"
+      />
+      {error ? (
+        <p
+          id={`${questionId}-text-answer-error`}
+          className="text-xs font-medium text-red-600"
+        >
+          {error}
+        </p>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          Câu trả lời sẽ được lưu khi bạn chuyển câu hoặc nộp bài.
+        </p>
+      )}
+    </div>
+  );
+}
 
 interface QuestionCardProps {
   question: Question;
   index: number;
   total: number;
-  selectedIds: string[];
-  onSelect: (questionId: string, optionIds: string[]) => void;
+  answer?: StudentAnswer;
+  answerError?: string;
+  onSelect: (question: Question, optionIds: string[]) => void;
+  onTextAnswerChange: (questionId: string, value: string) => void;
   isFlagged?: boolean;
 }
 
@@ -18,25 +86,25 @@ export function QuestionCard({
   question,
   index,
   total,
-  selectedIds,
+  answer,
+  answerError,
   onSelect,
+  onTextAnswerChange,
   isFlagged = false,
 }: QuestionCardProps) {
-  const isSingleSelect =
-    question.type === 'single' ||
-    question.type === 'multiple_choice' ||
-    question.type === 'true_false';
-  const textAnswer = selectedIds[0] ?? '';
+  const isSingleSelect = isSingleChoiceQuestionType(question.type);
+  const selectedIds = getSelectedOptionIds(question, answer);
+  const textAnswer = getTextAnswerValue(question, answer);
 
   const handleSelect = (optionId: string) => {
     if (isSingleSelect) {
-      onSelect(question.id, [optionId]);
+      onSelect(question, [optionId]);
     } else {
       // Multiple: toggle
       if (selectedIds.includes(optionId)) {
-        onSelect(question.id, selectedIds.filter(id => id !== optionId));
+        onSelect(question, selectedIds.filter(id => id !== optionId));
       } else {
-        onSelect(question.id, [...selectedIds, optionId]);
+        onSelect(question, [...selectedIds, optionId]);
       }
     }
   };
@@ -72,23 +140,12 @@ export function QuestionCard({
 
       {/* Options */}
       {question.type === 'text' ? (
-        <div className="space-y-2">
-          <Textarea
-            value={textAnswer}
-            onChange={(event) => {
-              const nextValue = event.target.value;
-              onSelect(
-                question.id,
-                nextValue.trim() ? [nextValue] : [],
-              );
-            }}
-            placeholder="Nhập câu trả lời của bạn"
-            className="min-h-36"
-          />
-          <p className="text-xs text-muted-foreground">
-            Câu trả lời sẽ được lưu khi bạn chuyển câu hoặc nộp bài.
-          </p>
-        </div>
+        <TextQuestion
+          questionId={question.id}
+          value={textAnswer}
+          error={answerError}
+          onChange={onTextAnswerChange}
+        />
       ) : (
         <div className="space-y-3">
           {question.options.map((option, i) => (

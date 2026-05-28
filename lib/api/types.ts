@@ -417,7 +417,7 @@ export interface StudentExamQuestionSchema {
   order_index: number;
   prompt: string;
   points: number;
-  options: StudentExamOptionSchema[];
+  options: StudentExamOptionSchema[] | null;
 }
 
 export interface StudentExamDetailResponse {

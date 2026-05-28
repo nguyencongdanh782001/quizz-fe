@@ -57,7 +57,11 @@ function QuestionPreviewCard({
         </span>
       </div>
 
-      {showOptions ? (
+      {question.type === "text" ? (
+        <div className="mt-4 min-h-28 rounded-xl border border-dashed border-outline/20 bg-surface p-4 text-sm leading-6 text-muted-foreground">
+          Nhập câu trả lời của bạn...
+        </div>
+      ) : showOptions ? (
         <div className="mt-4 space-y-2.5">
           {question.options.map((option, optionIndex) => (
             <div

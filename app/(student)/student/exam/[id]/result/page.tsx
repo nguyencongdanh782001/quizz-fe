@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
-  return `${m}m ${s}s`;
+  return `${m} phút ${s} giây`;
 }
 
 function ResultPageContent() {
@@ -169,14 +169,14 @@ function ResultPageContent() {
             <div className="flex items-start gap-3">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <div className="min-w-0 flex-1">
-                <p className="font-medium">Retake failed</p>
+                <p className="font-medium">Không thể thi lại</p>
                 <p className="mt-1">{retakeToastMessage}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setRetakeToastMessage(null)}
                 className="shrink-0 text-red-500 transition-colors hover:text-red-700 dark:text-red-300 dark:hover:text-red-100"
-                aria-label="Dismiss error message"
+                aria-label="Đóng thông báo lỗi"
               >
                 <XCircle className="h-4 w-4" />
               </button>
@@ -320,7 +320,14 @@ function ResultPageContent() {
                           <p>Đã chọn: {answer.selectedOptionText}</p>
                         )}
                         {answer.submittedAnswerText && (
-                          <p>Trả lời: {answer.submittedAnswerText}</p>
+                          <div className="mt-2 rounded-xl border border-outline/10 bg-surface/70 p-3">
+                            <p className="font-medium text-on-surface">
+                              Câu trả lời của bạn:
+                            </p>
+                            <p className="mt-1 whitespace-pre-wrap break-words leading-5 text-muted-foreground">
+                              {answer.submittedAnswerText}
+                            </p>
+                          </div>
                         )}
                         {answer.correctOptionText && (
                           <p>Đáp án đúng: {answer.correctOptionText}</p>
