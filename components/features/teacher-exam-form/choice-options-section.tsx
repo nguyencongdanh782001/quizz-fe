@@ -8,6 +8,7 @@ import { RadioGroup } from "@/components/ui/radio-group";
 import type { TeacherExamFormValues } from "./types";
 import { OptionItem } from "./option-item";
 import { normalizeTeacherExamQuestionType } from "./utils";
+import { cn } from "@/lib/utils";
 
 export function ChoiceOptionsSection({
   questionIndex,
@@ -50,11 +51,6 @@ export function ChoiceOptionsSection({
             </p>
           </div>
         </div>
-
-        <Button type="button" variant="outline" size="sm" onClick={onAddOption}>
-          <Plus className="mr-2 h-4 w-4" />
-          {EXAM_FLOW_MESSAGES.buttons.addOption}
-        </Button>
       </div>
 
       {typeof optionsError === "string" &&
@@ -80,7 +76,9 @@ export function ChoiceOptionsSection({
               isCorrect={option.is_correct}
               canRemove={question.options.length > 2}
               onRemove={() => onRemoveOption(optionIndex)}
-              onCorrectChange={() => onSelectSingleCorrectOption(option.client_id)}
+              onCorrectChange={() =>
+                onSelectSingleCorrectOption(option.client_id)
+              }
             />
           ))}
         </RadioGroup>
@@ -103,6 +101,20 @@ export function ChoiceOptionsSection({
           ))}
         </div>
       )}
+
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={onAddOption}
+        className={cn(
+          "flex w-full items-center justify-center gap-2 rounded-[28px] border border-dashed border-outline/30 bg-surface px-4 py-5 text-sm font-medium text-on-surface transition-all",
+          "hover:border-primary/35 hover:bg-primary/5 hover:text-primary",
+        )}
+      >
+        <Plus className="mr-2 h-4 w-4" />
+        {EXAM_FLOW_MESSAGES.buttons.addOption}
+      </Button>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { EXAM_FLOW_MESSAGES } from "@/components/exams/exam-flow-messages";
 import { InputField } from "@/components/common/form/input-field";
 import { Button } from "@/components/ui/button";
 import type { TeacherExamFormValues } from "./types";
+import { cn } from "@/lib/utils";
 
 function getFieldError(
   error: unknown,
@@ -25,7 +26,10 @@ export function TextAnswerSection({
   const { values, errors, touched, setFieldValue, submitCount } =
     useFormikContext<TeacherExamFormValues>();
   const question = values.questions[questionIndex];
-  const answersError = getIn(errors, `questions.${questionIndex}.accepted_answers`);
+  const answersError = getIn(
+    errors,
+    `questions.${questionIndex}.accepted_answers`,
+  );
   const answersTouched = getIn(
     touched,
     `questions.${questionIndex}.accepted_answers`,
@@ -75,16 +79,6 @@ export function TextAnswerSection({
             </p>
           </div>
         </div>
-
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={handleAddAnswer}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          {EXAM_FLOW_MESSAGES.buttons.addOption}
-        </Button>
       </div>
 
       {typeof answersError === "string" &&
@@ -104,7 +98,8 @@ export function TextAnswerSection({
             touched,
             `questions.${questionIndex}.accepted_answers.${answerIndex}`,
           );
-          const resolvedAnswerTouched = answerTouched || answersTouched || questionTouched;
+          const resolvedAnswerTouched =
+            answerTouched || answersTouched || questionTouched;
 
           return (
             <div
@@ -146,6 +141,20 @@ export function TextAnswerSection({
             </div>
           );
         })}
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleAddAnswer}
+          className={cn(
+            " flex w-full items-center justify-center gap-2 rounded-[28px] border border-dashed border-outline/30 bg-surface px-4 py-5 text-sm font-medium text-on-surface transition-all",
+            "hover:border-primary/35 hover:bg-primary/5 hover:text-primary",
+          )}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          {EXAM_FLOW_MESSAGES.buttons.addOption}
+        </Button>
       </div>
     </div>
   );

@@ -117,7 +117,10 @@ export function QuestionBuilderStep() {
     }, 180);
   }
 
-  function handleMoveQuestion(questionIndex: number, nextQuestionIndex: number) {
+  function handleMoveQuestion(
+    questionIndex: number,
+    nextQuestionIndex: number,
+  ) {
     if (
       nextQuestionIndex < 0 ||
       nextQuestionIndex >= values.questions.length ||
