@@ -98,15 +98,19 @@ export const EXAM_FLOW_MESSAGES = {
 export function getExamScopeLabel(scope: string | null | undefined): string {
   const normalizedScope = scope?.trim().toLowerCase();
 
-  if (!normalizedScope || normalizedScope === "system") {
+  if (normalizedScope === "system") {
     return EXAM_FLOW_MESSAGES.states.system;
   }
 
-  if (normalizedScope === "classroom" || normalizedScope === "class") {
+  if (
+    !normalizedScope ||
+    normalizedScope === "classroom" ||
+    normalizedScope === "class"
+  ) {
     return EXAM_FLOW_MESSAGES.states.classroom;
   }
 
-  return scope?.trim() || EXAM_FLOW_MESSAGES.states.system;
+  return scope?.trim() || EXAM_FLOW_MESSAGES.states.classroom;
 }
 
 export function getExamClassroomLabel(classroomId: number | null): string {

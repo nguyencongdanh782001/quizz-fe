@@ -2,30 +2,15 @@
 /* eslint-disable @next/next/no-img-element */
 
 import type { ReactNode } from "react";
-import Link from "next/link";
 import {
   BookOpen,
   CalendarClock,
   CheckCircle2,
   Clock3,
-  Copy,
-  Eye,
   GraduationCap,
-  MoreHorizontal,
-  PencilLine,
-  Rocket,
-  Trash2,
   Trophy,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -33,31 +18,24 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { TeacherExam } from "@/types/exam";
+import { VisibilityStatusBadge } from "./ExamVisibilityToggle";
+import { ExamContextMenu } from "./ExamContextMenu";
+import type { ToggleVisibilityResponse } from "@/hooks/queries/useToggleExamVisibility";
 import {
   formatExamDateTime,
   formatExamNumber,
   getActiveBadgeConfig,
   getExamScopeLabel,
-  getPublishedBadgeConfig,
 } from "./exam-utils";
 
 interface ExamCardProps {
   exam: TeacherExam;
   isDeleting: boolean;
-  isPublishing: boolean;
   onCopyLink: (exam: TeacherExam) => void;
   onDeleteRequest: (exam: TeacherExam) => void;
-  onTogglePublish: (exam: TeacherExam) => void;
+  onToggleVisibility: (response: ToggleVisibilityResponse) => void;
+  onToggleError: (message: string) => void;
   onViewDetail: (exam: TeacherExam) => void;
-}
-
-interface ExamActionMenuProps {
-  exam: TeacherExam;
-  isDeleting: boolean;
-  isPublishing: boolean;
-  onCopyLink: (exam: TeacherExam) => void;
-  onDeleteRequest: (exam: TeacherExam) => void;
-  onTogglePublish: (exam: TeacherExam) => void;
 }
 
 export function TruncatedTooltipText({
@@ -91,64 +69,16 @@ export function TruncatedTooltipText({
 }
 
 export function ExamStatusBadges({ exam }: { exam: TeacherExam }) {
-  const publishedBadge = getPublishedBadgeConfig(exam.is_published);
   const activeBadge = getActiveBadgeConfig(exam.is_active);
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Badge className={publishedBadge.className}>
-        <Rocket className="mr-1.5 size-3" />
-        {publishedBadge.label}
-      </Badge>
+      <VisibilityStatusBadge isPublished={exam.is_published} />
       <Badge className={activeBadge.className}>
         <CheckCircle2 className="mr-1.5 size-3" />
         {activeBadge.label}
       </Badge>
     </div>
-  );
-}
-
-export function ExamActionMenu({
-  exam,
-  isDeleting,
-  onCopyLink,
-  onDeleteRequest,
-}: ExamActionMenuProps) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full text-muted-foreground hover:text-on-surface"
-          aria-label="Thêm thao tác"
-        >
-          <MoreHorizontal className="size-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-60">
-        <DropdownMenuItem onSelect={() => onCopyLink(exam)}>
-          <Copy className="size-4" />
-          Sao chép liên kết
-        </DropdownMenuItem>
-        {/* <DropdownMenuItem
-          disabled={isPublishing}
-          onSelect={() => onTogglePublish(exam)}
-        >
-          <Rocket className="size-4" />
-          {exam.is_published ? "Ẩn đề thi" : "Xuất bản"}
-        </DropdownMenuItem> */}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          destructive
-          disabled={isDeleting}
-          onSelect={() => onDeleteRequest(exam)}
-        >
-          <Trash2 className="size-4" />
-          {isDeleting ? "Đang xóa..." : "Xóa đề thi"}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }
 
@@ -177,10 +107,10 @@ function ExamMetaItem({
 export function ExamCard({
   exam,
   isDeleting,
-  isPublishing,
   onCopyLink,
   onDeleteRequest,
-  onTogglePublish,
+  onToggleVisibility,
+  onToggleError,
   onViewDetail,
 }: ExamCardProps) {
   return (
@@ -209,13 +139,14 @@ export function ExamCard({
           <Badge className="border-white/30 bg-white/85 text-slate-900 shadow-sm backdrop-blur-sm dark:bg-slate-950/45 dark:text-white">
             {getExamScopeLabel(exam.scope)}
           </Badge>
-          <ExamActionMenu
+          <ExamContextMenu
             exam={exam}
             isDeleting={isDeleting}
-            isPublishing={isPublishing}
+            onViewDetail={onViewDetail}
             onCopyLink={onCopyLink}
             onDeleteRequest={onDeleteRequest}
-            onTogglePublish={onTogglePublish}
+            onToggleVisibility={onToggleVisibility}
+            onToggleError={onToggleError}
           />
         </div>
       </div>
@@ -295,28 +226,15 @@ export function ExamCard({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="default"
-            size="lg"
-            onClick={() => onViewDetail(exam)}
-            className="h-11 flex-1 rounded-2xl"
-          >
-            <Eye className="mr-2 size-4" />
-            Xem chi tiết
-          </Button>
-          <Button
-            asChild
-            type="button"
-            variant="outline"
-            size="lg"
-            className="h-11 flex-1 rounded-2xl"
-          >
-            <Link href={`/teacher/exams/create?edit=${exam.id}`}>
-              <PencilLine className="mr-2 size-4" />
-              Chỉnh sửa
-            </Link>
-          </Button>
+          <ExamContextMenu
+            exam={exam}
+            isDeleting={isDeleting}
+            onViewDetail={onViewDetail}
+            onCopyLink={onCopyLink}
+            onDeleteRequest={onDeleteRequest}
+            onToggleVisibility={onToggleVisibility}
+            onToggleError={onToggleError}
+          />
         </div>
       </div>
     </article>

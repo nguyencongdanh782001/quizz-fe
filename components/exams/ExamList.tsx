@@ -1,17 +1,15 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { useDebounce } from "use-debounce";
 import Link from "next/link";
 import {
   AlertTriangle,
-  Eye,
   FileX2,
   LoaderCircle,
-  PencilLine,
   Plus,
   RefreshCw,
 } from "lucide-react";
@@ -27,8 +25,8 @@ import {
   ToastViewport,
 } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { updateTeacherSystemExamPublishState } from "@/services/exam.service";
 import { DeleteExamDialog } from "@/components/exams/DeleteExamDialog";
+import { ExamContextMenu } from "@/components/exams/ExamContextMenu";
 import { useDeleteExam } from "@/hooks/queries/useDeleteExam";
 import { useTeacherExams } from "@/hooks/queries/useTeacherExams";
 import { getApiErrorMessage } from "@/lib/api/error-message";
@@ -39,14 +37,11 @@ import type {
   TeacherExamQuery,
 } from "@/types/exam";
 import { EXAM_FLOW_MESSAGES } from "./exam-flow-messages";
-import {
-  ExamCard,
-  ExamActionMenu,
-  ExamStatusBadges,
-  TruncatedTooltipText,
-} from "./ExamCard";
+import { ExamCard, ExamStatusBadges, TruncatedTooltipText } from "./ExamCard";
 import { ExamDetailModal } from "./ExamDetailModal";
 import { ExamFilters } from "./ExamFilters";
+import { mergeTeacherExamPublishUpdate } from "./exam-publish-utils";
+import type { ToggleVisibilityResponse } from "@/hooks/queries/useToggleExamVisibility";
 import {
   clampPage,
   DEFAULT_EXAM_FILTER_VALUES,
@@ -177,9 +172,7 @@ function LoadingState() {
                       <Skeleton className="h-4 w-28" />
                     </td>
                     <td className="px-5 py-4">
-                      <div className="flex justify-end gap-2">
-                        <Skeleton className="h-10 w-28 rounded-2xl" />
-                        <Skeleton className="h-10 w-28 rounded-2xl" />
+                      <div className="flex justify-end">
                         <Skeleton className="h-10 w-10 rounded-full" />
                       </div>
                     </td>
@@ -213,9 +206,8 @@ function LoadingState() {
                   <Skeleton key={metricIndex} className="h-16 rounded-2xl" />
                 ))}
               </div>
-              <div className="flex gap-2">
-                <Skeleton className="h-11 flex-1 rounded-2xl" />
-                <Skeleton className="h-11 flex-1 rounded-2xl" />
+              <div className="flex justify-end">
+                <Skeleton className="h-11 w-11 rounded-full" />
               </div>
             </CardContent>
           </Card>
@@ -341,12 +333,14 @@ function PaginationControls({
 }
 
 export function ExamList() {
-  const [page, setPage] = useState(1);
+  const [paginationState, setPaginationState] = useState({
+    page: 1,
+    filterSignature: "",
+  });
   const [selectedExam, setSelectedExam] = useState<TeacherExam | null>(null);
   const [deleteCandidate, setDeleteCandidate] = useState<TeacherExam | null>(
     null,
   );
-  const [publishingExamId, setPublishingExamId] = useState<number | null>(null);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   const formik = useFormik<TeacherExamFilterFormValues>({
@@ -357,16 +351,17 @@ export function ExamList() {
 
   const [debouncedSearch] = useDebounce(formik.values.search.trim(), 350);
   const isSearchDebouncing = debouncedSearch !== formik.values.search.trim();
-
-  useEffect(() => {
-    setPage(1);
-  }, [
+  const filterSignature = [
     debouncedSearch,
     formik.values.active,
     formik.values.published,
     formik.values.sort_by,
     formik.values.sort_order,
-  ]);
+  ].join("|");
+  const page =
+    paginationState.filterSignature === filterSignature
+      ? paginationState.page
+      : 1;
 
   const query: TeacherExamQuery = {
     search: debouncedSearch || undefined,
@@ -376,13 +371,12 @@ export function ExamList() {
     sort_order: formik.values.sort_order,
   };
 
-  const { data, error, isFetching, isPending, refetch } = useTeacherExams(
-    query,
-  );
+  const { data, error, isFetching, isPending, refetch } =
+    useTeacherExams(query);
   const deleteExamMutation = useDeleteExam();
   const isLoading = isPending && !data;
   const isDeletingExam = deleteExamMutation.isPending;
-  const deletingExamId = isDeletingExam ? deleteCandidate?.id ?? null : null;
+  const deletingExamId = isDeletingExam ? (deleteCandidate?.id ?? null) : null;
 
   const addToast = ({
     title,
@@ -428,13 +422,14 @@ export function ExamList() {
     formik.values.sort_by !== DEFAULT_EXAM_FILTER_VALUES.sort_by ||
     formik.values.sort_order !== DEFAULT_EXAM_FILTER_VALUES.sort_order;
 
-  useEffect(() => {
-    if (page !== safePage) {
-      setPage(safePage);
-    }
-  }, [page, safePage]);
-
   const totalCount = filteredItems.length;
+
+  function handlePageChange(nextPage: number) {
+    setPaginationState({
+      page: nextPage,
+      filterSignature,
+    });
+  }
 
   function handleDeleteRequest(exam: TeacherExam) {
     if (isDeletingExam) {
@@ -480,35 +475,25 @@ export function ExamList() {
     }
   }
 
-  async function handleTogglePublish(exam: TeacherExam) {
-    const nextPublished = !exam.is_published;
+  function handleToggleVisibility(response: ToggleVisibilityResponse) {
+    setSelectedExam((current) =>
+      current ? mergeTeacherExamPublishUpdate(current, response.exam) : current,
+    );
+    addToast({
+      title: response.exam.is_published
+        ? "Đã công khai đề thi"
+        : "Đã chuyển đề thi sang riêng tư",
+      description: response.message || "Cập nhật trạng thái đề thi thành công",
+      variant: "success",
+    });
+  }
 
-    setPublishingExamId(exam.id);
-
-    try {
-      const message = await updateTeacherSystemExamPublishState(
-        exam.id,
-        nextPublished,
-      );
-
-      addToast({
-        title: nextPublished
-          ? "Xuất bản đề thi thành công"
-          : "Ẩn đề thi thành công",
-        description: message,
-        variant: "success",
-      });
-
-      void refetch();
-    } catch (mutationError) {
-      addToast({
-        title: "Không thể cập nhật trạng thái đề thi",
-        description: getApiErrorMessage(mutationError),
-        variant: "error",
-      });
-    } finally {
-      setPublishingExamId(null);
-    }
+  function handleToggleError(message: string) {
+    addToast({
+      title: "Không thể cập nhật trạng thái đề thi",
+      description: message,
+      variant: "error",
+    });
   }
 
   async function handleDeleteExamConfirmation() {
@@ -517,7 +502,7 @@ export function ExamList() {
     }
 
     const examToDelete = deleteCandidate;
-    const shouldGoToPreviousPage = visibleItems.length === 1 && page > 1;
+    const shouldGoToPreviousPage = visibleItems.length === 1 && safePage > 1;
 
     try {
       const response = await deleteExamMutation.mutateAsync(examToDelete.id);
@@ -534,7 +519,7 @@ export function ExamList() {
       }
 
       if (shouldGoToPreviousPage) {
-        setPage((current) => Math.max(current - 1, 1));
+        handlePageChange(Math.max(safePage - 1, 1));
       }
 
       setDeleteCandidate(null);
@@ -624,7 +609,7 @@ export function ExamList() {
                           ].map((heading) => (
                             <th
                               key={heading}
-                              className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+                              className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground break-keep whitespace-nowrap"
                             >
                               {heading}
                             </th>
@@ -661,7 +646,8 @@ export function ExamList() {
                                   />
                                   <TruncatedTooltipText
                                     text={
-                                      exam.description || "Đề thi chưa có mô tả."
+                                      exam.description ||
+                                      "Đề thi chưa có mô tả."
                                     }
                                     lines={2}
                                     className="max-w-xl text-sm text-muted-foreground"
@@ -755,38 +741,15 @@ export function ExamList() {
                             </td>
 
                             <td className="px-5 py-4">
-                              <div className="flex min-w-60 justify-end gap-2">
-                                <Button
-                                  type="button"
-                                  variant="default"
-                                  size="lg"
-                                  onClick={() => setSelectedExam(exam)}
-                                  className="h-10 rounded-2xl px-4"
-                                >
-                                  <Eye className="mr-2 size-4" />
-                                  Xem
-                                </Button>
-                                <Button
-                                  asChild
-                                  type="button"
-                                  variant="outline"
-                                  size="lg"
-                                  className="h-10 rounded-2xl px-4"
-                                >
-                                  <Link
-                                    href={`/teacher/exams/create?edit=${exam.id}`}
-                                  >
-                                    <PencilLine className="mr-2 size-4" />
-                                    Sửa
-                                  </Link>
-                                </Button>
-                                <ExamActionMenu
+                              <div className="flex min-w-16 justify-end">
+                                <ExamContextMenu
                                   exam={exam}
                                   isDeleting={deletingExamId === exam.id}
-                                  isPublishing={publishingExamId === exam.id}
+                                  onViewDetail={setSelectedExam}
                                   onCopyLink={handleCopyLink}
                                   onDeleteRequest={handleDeleteRequest}
-                                  onTogglePublish={handleTogglePublish}
+                                  onToggleVisibility={handleToggleVisibility}
+                                  onToggleError={handleToggleError}
                                 />
                               </div>
                             </td>
@@ -804,10 +767,10 @@ export function ExamList() {
                     key={exam.id}
                     exam={exam}
                     isDeleting={deletingExamId === exam.id}
-                    isPublishing={publishingExamId === exam.id}
                     onCopyLink={handleCopyLink}
                     onDeleteRequest={handleDeleteRequest}
-                    onTogglePublish={handleTogglePublish}
+                    onToggleVisibility={handleToggleVisibility}
+                    onToggleError={handleToggleError}
                     onViewDetail={setSelectedExam}
                   />
                 ))}
@@ -815,7 +778,7 @@ export function ExamList() {
 
               <PaginationControls
                 pagination={pagination}
-                onPageChange={setPage}
+                onPageChange={handlePageChange}
               />
             </>
           )}
@@ -824,6 +787,8 @@ export function ExamList() {
         <ExamDetailModal
           exam={selectedExam}
           open={Boolean(selectedExam)}
+          onToggleVisibility={handleToggleVisibility}
+          onToggleError={handleToggleError}
           onOpenChange={(open) => {
             if (!open) {
               setSelectedExam(null);

@@ -79,12 +79,12 @@ export function getPublishedBadgeConfig(isPublished: boolean) {
     ? {
         label: "Đã xuất bản",
         className:
-          "border-emerald-200/80 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-300",
+          "border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/25 dark:text-emerald-300",
       }
     : {
         label: "Chưa xuất bản",
         className:
-          "border-amber-200/80 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300",
+          "border-amber-200 bg-amber-100 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/25 dark:text-amber-300",
       };
 }
 

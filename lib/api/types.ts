@@ -345,6 +345,22 @@ export interface TeacherSystemExamDetailResponse
   questions?: TeacherExamQuestionSchema[] | null;
 }
 
+export type TeacherExamPublishSchema = Omit<
+  TeacherExamSummarySchema,
+  "created_at" | "updated_at"
+> &
+  Partial<Pick<TeacherExamSummarySchema, "created_at" | "updated_at">>;
+
+export interface TeacherPublishExamResponse {
+  message: string;
+  exam: TeacherExamPublishSchema;
+}
+
+export interface TeacherPrivateExamResponse {
+  message: string;
+  exam: TeacherExamPublishSchema;
+}
+
 export type TeacherClassExamSchema = TeacherExamSummarySchema;
 
 export interface TeacherClassExamDetailResponse

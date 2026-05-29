@@ -4,6 +4,8 @@ import type {
   TeacherCreateExamRequest,
   TeacherCreateSystemExamResponse,
   TeacherUpdateExamRequest,
+  TeacherPublishExamResponse,
+  TeacherPrivateExamResponse,
   TeacherSystemExamDetailResponse,
   TeacherSystemExamListResponse,
 } from "@/lib/api/types";
@@ -77,18 +79,35 @@ export async function deleteTeacherSystemExam(
   return response.data.message;
 }
 
-export async function updateTeacherSystemExamPublishState(
+export async function publishTeacherExam(
   examId: number | string,
-  isPublished: boolean,
-): Promise<string> {
-  const response = await client.patch<MessageResponse | { message?: string }>(
-    `/teacher/system/exams/${examId}/publish`,
-    {
-      is_published: isPublished,
-    },
+): Promise<TeacherPublishExamResponse> {
+  const response = await client.post<TeacherPublishExamResponse>(
+    `/teacher/exams/${examId}/publish`,
   );
 
-  return response.data.message ?? "Cập nhật trạng thái bài thi thành công.";
+  return response.data;
+}
+
+export async function privateTeacherExam(
+  examId: number | string,
+): Promise<TeacherPrivateExamResponse> {
+  const response = await client.post<TeacherPrivateExamResponse>(
+    `/teacher/exams/${examId}/private`,
+  );
+
+  return response.data;
+}
+
+export async function updateTeacherSystemExamPublishState(
+  examId: number | string,
+  _isPublished: boolean,
+): Promise<string> {
+  void _isPublished;
+
+  const response = await publishTeacherExam(examId);
+
+  return response.message || "Cập nhật trạng thái đề thi thành công.";
 }
 
 export async function createTeacherSystemExam(

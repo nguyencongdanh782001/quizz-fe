@@ -48,6 +48,7 @@ export interface Exam {
   classroomName?: string | null;
   totalPoints?: number | null;
   scope?: string | null;
+  isPublished?: boolean;
   isActive?: boolean;
 }
 

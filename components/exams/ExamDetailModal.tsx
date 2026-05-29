@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ExamVisibilityToggle } from "@/components/exams/ExamVisibilityToggle";
+import type { ToggleVisibilityResponse } from "@/hooks/queries/useToggleExamVisibility";
 import {
   Dialog,
   DialogContent,
@@ -26,12 +28,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { TeacherExam } from "@/types/exam";
 import { getTeacherSystemExamDetail } from "@/services/exam.service";
 import { cn } from "@/lib/utils";
+import { mergeTeacherExamPublishUpdate } from "./exam-publish-utils";
+import { VisibilityStatusBadge } from "./ExamVisibilityToggle";
 import {
   formatExamDateTime,
   formatExamNumber,
   getActiveBadgeConfig,
-  getExamScopeLabel,
-  getPublishedBadgeConfig,
   getQuestionTypeLabel,
 } from "./exam-utils";
 
@@ -41,6 +43,8 @@ interface ExamDetailModalProps {
   exam: TeacherExam | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onToggleVisibility?: (response: ToggleVisibilityResponse) => void;
+  onToggleError?: (message: string) => void;
 }
 
 function ExamDetailSkeleton() {
@@ -85,6 +89,8 @@ export function ExamDetailModal({
   exam,
   open,
   onOpenChange,
+  onToggleVisibility,
+  onToggleError,
 }: ExamDetailModalProps) {
   const {
     data: detail,
@@ -101,6 +107,19 @@ export function ExamDetailModal({
   );
 
   const resolvedExam = detail ?? exam;
+
+  function handleToggleSuccess(response: ToggleVisibilityResponse) {
+    void mutate(
+      (current) =>
+        current
+          ? mergeTeacherExamPublishUpdate(current, response.exam)
+          : current,
+      {
+        revalidate: false,
+      },
+    );
+    onToggleVisibility?.(response);
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -158,39 +177,41 @@ export function ExamDetailModal({
                     )}
                     <div className="absolute inset-0 bg-linear-to-t from-slate-950/65 via-slate-950/15 to-transparent" />
                     <div className="absolute inset-x-0 bottom-0 space-y-4 px-6 py-6 text-white sm:px-7">
-                      <div className="flex flex-wrap gap-2">
-                        {(() => {
-                          const publishedBadge = getPublishedBadgeConfig(
-                            resolvedExam.is_published,
-                          );
-                          const activeBadge = getActiveBadgeConfig(
-                            resolvedExam.is_active,
-                          );
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex flex-wrap gap-2">
+                          {(() => {
+                            const activeBadge = getActiveBadgeConfig(
+                              resolvedExam.is_active,
+                            );
 
-                          return (
-                            <>
-                              <Badge className="border-white/25 bg-white/90 text-slate-900 shadow-sm">
-                                {getExamScopeLabel(resolvedExam.scope)}
-                              </Badge>
-                              <Badge
-                                className={cn(
-                                  "shadow-sm",
-                                  publishedBadge.className,
-                                )}
-                              >
-                                {publishedBadge.label}
-                              </Badge>
-                              <Badge
-                                className={cn(
-                                  "shadow-sm",
-                                  activeBadge.className,
-                                )}
-                              >
-                                {activeBadge.label}
-                              </Badge>
-                            </>
-                          );
-                        })()}
+                            return (
+                              <>
+                                <VisibilityStatusBadge
+                                  isPublished={resolvedExam.is_published}
+                                  className="border-white/25 bg-white/90 text-slate-900 shadow-sm"
+                                />
+                                <Badge
+                                  className={cn(
+                                    "shadow-sm",
+                                    activeBadge.className,
+                                  )}
+                                >
+                                  {activeBadge.label}
+                                </Badge>
+                              </>
+                            );
+                          })()}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <ExamVisibilityToggle
+                            examId={resolvedExam.id}
+                            examTitle={resolvedExam.title}
+                            isPublished={resolvedExam.is_published}
+                            onSuccess={handleToggleSuccess}
+                            onError={onToggleError}
+                            className="h-9 rounded-2xl border-white/30 bg-white/92 px-4 text-slate-900 shadow-sm hover:bg-white"
+                          />
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <h2 className="font-display text-3xl font-semibold leading-tight">

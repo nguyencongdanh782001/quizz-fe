@@ -158,6 +158,7 @@ function mapTeacherClassExam(item: TeacherClassExamSchema): Exam {
     classroomName: item.classroom_name,
     totalPoints: item.total_points,
     scope: item.scope,
+    isPublished: item.is_published,
     isActive: item.is_active,
   };
 }
