@@ -6,6 +6,7 @@ import {
   Clock3,
   Eye,
   FileCheck2,
+  ImageIcon,
   ListChecks,
 } from "lucide-react";
 import {
@@ -27,6 +28,7 @@ import {
   normalizeAcceptedAnswers,
   normalizeTeacherExamQuestionType,
 } from "./utils";
+import { ReviewImagePreview } from "./review-image-preview";
 
 function getTotalPoints(values: TeacherExamFormValues): number {
   return values.questions.reduce(
@@ -126,10 +128,11 @@ export function ReviewStep() {
                   bắt đầu làm bài hoặc khi bạn xem lại đề thi sau này.
                 </p>
               </div>
-
-              <div className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-                Sẵn sàng xem lại
+              <div className="w-full flex justify-end items-center">
+                <div className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                  <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                  Sẵn sàng xem lại
+                </div>
               </div>
             </div>
 
@@ -151,14 +154,24 @@ export function ReviewStep() {
               </div>
 
               <div className="space-y-3 rounded-[24px] border border-outline/10 bg-surface-container-low p-4">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                    {EXAM_FLOW_MESSAGES.labels.image}
-                  </p>
-                  <p className="mt-2 break-all text-sm text-on-surface-variant">
-                    {values.image_url.trim() || "Không sử dụng ảnh đề thi"}
-                  </p>
-                </div>
+                {values.image_url.trim() ? (
+                  <ReviewImagePreview
+                    src={values.image_url}
+                    alt={`Ảnh đề thi ${values.title.trim() || "chưa có tên"}`}
+                    label={EXAM_FLOW_MESSAGES.labels.image}
+                    variant="exam"
+                  />
+                ) : (
+                  <div className="rounded-[22px] border border-dashed border-outline/20 bg-muted/25 p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-on-surface">
+                      <ImageIcon className="size-4 text-primary" />
+                      {EXAM_FLOW_MESSAGES.labels.image}
+                    </div>
+                    <p className="mt-3 text-sm text-on-surface-variant">
+                      Chưa có ảnh đề thi.
+                    </p>
+                  </div>
+                )}
                 <div>
                   <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
                     {EXAM_FLOW_MESSAGES.labels.published}
@@ -245,16 +258,12 @@ export function ReviewStep() {
                     </CardHeader>
 
                     <CardContent className="space-y-4 pt-5">
-                      {question.image_url.trim() ? (
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                            Hình minh họa
-                          </p>
-                          <p className="mt-2 break-all text-sm text-on-surface-variant">
-                            {question.image_url}
-                          </p>
-                        </div>
-                      ) : null}
+                      <ReviewImagePreview
+                        src={question.image_url}
+                        alt={`Ảnh minh họa câu hỏi ${questionIndex + 1}`}
+                        label="Ảnh minh họa"
+                        variant="question"
+                      />
 
                       {questionType === "text" ? (
                         <div className="space-y-3">
@@ -294,25 +303,34 @@ export function ReviewStep() {
                                     : "border-outline/10 bg-surface-container-lowest text-on-surface-variant",
                                 )}
                               >
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="font-semibold text-on-surface">
-                                    {String.fromCharCode(65 + optionIndex)}.
-                                  </span>
-                                  <span>
-                                    {option.option_text.trim() ||
-                                      "Chưa nhập đáp án"}
-                                  </span>
-                                  {option.is_correct ? (
-                                    <span className="inline-flex items-center rounded-full bg-primary/12 px-2 py-0.5 text-[0.7rem] font-semibold text-primary">
-                                      Đúng
-                                    </span>
-                                  ) : null}
+                                <div className="flex items-start gap-3">
+                                  <ReviewImagePreview
+                                    src={option.image_url}
+                                    alt={`Ảnh đáp án ${String.fromCharCode(
+                                      65 + optionIndex,
+                                    )} của câu hỏi ${questionIndex + 1}`}
+                                    label={`Ảnh đáp án ${String.fromCharCode(
+                                      65 + optionIndex,
+                                    )}`}
+                                    variant="option"
+                                  />
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className="font-semibold text-on-surface">
+                                        {String.fromCharCode(65 + optionIndex)}.
+                                      </span>
+                                      <span className="min-w-0 wrap-break-word">
+                                        {option.option_text.trim() ||
+                                          "Chưa nhập đáp án"}
+                                      </span>
+                                      {option.is_correct ? (
+                                        <span className="inline-flex items-center rounded-full bg-primary/12 px-2 py-0.5 text-[0.7rem] font-semibold text-primary">
+                                          Đúng
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  </div>
                                 </div>
-                                {option.image_url.trim() ? (
-                                  <p className="mt-2 break-all text-xs text-muted-foreground">
-                                    Ảnh: {option.image_url}
-                                  </p>
-                                ) : null}
                               </div>
                             ))}
                           </div>

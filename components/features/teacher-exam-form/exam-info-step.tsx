@@ -17,6 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ImageUploadField } from "./image-upload-field";
 import type { TeacherExamFormValues } from "./types";
 
 function getFieldError(
@@ -45,8 +46,7 @@ export function ExamInfoStep() {
               Bước 1. Thông tin đề thi
             </CardTitle>
             <CardDescription className="mt-2 max-w-3xl text-sm leading-relaxed">
-              Nhập thông tin cơ bản của đề thi trước khi thêm câu hỏi và đáp
-              án.
+              Nhập thông tin cơ bản của đề thi trước khi thêm câu hỏi và đáp án.
             </CardDescription>
           </div>
         </div>
@@ -77,19 +77,17 @@ export function ExamInfoStep() {
           rows={5}
         />
 
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_220px]">
-          <InputField
+        <div className="grid gap-5">
+          <ImageUploadField
+            id="exam-image-upload"
             label={EXAM_FLOW_MESSAGES.labels.image}
             value={values.image_url}
-            onChange={(event) =>
-              void setFieldValue("image_url", event.target.value)
-            }
+            onChange={(url) => void setFieldValue("image_url", url)}
             error={getFieldError(
               errors.image_url,
               touched.image_url,
               submitCount,
             )}
-            placeholder={EXAM_FLOW_MESSAGES.placeholders.image}
             helperText="Bạn có thể để trống nếu đề thi không sử dụng ảnh minh họa."
           />
 
@@ -100,10 +98,7 @@ export function ExamInfoStep() {
             min={1}
             value={values.duration_minutes}
             onChange={(event) =>
-              void setFieldValue(
-                "duration_minutes",
-                Number(event.target.value),
-              )
+              void setFieldValue("duration_minutes", Number(event.target.value))
             }
             error={getFieldError(
               errors.duration_minutes,

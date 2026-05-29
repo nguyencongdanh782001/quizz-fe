@@ -405,6 +405,19 @@ export interface TeacherCreateSystemExamResponse {
   exam: TeacherSystemExamDetailResponse;
 }
 
+export interface TeacherExamImageSchema {
+  filename: string;
+  content_type: string;
+  size_bytes: number;
+  public_id: string;
+  url: string;
+}
+
+export interface TeacherExamImageUploadResponse {
+  message: string;
+  image: TeacherExamImageSchema;
+}
+
 export interface StudentExamOptionSchema {
   id: number;
   option_key: string;

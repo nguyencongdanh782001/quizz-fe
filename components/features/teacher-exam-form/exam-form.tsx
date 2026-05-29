@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   Form,
   Formik,
@@ -8,6 +7,7 @@ import {
   type FormikTouched,
   useFormikContext,
 } from "formik";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -22,6 +22,16 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { EXAM_FLOW_MESSAGES } from "@/components/exams/exam-flow-messages";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -188,6 +198,7 @@ function ExamFormBody({
   submittingLabel,
   submitError,
   submitContextLabel,
+  confirmCancelOnFirstStep,
 }: {
   cancelHref: string;
   isSubmitting: boolean;
@@ -195,11 +206,21 @@ function ExamFormBody({
   submittingLabel: string;
   submitError?: string | null;
   submitContextLabel: string;
+  confirmCancelOnFirstStep: boolean;
 }) {
-  const { values, errors, isValid, setTouched, validateForm } =
-    useFormikContext<TeacherExamFormValues>();
+  const router = useRouter();
+  const {
+    values,
+    errors,
+    dirty,
+    isValid,
+    resetForm,
+    setTouched,
+    validateForm,
+  } = useFormikContext<TeacherExamFormValues>();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [maxVisitedStepIndex, setMaxVisitedStepIndex] = useState(0);
+  const [openCancelModal, setOpenCancelModal] = useState(false);
   const currentStep = EXAM_STEPS[currentStepIndex];
   const questionCount = values.questions.length;
   const completedQuestionCount = getCompletedQuestionCount(values);
@@ -263,22 +284,22 @@ function ExamFormBody({
               </div>
 
               <div className="rounded-[24px] border border-outline/10 bg-surface p-4">
-                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                    Trạng thái
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                      {values.is_published
-                        ? EXAM_FLOW_MESSAGES.states.public
-                        : EXAM_FLOW_MESSAGES.states.private}
-                    </span>
-                    <span className="inline-flex items-center rounded-full bg-secondary/12 px-2.5 py-1 text-xs font-semibold text-secondary">
-                      {values.is_active
-                        ? EXAM_FLOW_MESSAGES.states.active
-                        : EXAM_FLOW_MESSAGES.states.hidden}
-                    </span>
-                  </div>
+                <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                  Trạng thái
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                    {values.is_published
+                      ? EXAM_FLOW_MESSAGES.states.public
+                      : EXAM_FLOW_MESSAGES.states.private}
+                  </span>
+                  <span className="inline-flex items-center rounded-full bg-secondary/12 px-2.5 py-1 text-xs font-semibold text-secondary">
+                    {values.is_active
+                      ? EXAM_FLOW_MESSAGES.states.active
+                      : EXAM_FLOW_MESSAGES.states.hidden}
+                  </span>
                 </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -474,6 +495,21 @@ function ExamFormBody({
     }
   }
 
+  function handleCancelClick() {
+    if (confirmCancelOnFirstStep || (currentStepIndex === 0 && dirty)) {
+      setOpenCancelModal(true);
+      return;
+    }
+
+    router.push(cancelHref);
+  }
+
+  function handleConfirmCancel() {
+    resetForm();
+    setOpenCancelModal(false);
+    router.push(cancelHref);
+  }
+
   function renderCurrentStep() {
     if (currentStep.id === "info") {
       return <ExamInfoStep />;
@@ -492,83 +528,109 @@ function ExamFormBody({
       : "Tiếp tục đến bước xem lại";
 
   return (
-    <Form className="pb-10">
-      <ExamStepLayout
-        steps={EXAM_STEPS}
-        currentStepIndex={currentStepIndex}
-        maxVisitedStepIndex={maxVisitedStepIndex}
-        onStepSelect={handleStepSelect}
-        aside={stepAside}
-        actions={
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="text-sm text-muted-foreground">
-              {currentStep.id === "review" ? (
-                <span className="inline-flex items-center gap-2">
-                  <FileCheck2 className="h-4 w-4 text-primary" />
-                  Xác nhận lần cuối trước khi lưu đề thi.
-                </span>
-              ) : currentStep.id === "questions" ? (
-                <span className="inline-flex items-center gap-2">
-                  <ListChecks className="h-4 w-4 text-secondary" />
-                  Thêm và sắp xếp câu hỏi trước khi sang bước xem lại.
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4 text-primary" />
-                  Hoàn thiện thông tin cơ bản rồi tiếp tục.
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
-              {currentStepIndex > 0 ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="lg"
-                  onClick={handlePreviousStep}
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  {EXAM_FLOW_MESSAGES.buttons.back}
-                </Button>
-              ) : (
-                <Button asChild type="button" variant="outline" size="lg">
-                  <Link href={cancelHref}>{EXAM_FLOW_MESSAGES.buttons.cancel}</Link>
-                </Button>
-              )}
-
-              <Button
-                type="submit"
-                size="lg"
-                disabled={isSubmitting || !isValid}
-                className={`${currentStep.id !== "review" ? "hidden" : ""}`}
-              >
-                {isSubmitting ? (
-                  <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+    <>
+      <Form className="pb-10">
+        <ExamStepLayout
+          steps={EXAM_STEPS}
+          currentStepIndex={currentStepIndex}
+          maxVisitedStepIndex={maxVisitedStepIndex}
+          onStepSelect={handleStepSelect}
+          aside={stepAside}
+          actions={
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="text-sm text-muted-foreground">
+                {currentStep.id === "review" ? (
+                  <span className="inline-flex items-center gap-2">
+                    <FileCheck2 className="h-4 w-4 text-primary" />
+                    Xác nhận lần cuối trước khi lưu đề thi.
+                  </span>
+                ) : currentStep.id === "questions" ? (
+                  <span className="inline-flex items-center gap-2">
+                    <ListChecks className="h-4 w-4 text-secondary" />
+                    Thêm và sắp xếp câu hỏi trước khi sang bước xem lại.
+                  </span>
                 ) : (
-                  <FileCheck2 className="mr-2 h-4 w-4" />
+                  <span className="inline-flex items-center gap-2">
+                    <ClipboardList className="h-4 w-4 text-primary" />
+                    Hoàn thiện thông tin cơ bản rồi tiếp tục.
+                  </span>
                 )}
-                {isSubmitting ? submittingLabel : submitLabel}
-              </Button>
+              </div>
 
-              {currentStep.id !== "review" && (
-                <Button type="button" size="lg" onClick={handleNextStep}>
-                  {nextButtonLabel}
-                  <ArrowRight className="ml-2 h-4 w-4" />
+              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
+                {currentStepIndex > 0 ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    onClick={handlePreviousStep}
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    {EXAM_FLOW_MESSAGES.buttons.back}
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    onClick={handleCancelClick}
+                  >
+                    {EXAM_FLOW_MESSAGES.buttons.cancel}
+                  </Button>
+                )}
+
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={isSubmitting || !isValid}
+                  className={`${currentStep.id !== "review" ? "hidden" : ""}`}
+                >
+                  {isSubmitting ? (
+                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileCheck2 className="mr-2 h-4 w-4" />
+                  )}
+                  {isSubmitting ? submittingLabel : submitLabel}
                 </Button>
-              )}
+
+                {currentStep.id !== "review" && (
+                  <Button type="button" size="lg" onClick={handleNextStep}>
+                    {nextButtonLabel}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
-        }
-      >
-        <div
-          key={currentStep.id}
-          className="animate-in fade-in-0 slide-in-from-right-2 duration-300"
+          }
         >
-          {renderCurrentStep()}
-        </div>
-      </ExamStepLayout>
-    </Form>
+          <div
+            key={currentStep.id}
+            className="animate-in fade-in-0 slide-in-from-right-2 duration-300"
+          >
+            {renderCurrentStep()}
+          </div>
+        </ExamStepLayout>
+      </Form>
+
+      <AlertDialog open={openCancelModal} onOpenChange={setOpenCancelModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận hủy tạo đề thi</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có thay đổi chưa được lưu.
+              <br />
+              Bạn có chắc chắn muốn hủy tạo đề thi không?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Tiếp tục chỉnh sửa</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmCancel}>
+              Xác nhận hủy
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -581,6 +643,7 @@ export function ExamForm({
   submittingLabel = EXAM_FLOW_MESSAGES.loading.save,
   submitError,
   submitContextLabel = "lớp học",
+  confirmCancelOnFirstStep = false,
 }: {
   initialValues: TeacherExamFormValues;
   onSubmit: (values: TeacherExamFormValues) => Promise<void>;
@@ -590,6 +653,7 @@ export function ExamForm({
   submittingLabel?: string;
   submitError?: string | null;
   submitContextLabel?: string;
+  confirmCancelOnFirstStep?: boolean;
 }) {
   return (
     <Formik<TeacherExamFormValues>
@@ -611,6 +675,7 @@ export function ExamForm({
           submittingLabel={submittingLabel}
           submitError={submitError}
           submitContextLabel={submitContextLabel}
+          confirmCancelOnFirstStep={confirmCancelOnFirstStep}
         />
       </>
     </Formik>

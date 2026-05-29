@@ -12,10 +12,8 @@ import { SelectField } from "@/components/common/form/select-field";
 import { TextareaField } from "@/components/common/form/textarea-field";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type {
-  TeacherExamFormValues,
-  TeacherExamQuestionType,
-} from "./types";
+import type { TeacherExamFormValues, TeacherExamQuestionType } from "./types";
+import { ImageUploadField } from "./image-upload-field";
 import { ChoiceOptionsSection } from "./choice-options-section";
 import { TextAnswerSection } from "./text-answer-section";
 import {
@@ -156,7 +154,10 @@ export function QuestionItem({
             ...question.options,
             createEmptyOption(false),
           ])
-        : reindexTeacherExamOptions([...question.options, createEmptyOption(false)]);
+        : reindexTeacherExamOptions([
+            ...question.options,
+            createEmptyOption(false),
+          ]);
 
     void setFieldValue(`questions.${questionIndex}.options`, nextOptions);
   }
@@ -302,7 +303,7 @@ export function QuestionItem({
           helperText="Viết rõ yêu cầu để học sinh có thể trả lời mà không cần đoán ý."
         />
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,240px)_minmax(0,140px)_minmax(0,1fr)]">
+        <div className="grid gap-4 md:grid-cols-2">
           <SelectField
             label={EXAM_FLOW_MESSAGES.labels.questionType}
             name={`questions.${questionIndex}.question_type`}
@@ -330,21 +331,19 @@ export function QuestionItem({
             error={shouldShowError(pointsTouched, pointsError)}
             placeholder="1"
           />
-
-          <InputField
-            id={`question-${question.client_id}-image`}
-            label="Ảnh câu hỏi (tùy chọn)"
-            value={question.image_url}
-            onChange={(event) =>
-              void setFieldValue(
-                `questions.${questionIndex}.image_url`,
-                event.target.value,
-              )
-            }
-            error={shouldShowError(imageTouched, imageError)}
-            placeholder="https://example.com/question-image.png"
-          />
         </div>
+
+        <ImageUploadField
+          id={`question-${question.client_id}-image`}
+          label="Ảnh câu hỏi (tùy chọn)"
+          value={question.image_url}
+          onChange={(url) =>
+            void setFieldValue(`questions.${questionIndex}.image_url`, url)
+          }
+          error={shouldShowError(imageTouched, imageError)}
+          helperText="Dùng khi câu hỏi cần biểu đồ, hình minh họa hoặc ngữ cảnh trực quan."
+          size="compact"
+        />
 
         {questionType === "text" ? (
           <TextAnswerSection questionIndex={questionIndex} />

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import type { TeacherExamFormValues } from "./types";
+import { ImageUploadField } from "./image-upload-field";
 
 const OPTION_KEYS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -140,19 +141,19 @@ export function OptionItem({
             placeholder={EXAM_FLOW_MESSAGES.placeholders.option}
           />
 
-          <InputField
+          <ImageUploadField
             id={`${controlId}-image`}
             label="Ảnh đáp án (tùy chọn)"
             value={option.image_url}
-            onChange={(event) =>
+            onChange={(url) =>
               void setFieldValue(
                 `questions.${questionIndex}.options.${optionIndex}.image_url`,
-                event.target.value,
+                url,
               )
             }
             error={shouldShowError(imageTouched, imageError)}
-            placeholder="https://example.com/option-image.png"
             helperText="Chỉ dùng khi đáp án cần thêm hình ảnh minh họa."
+            size="compact"
           />
         </div>
       </div>
