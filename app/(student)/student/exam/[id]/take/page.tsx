@@ -90,6 +90,10 @@ function ExamTakeContent({
     () => getAnsweredQuestionIds(questions, answers),
     [answers, questions],
   );
+  const questionIds = useMemo(
+    () => questions.map((question) => question.id),
+    [questions],
+  );
   const answeredCount = answeredIds.size;
 
   const validateRequiredTextAnswers = useCallback(() => {
@@ -255,6 +259,13 @@ function ExamTakeContent({
     [currentIndex, goToQuestion, persistQuestionAnswer],
   );
 
+  const handleProgressJump = useCallback(
+    (index: number) => {
+      void handleJumpToQuestion(index);
+    },
+    [handleJumpToQuestion],
+  );
+
   const handleOpenSubmitConfirm = useCallback(() => {
     setSaveAnswerError(null);
 
@@ -359,8 +370,8 @@ function ExamTakeContent({
             total={questions.length}
             currentIndex={currentIndex}
             answeredIds={answeredIds}
-            questionIds={questions.map((q) => q.id)}
-            onJumpTo={(index) => void handleJumpToQuestion(index)}
+            questionIds={questionIds}
+            onJumpTo={handleProgressJump}
           />
         </div>
 
