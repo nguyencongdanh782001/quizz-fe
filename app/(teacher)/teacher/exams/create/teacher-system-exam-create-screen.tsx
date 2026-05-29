@@ -3,8 +3,14 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, RefreshCw, TriangleAlert } from "lucide-react";
+import {
+  ArrowLeft,
+  FileSpreadsheet,
+  RefreshCw,
+  TriangleAlert,
+} from "lucide-react";
 import { EXAM_FLOW_MESSAGES } from "@/components/exams/exam-flow-messages";
+import { ExamImportDialog } from "@/components/features/teacher-exam-form/exam-import-dialog";
 import { ExamForm } from "@/components/features/teacher-exam-form/exam-form";
 import type { TeacherExamFormValues } from "@/components/features/teacher-exam-form/types";
 import {
@@ -60,17 +66,13 @@ function ExamEditorLoadingState() {
 
       <div className="space-y-6">
         <Skeleton className="h-80 rounded-[32px]" />
-        <Skeleton className="h-[34rem] rounded-[32px]" />
+        <Skeleton className="h-136 rounded-[32px]" />
       </div>
     </div>
   );
 }
 
-function ExamEditorErrorState({
-  onRetry,
-}: {
-  onRetry: () => void;
-}) {
+function ExamEditorErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="rounded-[30px] border border-destructive/15 bg-destructive/6 px-6 py-10 text-center shadow-[0_20px_60px_-48px_rgba(186,26,26,0.45)]">
       <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-destructive/12 text-destructive">
@@ -88,9 +90,7 @@ function ExamEditorErrorState({
           Tải lại dữ liệu
         </Button>
         <Button asChild type="button" size="lg">
-          <Link href="/teacher/exams">
-            {EXAM_FLOW_MESSAGES.buttons.back}
-          </Link>
+          <Link href="/teacher/exams">{EXAM_FLOW_MESSAGES.buttons.back}</Link>
         </Button>
       </div>
     </div>
@@ -105,6 +105,8 @@ export function TeacherSystemExamCreateScreen({
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [toast, setToast] = useState<ScreenToastState | null>(null);
   const redirectTimeoutRef = useRef<number | null>(null);
   const normalizedEditId = editId?.trim() ? editId.trim() : null;
@@ -117,7 +119,9 @@ export function TeacherSystemExamCreateScreen({
     isEditMode && detailQuery.data
       ? mapTeacherExamDetailToFormValues(detailQuery.data)
       : createInitialTeacherExamFormValues();
-  const isSubmitting = isEditMode ? updateMutation.isPending : isCreating;
+  const isSubmitting = isEditMode
+    ? updateMutation.isPending
+    : isCreating || isImporting;
 
   useEffect(() => {
     return () => {
@@ -175,7 +179,9 @@ export function TeacherSystemExamCreateScreen({
       }, 1200);
     } catch (error) {
       console.error(
-        isEditMode ? "Failed to update system exam" : "Failed to create system exam",
+        isEditMode
+          ? "Failed to update system exam"
+          : "Failed to create system exam",
         error,
       );
 
@@ -200,6 +206,47 @@ export function TeacherSystemExamCreateScreen({
     }
   }
 
+  async function handleImportSubmit(values: TeacherExamFormValues) {
+    setSubmitError(null);
+    setToast(null);
+    setIsImporting(true);
+
+    try {
+      const response = await createTeacherSystemExam(
+        mapTeacherExamFormToPayload(values),
+      );
+
+      if (redirectTimeoutRef.current !== null) {
+        window.clearTimeout(redirectTimeoutRef.current);
+      }
+
+      openToast({
+        title: "tạo đề thi thành công",
+        description:
+          response.message || "Đề thi đã được tạo. Đang chuyển về danh sách...",
+        variant: "success",
+      });
+      setIsImportDialogOpen(false);
+      scrollTeacherContentToTop();
+      redirectTimeoutRef.current = window.setTimeout(() => {
+        router.push("/teacher/exams");
+      }, 1200);
+    } catch (error) {
+      console.error("Failed to import system exam", error);
+
+      const message = getApiErrorMessage(error, "Không thể tạo đề thi");
+
+      openToast({
+        title: "Không thể tạo đề thi",
+        description: message,
+        variant: "error",
+      });
+      scrollTeacherContentToTop();
+    } finally {
+      setIsImporting(false);
+    }
+  }
+
   return (
     <ToastProvider>
       <div className="mx-auto w-full max-w-7xl space-y-8">
@@ -211,20 +258,37 @@ export function TeacherSystemExamCreateScreen({
           Quay lại danh sách đề thi
         </Link>
 
-        <div>
-          <h1 className="font-display text-3xl font-bold text-on-surface">
-            {isEditMode
-              ? EXAM_FLOW_MESSAGES.titles.edit
-              : EXAM_FLOW_MESSAGES.titles.create}
-          </h1>
-          <p className="mt-2 max-w-4xl text-sm leading-relaxed text-muted-foreground">
-            {isEditMode
-              ? "Cập nhật đề thi theo từng bước rõ ràng: rà soát thông tin chung, chỉnh sửa câu hỏi và lưu lại phiên bản mới."
-              : "Hoàn thiện đề thi theo từng bước rõ ràng: nhập thông tin chung, xây dựng câu hỏi, sau đó xem lại toàn bộ nội dung trước khi lưu."}
-          </p>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h1 className="font-display text-3xl font-bold text-on-surface">
+              {isEditMode
+                ? EXAM_FLOW_MESSAGES.titles.edit
+                : EXAM_FLOW_MESSAGES.titles.create}
+            </h1>
+            <p className="mt-2 max-w-4xl text-sm leading-relaxed text-muted-foreground">
+              {isEditMode
+                ? "Cập nhật đề thi theo từng bước rõ ràng: rà soát thông tin chung, chỉnh sửa câu hỏi và lưu lại phiên bản mới."
+                : "Hoàn thiện đề thi theo từng bước rõ ràng: nhập thông tin chung, xây dựng câu hỏi, sau đó xem lại toàn bộ nội dung trước khi lưu."}
+            </p>
+          </div>
+
+          {!isEditMode ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              onClick={() => setIsImportDialogOpen(true)}
+              className="w-full sm:w-auto"
+            >
+              <FileSpreadsheet className="size-4" />
+              Tạo đề thi từ Excel
+            </Button>
+          ) : null}
         </div>
 
-        {isEditMode && detailQuery.isLoading ? <ExamEditorLoadingState /> : null}
+        {isEditMode && detailQuery.isLoading ? (
+          <ExamEditorLoadingState />
+        ) : null}
 
         {isEditMode && detailQuery.isError ? (
           <ExamEditorErrorState
@@ -255,6 +319,19 @@ export function TeacherSystemExamCreateScreen({
           />
         ) : null}
       </div>
+
+      {!isEditMode ? (
+        <ExamImportDialog
+          open={isImportDialogOpen}
+          onOpenChange={setIsImportDialogOpen}
+          baseValues={{
+            classroom_id: null,
+            scope: "system",
+          }}
+          isImporting={isImporting}
+          onImport={handleImportSubmit}
+        />
+      ) : null}
 
       {toast ? (
         <Toast

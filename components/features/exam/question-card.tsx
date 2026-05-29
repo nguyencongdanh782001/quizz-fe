@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useRef, type ChangeEvent } from 'react';
-import { Flag, CheckCircle } from 'lucide-react';
-import type { Question, StudentAnswer } from '@/types/exam.types';
-import { AnswerOption } from './answer-option';
-import { Textarea } from '@/components/ui/textarea';
+import { useCallback, useEffect, useRef, type ChangeEvent } from "react";
+import { Flag, CheckCircle } from "lucide-react";
+import type { Question, StudentAnswer } from "@/types/exam.types";
+import { AnswerOption } from "./answer-option";
+import { Textarea } from "@/components/ui/textarea";
 import {
   getSelectedOptionIds,
   getTextAnswerValue,
   isSingleChoiceQuestionType,
-} from '@/lib/student-exam-answers';
+} from "@/lib/student-exam-answers";
 
 function resizeTextarea(textarea: HTMLTextAreaElement): void {
-  textarea.style.height = 'auto';
+  textarea.style.height = "auto";
   textarea.style.height = `${textarea.scrollHeight}px`;
 }
 
@@ -102,7 +102,10 @@ export function QuestionCard({
     } else {
       // Multiple: toggle
       if (selectedIds.includes(optionId)) {
-        onSelect(question, selectedIds.filter(id => id !== optionId));
+        onSelect(
+          question,
+          selectedIds.filter((id) => id !== optionId),
+        );
       } else {
         onSelect(question, [...selectedIds, optionId]);
       }
@@ -122,12 +125,12 @@ export function QuestionCard({
           </h2>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {question.type === 'multiple' && (
+          {question.type === "multiple" && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-surface-container text-muted-foreground font-medium">
               Chọn nhiều
             </span>
           )}
-          {question.type === 'true_false' && (
+          {question.type === "true_false" && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-surface-container text-muted-foreground font-medium">
               Đúng / Sai
             </span>
@@ -139,7 +142,7 @@ export function QuestionCard({
       </div>
 
       {/* Options */}
-      {question.type === 'text' ? (
+      {question.type === "text" ? (
         <TextQuestion
           questionId={question.id}
           value={textAnswer}
@@ -154,7 +157,7 @@ export function QuestionCard({
               option={option}
               index={i}
               isSelected={selectedIds.includes(option.id)}
-              isMultiple={question.type === 'multiple'}
+              isMultiple={question.type === "multiple"}
               onSelect={handleSelect}
             />
           ))}
