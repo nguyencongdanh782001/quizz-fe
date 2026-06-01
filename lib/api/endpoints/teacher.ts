@@ -23,7 +23,7 @@ export const api = {
   teacher: {
     documents: {
       list: (params?: Record<string, string | number | boolean>) =>
-        client.get<TeacherDocumentListResponse>("/teacher/documents", {
+        client.get<TeacherDocumentListResponse>("/teacher/system/documents", {
           params,
         }),
       create: (data: TeacherCreateDocumentRequest) =>
@@ -36,11 +36,11 @@ export const api = {
       list: () => client.get<TeacherClassListResponse>("/teacher/classes"),
       create: (data: TeacherCreateClassRequest) =>
         client.post<TeacherCreateClassResponse>("/teacher/classes", data),
-      update: (
-        classId: string | number,
-        data: TeacherUpdateClassRequest,
-      ) =>
-        client.put<TeacherUpdateClassResponse>(`/teacher/classes/${classId}`, data),
+      update: (classId: string | number, data: TeacherUpdateClassRequest) =>
+        client.put<TeacherUpdateClassResponse>(
+          `/teacher/classes/${classId}`,
+          data,
+        ),
       delete: (classId: string | number) =>
         client.delete<MessageResponse>(`/teacher/classes/${classId}`),
       students: (classId: string | number) =>
@@ -59,10 +59,7 @@ export const api = {
         client.get<TeacherClassExamDetailResponse>(
           `/teacher/classes/${classId}/exams/${examId}`,
         ),
-      createExam: (
-        classId: string | number,
-        data: TeacherCreateExamRequest,
-      ) =>
+      createExam: (classId: string | number, data: TeacherCreateExamRequest) =>
         client.post<TeacherCreateClassExamResponse>(
           `/teacher/classes/${classId}/exams`,
           data,

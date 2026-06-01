@@ -13,11 +13,9 @@ import { useDebounce } from "use-debounce";
 import {
   FileSearch,
   FileText,
-  Layers3,
   LoaderCircle,
   Plus,
   RefreshCcw,
-  School,
 } from "lucide-react";
 import { DocumentFilterBar } from "@/components/features/document/document-filter-bar";
 import { TeacherDocumentList } from "@/components/features/document/teacher-document-list";
@@ -75,9 +73,8 @@ export function TeacherDocumentsScreen({
 }: TeacherDocumentsScreenProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [filters, setFilters] = useState<TeacherDocumentFilterState>(
-    initialFilters,
-  );
+  const [filters, setFilters] =
+    useState<TeacherDocumentFilterState>(initialFilters);
   const [debouncedSearch] = useDebounce(filters.search, 400);
   const lastSyncedSearchRef = useRef(
     buildTeacherDocumentSearchParams(initialFilters).toString(),
@@ -98,8 +95,7 @@ export function TeacherDocumentsScreen({
   const documents = documentsQuery.data ?? [];
   const hasActiveFilters = hasActiveTeacherDocumentFilters(filters);
   const isInitialLoading = documentsQuery.isPending && !documentsQuery.data;
-  const isSearchDebouncing =
-    debouncedSearch.trim() !== filters.search.trim();
+  const isSearchDebouncing = debouncedSearch.trim() !== filters.search.trim();
 
   const syncUrl = useEffectEvent((nextFilters: TeacherDocumentFilterState) => {
     const nextSearch = buildTeacherDocumentSearchParams(nextFilters).toString();
@@ -124,7 +120,12 @@ export function TeacherDocumentsScreen({
       is_published: filters.is_published,
       classroom_id: appliedClassroomId,
     });
-  }, [appliedClassroomId, debouncedSearch, filters.is_published, filters.scope]);
+  }, [
+    appliedClassroomId,
+    debouncedSearch,
+    filters.is_published,
+    filters.scope,
+  ]);
 
   const classroomMap = new Map<string, string>();
 
@@ -146,12 +147,12 @@ export function TeacherDocumentsScreen({
     .map(([id, name]) => ({ id, name }))
     .sort((left, right) => left.name.localeCompare(right.name, "vi"));
 
-  const systemDocumentCount = documents.filter(
-    (document) => document.scope !== "classroom",
-  ).length;
-  const classroomDocumentCount = documents.filter(
-    (document) => document.scope === "classroom",
-  ).length;
+  // const systemDocumentCount = documents.filter(
+  //   (document) => document.scope !== "classroom",
+  // ).length;
+  // const classroomDocumentCount = documents.filter(
+  //   (document) => document.scope === "classroom",
+  // ).length;
 
   return (
     <div className="space-y-6">
@@ -168,29 +169,29 @@ export function TeacherDocumentsScreen({
             </Link>
           </Button>
         }
-        metrics={[
-          {
-            label: "Tài liệu hiện có",
-            value: isInitialLoading ? "--" : documents.length,
-            description: "Tổng số tài liệu trả về theo bộ lọc hiện tại.",
-            icon: Layers3,
-            tone: "primary",
-          },
-          {
-            label: "Tài liệu hệ thống",
-            value: isInitialLoading ? "--" : systemDocumentCount,
-            description: "Các tài liệu áp dụng ở phạm vi toàn hệ thống.",
-            icon: FileText,
-            tone: "secondary",
-          },
-          {
-            label: "Tài liệu lớp học",
-            value: isInitialLoading ? "--" : classroomDocumentCount,
-            description: "Các tài liệu gắn với lớp học cụ thể.",
-            icon: School,
-            tone: "tertiary",
-          },
-        ]}
+        // metrics={[
+        //   {
+        //     label: "Tài liệu hiện có",
+        //     value: isInitialLoading ? "--" : documents.length,
+        //     description: "Tổng số tài liệu trả về theo bộ lọc hiện tại.",
+        //     icon: Layers3,
+        //     tone: "primary",
+        //   },
+        //   {
+        //     label: "Tài liệu hệ thống",
+        //     value: isInitialLoading ? "--" : systemDocumentCount,
+        //     description: "Các tài liệu áp dụng ở phạm vi toàn hệ thống.",
+        //     icon: FileText,
+        //     tone: "secondary",
+        //   },
+        //   {
+        //     label: "Tài liệu lớp học",
+        //     value: isInitialLoading ? "--" : classroomDocumentCount,
+        //     description: "Các tài liệu gắn với lớp học cụ thể.",
+        //     icon: School,
+        //     tone: "tertiary",
+        //   },
+        // ]}
       />
 
       <DocumentFilterBar
@@ -217,7 +218,10 @@ export function TeacherDocumentsScreen({
               Không thể tải tài liệu
             </h2>
             <p className="mt-2 text-sm leading-7 text-muted-foreground">
-              {getApiErrorMessage(documentsQuery.error, DOCUMENTS_ERROR_MESSAGE)}
+              {getApiErrorMessage(
+                documentsQuery.error,
+                DOCUMENTS_ERROR_MESSAGE,
+              )}
             </p>
           </div>
           <div className="flex justify-center">
@@ -249,7 +253,12 @@ export function TeacherDocumentsScreen({
           }
           action={
             hasActiveFilters ? (
-              <Button type="button" variant="outline" size="lg" onClick={() => setFilters(DEFAULT_TEACHER_DOCUMENT_FILTERS)}>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                onClick={() => setFilters(DEFAULT_TEACHER_DOCUMENT_FILTERS)}
+              >
                 Đặt lại bộ lọc
               </Button>
             ) : (
