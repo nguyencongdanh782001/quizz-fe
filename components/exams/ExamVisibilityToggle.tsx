@@ -15,7 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { getApiErrorMessage } from "@/lib/api/error-message";
+import { APP_MESSAGES } from "@/lib/app-messages";
 import { cn } from "@/lib/utils";
 import { useToggleExamVisibility } from "@/hooks/queries/useToggleExamVisibility";
 import type { ToggleVisibilityResponse } from "@/hooks/queries/useToggleExamVisibility";
@@ -47,9 +47,7 @@ function getVisibilityLoadingLabel(isPublished: boolean): string {
 }
 
 function getDialogTitle(isPublished: boolean): string {
-  return isPublished
-    ? "Chuyển đề thi sang riêng tư"
-    : "Công khai đề thi";
+  return isPublished ? "Chuyển đề thi sang riêng tư" : "Công khai đề thi";
 }
 
 function getDialogDescription(isPublished: boolean): string {
@@ -135,9 +133,8 @@ export function ExamVisibilityToggle({
       setOpen(false);
       setConfirmIsPublished(null);
     } catch (error) {
-      onError?.(
-        getApiErrorMessage(error, "Không thể cập nhật trạng thái đề thi"),
-      );
+      console.error(`Failed to update visibility for exam ${examId}`, error);
+      onError?.(APP_MESSAGES.UPDATE_EXAM_VISIBILITY_FAILED);
     }
   }
 

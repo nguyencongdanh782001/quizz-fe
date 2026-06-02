@@ -1,4 +1,5 @@
 import { api as teacherApi } from "@/lib/api/endpoints/teacher";
+import { APP_MESSAGES } from "@/lib/app-messages";
 import type {
   TeacherCreateDocumentRequest,
   TeacherDocumentSchema,
@@ -92,7 +93,7 @@ export async function createTeacherDocument(
   data: TeacherCreateDocumentRequest,
 ): Promise<string> {
   const payload = normalizeTeacherDocumentPayload(data);
-  const response = await teacherApi.teacher.documents.create(payload);
+  await teacherApi.teacher.documents.create(payload);
 
-  return response.data.message || "Tải lên tài liệu thành công";
+  return APP_MESSAGES.CREATE_DOCUMENT_SUCCESS;
 }

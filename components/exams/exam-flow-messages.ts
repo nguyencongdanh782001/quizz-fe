@@ -1,3 +1,4 @@
+import { APP_MESSAGES } from "@/lib/app-messages";
 import type { TeacherExamQuestionType } from "@/types/exam";
 
 export const EXAM_FLOW_MESSAGES = {
@@ -52,14 +53,14 @@ export const EXAM_FLOW_MESSAGES = {
     save: "Đang lưu dữ liệu...",
   },
   success: {
-    update: "Cập nhật đề thi thành công",
-    create: "Tạo đề thi thành công",
+    update: APP_MESSAGES.UPDATE_EXAM_SUCCESS,
+    create: APP_MESSAGES.CREATE_EXAM_SUCCESS,
     deleteQuestion: "Xóa câu hỏi thành công",
   },
   errors: {
-    loadDetail: "Không thể tải dữ liệu đề thi",
-    generic: "Có lỗi xảy ra, vui lòng thử lại",
-    update: "Không thể cập nhật đề thi",
+    loadDetail: APP_MESSAGES.LOAD_EXAM_FAILED,
+    generic: APP_MESSAGES.NETWORK_ERROR,
+    update: APP_MESSAGES.UPDATE_EXAM_FAILED,
     notFound: "Không tìm thấy bài thi",
   },
   validation: {

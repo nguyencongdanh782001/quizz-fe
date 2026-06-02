@@ -1,4 +1,5 @@
 import { api as teacherApi } from '@/lib/api/endpoints/teacher';
+import { APP_MESSAGES } from '@/lib/app-messages';
 import type {
   TeacherClassDocumentSchema,
   TeacherClassExamSchema,
@@ -200,8 +201,8 @@ export async function createTeacherClassExam(
   classId: string,
   data: TeacherCreateExamRequest,
 ): Promise<string> {
-  const response = await teacherApi.teacher.classes.createExam(classId, data);
-  return response.data.message;
+  await teacherApi.teacher.classes.createExam(classId, data);
+  return APP_MESSAGES.CREATE_EXAM_SUCCESS;
 }
 
 export async function getTeacherClassroomExamDetail(
@@ -218,30 +219,30 @@ export async function updateTeacherClassroomExam(
   examId: string,
   data: TeacherUpdateClassExamRequest,
 ): Promise<string> {
-  const response = await teacherApi.teacher.classes.updateExam(
+  await teacherApi.teacher.classes.updateExam(
     classId,
     examId,
     data,
   );
 
-  return response.data.message || 'Cập nhật bài thi thành công';
+  return APP_MESSAGES.UPDATE_EXAM_SUCCESS;
 }
 
 export async function removeTeacherClassStudent(
   classId: string,
   studentId: string,
 ): Promise<string> {
-  const response = await teacherApi.teacher.classes.removeStudent(
+  await teacherApi.teacher.classes.removeStudent(
     classId,
     studentId,
   );
 
-  return response.data.message;
+  return APP_MESSAGES.REMOVE_STUDENT_SUCCESS;
 }
 
 export async function deleteTeacherClassroom(classId: string): Promise<string> {
-  const response = await teacherApi.teacher.classes.delete(classId);
-  return response.data.message;
+  await teacherApi.teacher.classes.delete(classId);
+  return APP_MESSAGES.DELETE_CLASS_SUCCESS;
 }
 
 function normalizeJoinCode(joinCode: string): string {
@@ -276,7 +277,7 @@ export async function updateTeacherClassroom(
   const response = await teacherApi.teacher.classes.update(classId, payload);
 
   return {
-    message: response.data.message,
+    message: APP_MESSAGES.UPDATE_CLASS_SUCCESS,
     classroom: mapTeacherClass(response.data.classroom),
   };
 }

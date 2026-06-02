@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/toast";
 import { useTeacherSystemExamDetail } from "@/hooks/queries/useTeacherSystemExamDetail";
 import { useUpdateTeacherExam } from "@/hooks/queries/useUpdateTeacherExam";
-import { getApiErrorMessage } from "@/lib/api/error-message";
+import { APP_MESSAGES } from "@/lib/app-messages";
 import { createTeacherSystemExam } from "@/services/exam.service";
 
 type ToastVariant = "success" | "error";
@@ -143,19 +143,14 @@ export function TeacherSystemExamCreateScreen({
     setToast(null);
 
     try {
-      let message = "";
-
       if (isEditMode && normalizedEditId) {
-        message = await updateMutation.mutateAsync({
+        await updateMutation.mutateAsync({
           examId: normalizedEditId,
           payload: mapTeacherExamFormToUpdatePayload(values),
         });
       } else {
         setIsCreating(true);
-        const response = await createTeacherSystemExam(
-          mapTeacherExamFormToPayload(values),
-        );
-        message = response.message;
+        await createTeacherSystemExam(mapTeacherExamFormToPayload(values));
       }
 
       if (redirectTimeoutRef.current !== null) {
@@ -166,11 +161,6 @@ export function TeacherSystemExamCreateScreen({
         title: isEditMode
           ? EXAM_FLOW_MESSAGES.success.update
           : EXAM_FLOW_MESSAGES.success.create,
-        description:
-          message ||
-          (isEditMode
-            ? "Đề thi đã được cập nhật. Đang chuyển về danh sách..."
-            : "Đề thi đã được tạo. Đang chuyển về danh sách..."),
         variant: "success",
       });
       scrollTeacherContentToTop();
@@ -185,19 +175,14 @@ export function TeacherSystemExamCreateScreen({
         error,
       );
 
-      const message = getApiErrorMessage(
-        error,
-        isEditMode
-          ? EXAM_FLOW_MESSAGES.errors.update
-          : EXAM_FLOW_MESSAGES.errors.generic,
-      );
+      const message = isEditMode
+        ? APP_MESSAGES.UPDATE_EXAM_FAILED
+        : APP_MESSAGES.CREATE_EXAM_FAILED;
 
       setSubmitError(message);
       openToast({
-        title: isEditMode
-          ? EXAM_FLOW_MESSAGES.errors.update
-          : EXAM_FLOW_MESSAGES.errors.generic,
-        description: message,
+        title: message,
+        description: APP_MESSAGES.NETWORK_ERROR,
         variant: "error",
       });
       scrollTeacherContentToTop();
@@ -212,18 +197,14 @@ export function TeacherSystemExamCreateScreen({
     setIsImporting(true);
 
     try {
-      const response = await createTeacherSystemExam(
-        mapTeacherExamFormToPayload(values),
-      );
+      await createTeacherSystemExam(mapTeacherExamFormToPayload(values));
 
       if (redirectTimeoutRef.current !== null) {
         window.clearTimeout(redirectTimeoutRef.current);
       }
 
       openToast({
-        title: "tạo đề thi thành công",
-        description:
-          response.message || "Đề thi đã được tạo. Đang chuyển về danh sách...",
+        title: APP_MESSAGES.CREATE_EXAM_SUCCESS,
         variant: "success",
       });
       setIsImportDialogOpen(false);
@@ -234,11 +215,11 @@ export function TeacherSystemExamCreateScreen({
     } catch (error) {
       console.error("Failed to import system exam", error);
 
-      const message = getApiErrorMessage(error, "Không thể tạo đề thi");
+      const message = APP_MESSAGES.CREATE_EXAM_FAILED;
 
       openToast({
-        title: "Không thể tạo đề thi",
-        description: message,
+        title: message,
+        description: APP_MESSAGES.NETWORK_ERROR,
         variant: "error",
       });
       scrollTeacherContentToTop();

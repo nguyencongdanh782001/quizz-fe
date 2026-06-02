@@ -14,6 +14,7 @@ import {
   Users,
 } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/api/error-message";
+import { APP_MESSAGES } from "@/lib/app-messages";
 import { Button } from "@/components/ui/button";
 import {
   Toast,
@@ -41,20 +42,6 @@ import {
   readTeacherClassesFlashToast,
   type TeacherClassesFlashToast,
 } from "./flash-toast";
-
-function getErrorMessage(error: unknown): string {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof error.message === "string" &&
-    error.message.trim()
-  ) {
-    return error.message;
-  }
-
-  return "Không thể tải danh sách lớp học. Vui lòng thử lại.";
-}
 
 export default function TeacherClassesPage() {
   const [classes, setClasses] = useState<ClassInfo[]>([]);
@@ -86,7 +73,7 @@ export default function TeacherClassesPage() {
         }
 
         setClasses([]);
-        setLoadError(getErrorMessage(error));
+        setLoadError(APP_MESSAGES.LOAD_CLASSES_FAILED);
       } finally {
         if (isMounted) {
           setIsLoadingClasses(false);
@@ -166,14 +153,14 @@ export default function TeacherClassesPage() {
 
       return {
         status: "success",
-        message: result.message || "Cập nhật lớp học thành công",
+        message: result.message || APP_MESSAGES.UPDATE_CLASS_SUCCESS,
       };
     } catch (error) {
       console.error(`Failed to update class ${classId}`, error);
 
       return {
         status: "error",
-        message: getApiErrorMessage(error, "Không thể cập nhật lớp học"),
+        message: getApiErrorMessage(error, APP_MESSAGES.UPDATE_CLASS_FAILED),
       };
     } finally {
       setUpdatingClassId(null);
@@ -186,8 +173,8 @@ export default function TeacherClassesPage() {
     setDeletingClassId(classroom.id);
 
     try {
-      const message =
-        (await deleteTeacherClassroom(classroom.id)) || "Xóa lớp học thành công";
+      await deleteTeacherClassroom(classroom.id);
+      const message = APP_MESSAGES.DELETE_CLASS_SUCCESS;
 
       setClasses((current) =>
         current.filter((item) => item.id !== classroom.id),
@@ -206,7 +193,7 @@ export default function TeacherClassesPage() {
 
       return {
         status: "error",
-        message: getApiErrorMessage(error, "Không thể xóa lớp học"),
+        message: getApiErrorMessage(error, APP_MESSAGES.DELETE_CLASS_FAILED),
       };
     } finally {
       setDeletingClassId(null);

@@ -1,7 +1,7 @@
 import { api } from "@/lib/api/endpoints/auth";
+import { APP_MESSAGES } from "@/lib/app-messages";
 import type {
   ChangePasswordRequest,
-  MessageResponse,
   ProfileResponse,
   UpdateProfileRequest,
   UpdateProfileResponse,
@@ -50,21 +50,6 @@ function getUpdatedUser(response: UpdateProfileResponse): UserSchema | null {
   return null;
 }
 
-function getMessage(
-  response: UpdateProfileResponse | MessageResponse,
-  fallback: string,
-): string {
-  if ("message" in response && typeof response.message === "string") {
-    const message = response.message.trim();
-
-    if (message) {
-      return message;
-    }
-  }
-
-  return fallback;
-}
-
 export async function getProfile(): Promise<UserSchema> {
   const response = await api.auth.profile();
 
@@ -77,7 +62,7 @@ export async function updateProfile(
   const response = await api.auth.updateProfile(payload);
 
   return {
-    message: getMessage(response.data, "Cập nhật thông tin thành công"),
+    message: APP_MESSAGES.UPDATE_PROFILE_SUCCESS,
     user: getUpdatedUser(response.data),
   };
 }
@@ -85,7 +70,7 @@ export async function updateProfile(
 export async function changePassword(
   payload: ChangePasswordRequest,
 ): Promise<string> {
-  const response = await api.auth.changePassword(payload);
+  await api.auth.changePassword(payload);
 
-  return getMessage(response.data, "Đổi mật khẩu thành công");
+  return APP_MESSAGES.CHANGE_PASSWORD_SUCCESS;
 }

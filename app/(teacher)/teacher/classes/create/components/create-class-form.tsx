@@ -5,6 +5,7 @@ import * as Yup from "yup";
 import { useRouter } from "next/navigation";
 import { AlertCircle } from "lucide-react";
 import { createTeacherClass } from "@/lib/teacher-classes";
+import { APP_MESSAGES } from "@/lib/app-messages";
 import { ClassNameField } from "./class-name-field";
 import { DescriptionField } from "./description-field";
 import { JoinCodeField } from "./join-code-field";
@@ -36,20 +37,6 @@ const createClassSchema = Yup.object({
     .required("Mã vào lớp không được để trống"),
 });
 
-function getErrorMessage(error: unknown): string {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof error.message === "string" &&
-    error.message.trim()
-  ) {
-    return error.message;
-  }
-
-  return "Không thể tạo lớp học. Vui lòng thử lại.";
-}
-
 export function CreateClassForm() {
   const router = useRouter();
 
@@ -63,9 +50,10 @@ export function CreateClassForm() {
       await createTeacherClass(values);
       router.push("/teacher/classes");
     } catch (error) {
+      console.error("Failed to create class", error);
       helpers.setSubmitting(false);
       helpers.setStatus({
-        submitError: getErrorMessage(error),
+        submitError: APP_MESSAGES.CREATE_CLASS_FAILED,
       } satisfies CreateClassFormStatus);
     }
   }
@@ -90,7 +78,9 @@ export function CreateClassForm() {
                 <div className="flex items-start gap-3">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   <div>
-                    <p className="font-medium">Không thể tạo lớp học</p>
+                    <p className="font-medium">
+                      {APP_MESSAGES.CREATE_CLASS_FAILED}
+                    </p>
                     <p className="mt-1">{formStatus.submitError}</p>
                   </div>
                 </div>

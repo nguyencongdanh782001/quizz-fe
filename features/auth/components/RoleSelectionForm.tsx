@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { SurfaceCard } from "@/components/common/SurfaceCard";
 import { InputField } from "@/components/common/form/input-field";
 import { SelectField } from "@/components/common/form/select-field";
+import { APP_MESSAGES } from "@/lib/app-messages";
 import { onboardingSchema } from "../schemas/onboarding.schema";
 import { User, UserGender, UserRole } from "@/types/user.types";
 import { GraduationCap, Loader2, Users } from "lucide-react";
@@ -66,9 +67,10 @@ export function RoleSelectionForm({ initialUser }: RoleSelectionFormProps) {
       });
 
       router.replace(getDestination(nextUser.role_name));
-    } catch {
+    } catch (error) {
+      console.error("Failed to submit onboarding form", error);
       helpers.setSubmitting(false);
-      setSubmitError("Khong the hoan tat thong tin. Vui long thu lai.");
+      setSubmitError(APP_MESSAGES.COMPLETE_ONBOARDING_FAILED);
     }
   };
 

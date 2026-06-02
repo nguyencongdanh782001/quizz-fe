@@ -1,4 +1,5 @@
 import { client } from "@/lib/api/client";
+import { APP_MESSAGES } from "@/lib/app-messages";
 import type {
   MessageResponse,
   TeacherCreateExamRequest,
@@ -72,11 +73,9 @@ export async function getTeacherSystemExamDetail(
 export async function deleteTeacherSystemExam(
   examId: number | string,
 ): Promise<string> {
-  const response = await client.delete<MessageResponse>(
-    `/teacher/system/exams/${examId}`,
-  );
+  await client.delete<MessageResponse>(`/teacher/system/exams/${examId}`);
 
-  return response.data.message;
+  return APP_MESSAGES.DELETE_EXAM_SUCCESS;
 }
 
 export async function publishTeacherExam(
@@ -105,9 +104,9 @@ export async function updateTeacherSystemExamPublishState(
 ): Promise<string> {
   void _isPublished;
 
-  const response = await publishTeacherExam(examId);
+  await publishTeacherExam(examId);
 
-  return response.message || "Cập nhật trạng thái đề thi thành công.";
+  return APP_MESSAGES.PUBLISH_EXAM_SUCCESS;
 }
 
 export async function createTeacherSystemExam(
@@ -119,7 +118,7 @@ export async function createTeacherSystemExam(
   );
 
   return {
-    message: response.data.message,
+    message: APP_MESSAGES.CREATE_EXAM_SUCCESS,
     exam: mapTeacherExam(response.data.exam),
   };
 }
@@ -128,10 +127,10 @@ export async function updateTeacherExam(
   examId: number | string,
   data: TeacherUpdateExamRequest,
 ): Promise<string> {
-  const response = await client.put<MessageResponse | { message?: string }>(
+  await client.put<MessageResponse | { message?: string }>(
     `/teacher/exams/${examId}`,
     data,
   );
 
-  return response.data.message ?? "Cập nhật bài thi thành công.";
+  return APP_MESSAGES.UPDATE_EXAM_SUCCESS;
 }

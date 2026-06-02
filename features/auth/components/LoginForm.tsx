@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { InputField } from "@/components/common/form/input-field";
 import { useAuth } from "@/hooks/useAuth";
+import { APP_MESSAGES } from "@/lib/app-messages";
 import { cn } from "@/lib/utils";
 import { loginSchema } from "../schemas/login.schema";
 import { FormikAutofillSync } from "./FormikAutofillSync";
@@ -65,7 +66,8 @@ export function LoginForm() {
         user.role_name === "teacher" ? "/teacher" : "/student";
     } catch (err) {
       helpers.setSubmitting(false);
-      setApiError(err instanceof Error ? err.message : "Đăng nhập thất bại");
+      console.error("Failed to submit login form", err);
+      setApiError(APP_MESSAGES.LOGIN_FAILED);
     }
   };
 

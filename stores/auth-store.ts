@@ -8,6 +8,7 @@ import {
 import { User } from "@/types/user.types";
 import { api } from "@/lib/api/endpoints/auth";
 import { UserSchema } from "@/lib/api/types";
+import { APP_MESSAGES } from "@/lib/app-messages";
 
 const SESSION_COOKIE = "auth-session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
@@ -94,26 +95,6 @@ function clearAuthState(set: (partial: Partial<PersistedAuthState>) => void) {
   clearSessionCookie();
 }
 
-function getAuthErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  if (typeof error === "object" && error !== null) {
-    const maybeError = error as { message?: unknown; detail?: unknown };
-
-    if (typeof maybeError.message === "string" && maybeError.message.trim()) {
-      return maybeError.message;
-    }
-
-    if (typeof maybeError.detail === "string" && maybeError.detail.trim()) {
-      return maybeError.detail;
-    }
-  }
-
-  return fallback;
-}
-
 export const useAuthStore = create<PersistedAuthState>()(
   persist(
     (set) => ({
@@ -132,7 +113,8 @@ export const useAuthStore = create<PersistedAuthState>()(
           applyAuthenticatedUser(set, user);
           return user;
         } catch (err) {
-          const message = getAuthErrorMessage(err, "Dang nhap that bai");
+          console.error("Failed to login", err);
+          const message = APP_MESSAGES.LOGIN_FAILED;
           set({ isLoading: false, fetchError: message });
           throw new Error(message);
         }
@@ -151,7 +133,8 @@ export const useAuthStore = create<PersistedAuthState>()(
           applyAuthenticatedUser(set, user);
           return user;
         } catch (err) {
-          const message = getAuthErrorMessage(err, "Dang ky that bai");
+          console.error("Failed to register", err);
+          const message = APP_MESSAGES.REGISTER_FAILED;
           set({ isLoading: false, fetchError: message });
           throw new Error(message);
         }
@@ -178,10 +161,8 @@ export const useAuthStore = create<PersistedAuthState>()(
           applyAuthenticatedUser(set, user);
           return user;
         } catch (err) {
-          const message = getAuthErrorMessage(
-            err,
-            "Hoan tat thong tin that bai",
-          );
+          console.error("Failed to complete onboarding", err);
+          const message = APP_MESSAGES.COMPLETE_ONBOARDING_FAILED;
           set({ isLoading: false, fetchError: message });
           throw new Error(message);
         }

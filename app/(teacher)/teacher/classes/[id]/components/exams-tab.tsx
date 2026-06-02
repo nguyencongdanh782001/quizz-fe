@@ -12,6 +12,7 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast";
+import { APP_MESSAGES } from "@/lib/app-messages";
 import type { Exam } from "@/types/exam.types";
 import { EmptyState } from "./empty-state";
 import { ErrorState } from "./error-state";
@@ -98,18 +99,16 @@ export function ExamsTab({
             onToggleVisibility={(response) =>
               setToast({
                 title: response.exam.is_published
-                  ? "Đã công khai đề thi"
-                  : "Đã chuyển đề thi sang riêng tư",
-                description:
-                  response.message || "Cập nhật trạng thái đề thi thành công",
+                  ? APP_MESSAGES.PUBLISH_EXAM_SUCCESS
+                  : APP_MESSAGES.PRIVATE_EXAM_SUCCESS,
                 open: true,
                 variant: "success",
               })
             }
-            onToggleError={(message) =>
+            onToggleError={(_message) =>
               setToast({
-                title: "Không thể cập nhật trạng thái đề thi",
-                description: message || "Có lỗi xảy ra, vui lòng thử lại",
+                title: APP_MESSAGES.UPDATE_EXAM_VISIBILITY_FAILED,
+                description: APP_MESSAGES.NETWORK_ERROR,
                 open: true,
                 variant: "error",
               })

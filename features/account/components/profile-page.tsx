@@ -41,6 +41,7 @@ import type {
   UpdateProfileRequest,
   UserSchema,
 } from "@/lib/api/types";
+import { APP_MESSAGES } from "@/lib/app-messages";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
 import type { User } from "@/types/user.types";
@@ -427,9 +428,9 @@ function ProfileForm({
     try {
       await updateProfileMutation.mutateAsync(payload);
       helpers.resetForm({ values });
-      onToast("success", "Cập nhật thông tin thành công");
+      onToast("success", APP_MESSAGES.UPDATE_PROFILE_SUCCESS);
     } catch {
-      onToast("error", "Không thể cập nhật thông tin");
+      onToast("error", APP_MESSAGES.UPDATE_PROFILE_FAILED);
     } finally {
       helpers.setSubmitting(false);
     }
@@ -592,9 +593,9 @@ function ChangePasswordCard({ onToast }: ToastAwareProps) {
     try {
       await changePasswordMutation.mutateAsync(toPasswordPayload(values));
       helpers.resetForm();
-      onToast("success", "Đổi mật khẩu thành công");
+      onToast("success", APP_MESSAGES.CHANGE_PASSWORD_SUCCESS);
     } catch {
-      onToast("error", "Không thể đổi mật khẩu");
+      onToast("error", APP_MESSAGES.CHANGE_PASSWORD_FAILED);
     } finally {
       helpers.setSubmitting(false);
     }

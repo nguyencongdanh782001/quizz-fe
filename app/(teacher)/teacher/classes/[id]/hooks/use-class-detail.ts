@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { getApiErrorMessage } from "@/lib/api/error-message";
+import { APP_MESSAGES } from "@/lib/app-messages";
 import {
   deleteTeacherClassroom,
   getTeacherClassById,
@@ -54,18 +55,9 @@ export type DeleteClassroomResult =
     };
 
 const CLASS_ERROR_MESSAGE = "Không thể tải thông tin lớp học. Vui lòng thử lại.";
-const STUDENTS_ERROR_MESSAGE =
-  "Không thể tải danh sách học sinh. Vui lòng thử lại.";
-const EXAMS_ERROR_MESSAGE = "Không thể tải danh sách bài thi. Vui lòng thử lại.";
-const DOCUMENTS_ERROR_MESSAGE =
-  "Không thể tải tài liệu của lớp. Vui lòng thử lại.";
-const REMOVE_STUDENT_SUCCESS_MESSAGE = "Mời học sinh ra khỏi lớp thành công";
-const REMOVE_STUDENT_ERROR_MESSAGE = "Không thể mời học sinh ra khỏi lớp";
-const UPDATE_CLASSROOM_SUCCESS_MESSAGE = "Cập nhật lớp học thành công";
-const UPDATE_CLASSROOM_ERROR_MESSAGE = "Không thể cập nhật lớp học";
-const DELETE_CLASSROOM_SUCCESS_MESSAGE = "Xóa lớp học thành công";
-const DELETE_CLASSROOM_ERROR_MESSAGE = "Không thể xóa lớp học";
-const CLASSROOM_NOT_FOUND_MESSAGE = "Lớp học không tồn tại";
+const STUDENTS_ERROR_MESSAGE = APP_MESSAGES.LOAD_STUDENTS_FAILED;
+const EXAMS_ERROR_MESSAGE = APP_MESSAGES.LOAD_EXAMS_FAILED;
+const DOCUMENTS_ERROR_MESSAGE = APP_MESSAGES.LOAD_DOCUMENTS_FAILED;
 
 export function useClassDetail(classId: string) {
   const queryClient = useQueryClient();
@@ -185,13 +177,13 @@ export function useClassDetail(classId: string) {
     setRemovingStudentId(student.id);
 
     try {
-      const message = await removeStudentMutation.mutateAsync({
+      await removeStudentMutation.mutateAsync({
         studentId: student.id,
       });
 
       return {
         status: "success",
-        message: message || REMOVE_STUDENT_SUCCESS_MESSAGE,
+        message: APP_MESSAGES.REMOVE_STUDENT_SUCCESS,
       };
     } catch (error) {
       console.error(
@@ -201,7 +193,7 @@ export function useClassDetail(classId: string) {
 
       return {
         status: "error",
-        message: getApiErrorMessage(error, REMOVE_STUDENT_ERROR_MESSAGE),
+        message: getApiErrorMessage(error, APP_MESSAGES.REMOVE_STUDENT_FAILED),
       };
     } finally {
       setRemovingStudentId(null);
@@ -214,18 +206,18 @@ export function useClassDetail(classId: string) {
     setIsUpdatingClassroom(true);
 
     try {
-      const result = await updateClassroomMutation.mutateAsync(payload);
+      await updateClassroomMutation.mutateAsync(payload);
 
       return {
         status: "success",
-        message: result.message || UPDATE_CLASSROOM_SUCCESS_MESSAGE,
+        message: APP_MESSAGES.UPDATE_CLASS_SUCCESS,
       };
     } catch (error) {
       console.error(`Failed to update class ${classId}`, error);
 
       return {
         status: "error",
-        message: getApiErrorMessage(error, UPDATE_CLASSROOM_ERROR_MESSAGE),
+        message: getApiErrorMessage(error, APP_MESSAGES.UPDATE_CLASS_FAILED),
       };
     } finally {
       setIsUpdatingClassroom(false);
@@ -236,19 +228,18 @@ export function useClassDetail(classId: string) {
     setIsDeletingClassroom(true);
 
     try {
-      const message = await deleteClassroomMutation.mutateAsync();
+      await deleteClassroomMutation.mutateAsync();
 
       return {
         status: "success",
-        message: message || DELETE_CLASSROOM_SUCCESS_MESSAGE,
+        message: APP_MESSAGES.DELETE_CLASS_SUCCESS,
       };
     } catch (error) {
       console.error(`Failed to delete class ${classId}`, error);
 
       const apiError = error as ApiError;
-      const message = getApiErrorMessage(error, DELETE_CLASSROOM_ERROR_MESSAGE);
-      const shouldRedirectToList =
-        apiError.status === 404 || message === CLASSROOM_NOT_FOUND_MESSAGE;
+      const message = getApiErrorMessage(error, APP_MESSAGES.DELETE_CLASS_FAILED);
+      const shouldRedirectToList = apiError.status === 404;
 
       return {
         status: "error",

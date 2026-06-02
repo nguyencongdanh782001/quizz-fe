@@ -29,7 +29,7 @@ import { DeleteExamDialog } from "@/components/exams/DeleteExamDialog";
 import { ExamContextMenu } from "@/components/exams/ExamContextMenu";
 import { useDeleteExam } from "@/hooks/queries/useDeleteExam";
 import { useTeacherExams } from "@/hooks/queries/useTeacherExams";
-import { getApiErrorMessage } from "@/lib/api/error-message";
+import { APP_MESSAGES } from "@/lib/app-messages";
 import type {
   TeacherExam,
   TeacherExamFilterFormValues,
@@ -481,17 +481,16 @@ export function ExamList() {
     );
     addToast({
       title: response.exam.is_published
-        ? "Đã công khai đề thi"
-        : "Đã chuyển đề thi sang riêng tư",
-      description: response.message || "Cập nhật trạng thái đề thi thành công",
+        ? APP_MESSAGES.PUBLISH_EXAM_SUCCESS
+        : APP_MESSAGES.PRIVATE_EXAM_SUCCESS,
       variant: "success",
     });
   }
 
-  function handleToggleError(message: string) {
+  function handleToggleError(_message: string) {
     addToast({
-      title: "Không thể cập nhật trạng thái đề thi",
-      description: message,
+      title: APP_MESSAGES.UPDATE_EXAM_VISIBILITY_FAILED,
+      description: APP_MESSAGES.NETWORK_ERROR,
       variant: "error",
     });
   }
@@ -505,12 +504,10 @@ export function ExamList() {
     const shouldGoToPreviousPage = visibleItems.length === 1 && safePage > 1;
 
     try {
-      const response = await deleteExamMutation.mutateAsync(examToDelete.id);
+      await deleteExamMutation.mutateAsync(examToDelete.id);
 
       addToast({
-        title: "Xóa đề thi thành công",
-        description:
-          response.message || `Đề thi "${examToDelete.title}" đã được xóa.`,
+        title: APP_MESSAGES.DELETE_EXAM_SUCCESS,
         variant: "success",
       });
 
@@ -524,9 +521,10 @@ export function ExamList() {
 
       setDeleteCandidate(null);
     } catch (mutationError) {
+      console.error(`Failed to delete exam ${examToDelete.id}`, mutationError);
       addToast({
-        title: "Không thể xóa đề thi",
-        description: getApiErrorMessage(mutationError),
+        title: APP_MESSAGES.DELETE_EXAM_FAILED,
+        description: APP_MESSAGES.DELETE_FAILED,
         variant: "error",
       });
     }
