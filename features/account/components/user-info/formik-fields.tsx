@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useField } from "formik";
 import { Eye, EyeOff } from "lucide-react";
 import { InputField } from "@/components/common/form/input-field";
+import { SelectField } from "@/components/common/form/select-field";
 import { cn } from "@/lib/utils";
 
 interface BaseFormikFieldProps
@@ -81,5 +82,48 @@ export function FormikPasswordField({
         )}
       </button>
     </div>
+  );
+}
+
+interface FormikSelectFieldProps {
+  name: string;
+  label: string;
+  options: { value: string; label: string }[];
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  onValueChange?: () => void;
+}
+
+export function FormikSelectField({
+  name,
+  label,
+  options,
+  placeholder,
+  required,
+  disabled,
+  onValueChange,
+}: FormikSelectFieldProps) {
+  const [field, meta, helpers] = useField<string>(name);
+
+  return (
+    <SelectField
+      name={name}
+      label={label}
+      options={options}
+      placeholder={placeholder}
+      required={required}
+      disabled={disabled}
+      value={field.value ?? ""}
+      onValueChange={(value) => {
+        helpers.setValue(value);
+        helpers.setTouched(true);
+        onValueChange?.();
+      }}
+      onBlur={() => {
+        helpers.setTouched(true);
+      }}
+      error={meta.touched ? meta.error : undefined}
+    />
   );
 }

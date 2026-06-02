@@ -1,4 +1,5 @@
 import { Mail } from "lucide-react";
+import { UserAvatar } from "@/components/common/user-avatar";
 import type { ClassStudent } from "@/types/class.types";
 import { formatDate } from "../utils";
 import { RemoveStudentButton } from "./remove-student-button";
@@ -37,9 +38,12 @@ export function StudentTable({
             >
               <td className="px-5 py-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                    {student.name.charAt(0)}
-                  </div>
+                  <UserAvatar
+                    avatarUrl={student.avatarUrl}
+                    fullName={student.name}
+                    className="h-9 w-9"
+                    fallbackClassName="text-sm"
+                  />
                   <div>
                     <p className="text-sm font-medium text-on-surface">
                       {student.name}

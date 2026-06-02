@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/common/Logo";
+import { UserAvatar } from "@/components/common/user-avatar";
 import { useAuth } from "@/hooks/useAuth";
 import {
   BookOpen,
@@ -74,11 +75,12 @@ export function StudentSidebar() {
 
       <div className="p-3 border-t border-outline/15">
         <div className="flex items-center gap-2.5 px-3 mb-2">
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-            <span className="text-white font-display font-bold text-sm">
-              {user?.full_name?.charAt(0) ?? "U"}
-            </span>
-          </div>
+          <UserAvatar
+            avatarUrl={user?.avatar_url}
+            fullName={user?.full_name}
+            className="h-8 w-8"
+            fallbackClassName="text-sm"
+          />
           <span className="text-sm font-medium text-on-surface">
             {user?.full_name ?? "User"}
           </span>

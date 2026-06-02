@@ -9,6 +9,10 @@ import type {
   RevokeSessionResponse,
   CompleteOnboardingRequest,
   CompleteOnboardingResponse,
+  UpdateProfileRequest,
+  ChangePasswordRequest,
+  ProfileResponse,
+  UpdateProfileResponse,
   MessageResponse,
   HealthResponse,
   DbCheckResponse,
@@ -19,6 +23,14 @@ import { client } from "../client";
 export const api = {
   auth: {
     me: () => client.get<MeResponse>("/auth/me"),
+
+    profile: () => client.get<ProfileResponse>("/auth/profile"),
+
+    updateProfile: (data: UpdateProfileRequest) =>
+      client.put<UpdateProfileResponse>("/auth/profile", data),
+
+    changePassword: (data: ChangePasswordRequest) =>
+      client.put<MessageResponse>("/auth/password", data),
 
     login: (data: LoginRequest) =>
       client.post<AuthSessionResponse>("/auth/login", data),

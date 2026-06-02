@@ -1,5 +1,9 @@
 import * as Yup from "yup";
-import type { UserInfoFormValues } from "../components/user-info/types";
+import type {
+  ChangePasswordFormValues,
+  ProfileFormValues,
+  UserInfoFormValues,
+} from "../components/user-info/types";
 
 const USER_NAME_MIN_LENGTH = 3;
 const USER_NAME_MAX_LENGTH = 50;
@@ -117,3 +121,34 @@ export function createUserInfoSchema({
     ...createPasswordSchema(),
   });
 }
+
+export const profileFormSchema: Yup.ObjectSchema<ProfileFormValues> =
+  Yup.object({
+    full_name: Yup.string()
+      .trim()
+      .required("Vui lòng nhập họ và tên")
+      .max(80, "Họ và tên không được vượt quá 80 ký tự"),
+    phone: Yup.string()
+      .trim()
+      .max(20, "Số điện thoại không được vượt quá 20 ký tự")
+      .default(""),
+    date_of_birth: Yup.string().required("Vui lòng chọn ngày sinh"),
+    gender: Yup.mixed<ProfileFormValues["gender"]>()
+      .oneOf(["male", "female"], "Vui lòng chọn giới tính")
+      .required("Vui lòng chọn giới tính"),
+    school_name: Yup.string()
+      .trim()
+      .max(120, "Trường học không được vượt quá 120 ký tự")
+      .default(""),
+  });
+
+export const changePasswordSchema: Yup.ObjectSchema<ChangePasswordFormValues> =
+  Yup.object({
+    current_password: Yup.string().required("Vui lòng nhập mật khẩu hiện tại"),
+    new_password: Yup.string()
+      .required("Vui lòng nhập mật khẩu mới")
+      .min(8, "Mật khẩu mới cần ít nhất 8 ký tự"),
+    confirm_password: Yup.string()
+      .required("Vui lòng xác nhận mật khẩu mới")
+      .oneOf([Yup.ref("new_password")], "Mật khẩu xác nhận không khớp"),
+  });

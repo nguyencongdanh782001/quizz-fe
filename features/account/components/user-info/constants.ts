@@ -1,6 +1,12 @@
 import { Briefcase, GraduationCap } from "lucide-react";
+import type { ProfileGender, UserSchema } from "@/lib/api/types";
 import type { User } from "@/types/user.types";
-import type { UserInfoFormValues, UserInfoRole, UserInfoRoleContent } from "./types";
+import type {
+  ProfileFormValues,
+  UserInfoFormValues,
+  UserInfoRole,
+  UserInfoRoleContent,
+} from "./types";
 
 export const roleContentByRole: Record<UserInfoRole, UserInfoRoleContent> = {
   student: {
@@ -44,5 +50,25 @@ export function createUserInfoInitialValues(
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
+  };
+}
+
+export const genderOptions: Array<{ value: ProfileGender; label: string }> = [
+  { value: "male", label: "Nam" },
+  { value: "female", label: "Nữ" },
+];
+
+export function createProfileInitialValues(user: UserSchema): ProfileFormValues {
+  const gender =
+    user.profile?.gender === "male" || user.profile?.gender === "female"
+      ? user.profile.gender
+      : "";
+
+  return {
+    full_name: user.full_name ?? "",
+    phone: user.phone ?? "",
+    date_of_birth: user.profile?.date_of_birth ?? "",
+    gender,
+    school_name: user.profile?.school_name ?? "",
   };
 }

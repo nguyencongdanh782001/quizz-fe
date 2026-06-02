@@ -114,6 +114,31 @@ export interface CompleteOnboardingResponse {
   user: UserSchema;
 }
 
+export type ProfileGender = "male" | "female";
+
+export interface UpdateProfileRequest {
+  full_name: string;
+  phone: string;
+  date_of_birth: string;
+  gender: ProfileGender;
+  school_name: string;
+}
+
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+  confirm_password: string;
+}
+
+export type ProfileResponse = UserSchema | { user: UserSchema };
+
+export type UpdateProfileResponse =
+  | UserSchema
+  | {
+      message?: string;
+      user?: UserSchema;
+    };
+
 export interface MessageResponse {
   message: string;
 }

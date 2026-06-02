@@ -23,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { UserAvatar } from "@/components/common/user-avatar";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -189,7 +190,7 @@ export function AppShell({ role, children }: AppShellProps) {
 
   const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname), [pathname]);
   const currentLabel = breadcrumbs[breadcrumbs.length - 1]?.label ?? roleTitle;
-  const userInitial = user?.full_name?.trim().charAt(0).toUpperCase() ?? "U";
+  const userName = user?.full_name?.trim() || "Người dùng";
 
   return (
     <div className="relative min-h-screen overflow-x-clip bg-[linear-gradient(180deg,#f7f8ff_0%,#f4f7ff_38%,#eef7ff_100%)]">
@@ -205,8 +206,9 @@ export function AppShell({ role, children }: AppShellProps) {
               role={role}
               currentPath={pathname}
               navItems={navItems}
-              userName={user?.full_name?.trim() || roleTitle}
-              userInitial={userInitial}
+              userName={userName}
+              userFullName={user?.full_name}
+              userAvatarUrl={user?.avatar_url}
               roleTitle={roleTitle}
               roleDescription={roleDescription}
               onNavigate={() => undefined}
@@ -313,12 +315,15 @@ export function AppShell({ role, children }: AppShellProps) {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="inline-flex items-center gap-3 rounded-[1.15rem] px-2 py-1.5 transition-colors hover:bg-white/60">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-tertiary text-sm font-bold text-primary-foreground shadow-[0_14px_28px_-18px_rgba(79,70,229,0.55)]">
-                        {userInitial}
-                      </div>
+                      <UserAvatar
+                        avatarUrl={user?.avatar_url}
+                        fullName={user?.full_name}
+                        className="size-10 shadow-[0_14px_28px_-18px_rgba(79,70,229,0.55)]"
+                        fallbackClassName="text-sm"
+                      />
                       <div className="hidden text-left sm:block">
                         <p className="text-sm font-semibold text-on-surface">
-                          {user?.full_name?.trim() || "Người dùng"}
+                          {userName}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {role === "teacher" ? "Giáo viên" : "Học sinh"}
@@ -329,7 +334,7 @@ export function AppShell({ role, children }: AppShellProps) {
                   <DropdownMenuContent align="end" className="w-64">
                     <div className="px-3 py-2">
                       <p className="font-medium text-on-surface">
-                        {user?.full_name?.trim() || "Người dùng"}
+                        {userName}
                       </p>
                       <p className="mt-1 text-sm text-muted-foreground">
                         {user?.email || "Tài khoản đang hoạt động"}
@@ -386,8 +391,9 @@ export function AppShell({ role, children }: AppShellProps) {
                   role={role}
                   currentPath={pathname}
                   navItems={navItems}
-                  userName={user?.full_name?.trim() || roleTitle}
-                  userInitial={userInitial}
+                  userName={userName}
+                  userFullName={user?.full_name}
+                  userAvatarUrl={user?.avatar_url}
                   roleTitle={roleTitle}
                   roleDescription={roleDescription}
                   onNavigate={() => setMobileOpen(false)}
@@ -419,7 +425,8 @@ function SidebarContent({
   currentPath,
   navItems,
   userName,
-  userInitial,
+  userFullName,
+  userAvatarUrl,
   roleTitle,
   roleDescription,
   onNavigate,
@@ -430,7 +437,8 @@ function SidebarContent({
   currentPath: string;
   navItems: NavItem[];
   userName: string;
-  userInitial: string;
+  userFullName?: string | null;
+  userAvatarUrl?: string | null;
   roleTitle: string;
   roleDescription: string;
   onNavigate: () => void;
@@ -517,9 +525,12 @@ function SidebarContent({
 
       <div className="mt-4 rounded-[1.6rem] border border-white/70 bg-white/72 p-4 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.28)]">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-[1.2rem] bg-linear-to-br from-primary to-tertiary text-sm font-bold text-primary-foreground">
-            {userInitial}
-          </div>
+          <UserAvatar
+            avatarUrl={userAvatarUrl}
+            fullName={userFullName}
+            className="size-11"
+            fallbackClassName="text-sm"
+          />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-on-surface">
               {userName}
