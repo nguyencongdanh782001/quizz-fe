@@ -167,7 +167,7 @@ export function ExamVisibilityToggle({
           className={cn(
             "h-10 rounded-xl px-4 transition-all",
             !isPublished &&
-              "bg-gradient-to-r from-indigo-500 to-violet-500 text-white hover:shadow-[0_20px_40px_-24px_rgba(79,70,229,0.55)]",
+              "bg-linear-to-r from-indigo-500 to-violet-500 text-white hover:shadow-[0_20px_40px_-24px_rgba(79,70,229,0.55)]",
             className,
           )}
         >
@@ -216,7 +216,7 @@ export function ExamVisibilityToggle({
               className={cn(
                 willMakePrivate
                   ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
-                  : "bg-gradient-to-r from-indigo-500 to-violet-500 text-white hover:shadow-[0_20px_40px_-24px_rgba(79,70,229,0.55)]",
+                  : "bg-linear-to-r from-indigo-500 to-violet-500 text-white hover:shadow-[0_20px_40px_-24px_rgba(79,70,229,0.55)]",
               )}
             >
               {isPending ? (

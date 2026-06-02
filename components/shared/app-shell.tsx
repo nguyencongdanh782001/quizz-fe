@@ -1,11 +1,19 @@
 "use client";
 
-import Link from "next/link";
-import { useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
+import { UserAvatar } from "@/components/common/user-avatar";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/useAuth";
+import { APP_NAME } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Bell,
   BookOpen,
   ChevronRight,
   FileCheck,
@@ -16,25 +24,13 @@ import {
   Library,
   LogOut,
   Menu,
-  Search,
-  Sparkles,
   UserRound,
   Users,
   X,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { UserAvatar } from "@/components/common/user-avatar";
-import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { APP_NAME } from "@/lib/constants";
-import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/useAuth";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useMemo, useState } from "react";
 
 type AppRole = "teacher" | "student";
 
@@ -137,18 +133,18 @@ const routeLabelMap: Record<string, string> = {
   take: "Làm bài",
 };
 
-const notificationCopy: Record<AppRole, string[]> = {
-  teacher: [
-    "3 lớp học vừa có học sinh nộp bài mới.",
-    "2 tài liệu đang chờ xuất bản cho hệ thống.",
-    "Báo cáo tiến độ tuần này đã sẵn sàng.",
-  ],
-  student: [
-    "Có 4 đề thi mới phù hợp với lớp học của bạn.",
-    "Giáo viên vừa chia sẻ thêm tài liệu mới.",
-    "Kết quả bài thi gần nhất đã được cập nhật.",
-  ],
-};
+// const notificationCopy: Record<AppRole, string[]> = {
+//   teacher: [
+//     "3 lớp học vừa có học sinh nộp bài mới.",
+//     "2 tài liệu đang chờ xuất bản cho hệ thống.",
+//     "Báo cáo tiến độ tuần này đã sẵn sàng.",
+//   ],
+//   student: [
+//     "Có 4 đề thi mới phù hợp với lớp học của bạn.",
+//     "Giáo viên vừa chia sẻ thêm tài liệu mới.",
+//     "Kết quả bài thi gần nhất đã được cập nhật.",
+//   ],
+// };
 
 function buildBreadcrumbs(pathname: string) {
   const segments = pathname.split("/").filter(Boolean);
@@ -261,7 +257,7 @@ export function AppShell({ role, children }: AppShellProps) {
                 </div>
               </div>
 
-              <div className="hidden min-w-0 max-w-md flex-1 xl:block">
+              {/* <div className="hidden min-w-0 max-w-md flex-1 xl:block">
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -270,10 +266,10 @@ export function AppShell({ role, children }: AppShellProps) {
                     className="h-11 rounded-2xl border-white/70 bg-white/72 pl-10"
                   />
                 </div>
-              </div>
+              </div> */}
 
               <div className="flex items-center gap-2">
-                <DropdownMenu>
+                {/* <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       type="button"
@@ -310,7 +306,7 @@ export function AppShell({ role, children }: AppShellProps) {
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>
-                </DropdownMenu>
+                </DropdownMenu> */}
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -333,9 +329,7 @@ export function AppShell({ role, children }: AppShellProps) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-64">
                     <div className="px-3 py-2">
-                      <p className="font-medium text-on-surface">
-                        {userName}
-                      </p>
+                      <p className="font-medium text-on-surface">{userName}</p>
                       <p className="mt-1 text-sm text-muted-foreground">
                         {user?.email || "Tài khoản đang hoạt động"}
                       </p>
