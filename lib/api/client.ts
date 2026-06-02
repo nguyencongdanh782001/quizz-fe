@@ -3,6 +3,7 @@ import axios from "axios";
 import type { ApiError } from "./types";
 import { getToken } from "./token-client";
 import { APP_MESSAGES } from "@/lib/app-messages";
+import { logoutAndClearSession } from "@/lib/auth/logout-and-clear-session";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -57,19 +58,20 @@ function getStringField(
     : undefined;
 }
 
-/** Handle 401 by clearing token and redirecting to login. */
-function handle403() {
-  if (typeof window !== "undefined") {
-    window.location.href = "/login";
-  }
-}
-
 client.interceptors.response.use(
   (res) => res,
   (error: AxiosError) => {
-    if (error.response?.status === 403) {
-      handle403();
+    const status = error.response?.status;
+    const url = error.config?.url ?? "";
+
+    if (
+      (status === 401 || status === 403) &&
+      !url.includes("/login") &&
+      !url.includes("/register")
+    ) {
+      logoutAndClearSession(url);
     }
+
     return Promise.reject(normalizeError(error));
   },
 );
