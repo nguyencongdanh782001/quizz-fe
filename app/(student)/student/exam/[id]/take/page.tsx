@@ -13,6 +13,7 @@ import {
   submitStudentAttempt,
   StudentExamDetailData,
 } from "@/lib/student-system-exams";
+import { useBreadcrumbLabel } from "@/components/shared/breadcrumb-labels";
 import {
   findFirstUnansweredTextQuestionIndex,
   getAnsweredQuestionIds,
@@ -488,6 +489,12 @@ export default function ExamTakePage({
   );
   const [isLoadingExam, setIsLoadingExam] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const examBreadcrumbHref = `/student/exam/${id}`;
+  const examBreadcrumbLabel = examDetail?.exam.title?.trim() || (
+    isLoadingExam ? null : "Chi tiết đề thi"
+  );
+
+  useBreadcrumbLabel(examBreadcrumbHref, examBreadcrumbLabel);
 
   useEffect(() => {
     let isMounted = true;

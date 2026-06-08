@@ -30,7 +30,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import {
+  BREADCRUMB_LOADING_LABEL,
+  getBreadcrumbLabelOverride,
+  isDynamicBreadcrumbSegment,
+  useBreadcrumbLabelStoreVersion,
+} from "./breadcrumb-labels";
 
 type AppRole = "teacher" | "student";
 
@@ -152,9 +158,16 @@ function buildBreadcrumbs(pathname: string) {
 
   return segments.map((segment, index) => {
     href += `/${segment}`;
+    const overrideLabel = getBreadcrumbLabelOverride(href);
+
     return {
       href,
-      label: routeLabelMap[segment] ?? decodeURIComponent(segment),
+      label:
+        overrideLabel ??
+        routeLabelMap[segment] ??
+        (isDynamicBreadcrumbSegment(segment)
+          ? BREADCRUMB_LOADING_LABEL
+          : decodeURIComponent(segment)),
       isCurrent: index === segments.length - 1,
     };
   });
@@ -174,6 +187,7 @@ function BrandMark() {
 
 export function AppShell({ role, children }: AppShellProps) {
   const pathname = usePathname();
+  useBreadcrumbLabelStoreVersion();
   const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const navItems = role === "teacher" ? teacherNav : studentNav;
@@ -184,7 +198,7 @@ export function AppShell({ role, children }: AppShellProps) {
       ? "Điều hành lớp học, bài thi và học liệu trong một giao diện thống nhất."
       : "Theo dõi tiến độ học tập, lớp học và tài liệu từ một bảng điều khiển rõ ràng.";
 
-  const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname), [pathname]);
+  const breadcrumbs = buildBreadcrumbs(pathname);
   const currentLabel = breadcrumbs[breadcrumbs.length - 1]?.label ?? roleTitle;
   const userName = user?.full_name?.trim() || "Người dùng";
 

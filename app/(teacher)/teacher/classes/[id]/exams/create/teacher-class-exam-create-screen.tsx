@@ -16,6 +16,7 @@ import { EXAM_FLOW_MESSAGES } from "@/components/exams/exam-flow-messages";
 import { ExamImportDialog } from "@/components/features/teacher-exam-form/exam-import-dialog";
 import { ExamForm } from "@/components/features/teacher-exam-form/exam-form";
 import { SystemExamSelectorDialog } from "@/components/features/teacher-exam-form/system-exam-selector-dialog";
+import { useBreadcrumbLabel } from "@/components/shared/breadcrumb-labels";
 import type { TeacherExamFormValues } from "@/components/features/teacher-exam-form/types";
 import {
   createInitialTeacherExamFormValues,
@@ -35,6 +36,7 @@ import {
 import { getApiErrorMessage } from "@/lib/api/error-message";
 import {
   createTeacherClassExam,
+  getTeacherClassById,
   getTeacherClassroomExamDetail,
   updateTeacherClassroomExam,
 } from "@/lib/teacher-classes";
@@ -197,6 +199,14 @@ export function TeacherClassExamCreateScreen({
   const normalizedEditId = editId?.trim() ? editId.trim() : null;
   const isEditMode = normalizedEditId !== null;
   const cancelHref = `/teacher/classes/${classId}`;
+  const classQuery = useQuery({
+    queryKey: teacherClassDetailQueryKeys.detail(classId),
+    queryFn: async () => getTeacherClassById(classId),
+  });
+  const classBreadcrumbHref = `/teacher/classes/${classId}`;
+  const classBreadcrumbLabel = classQuery.data?.name?.trim() || (
+    classQuery.isPending ? null : "Chi tiết lớp học"
+  );
   const createModeInitialValues = useMemo(
     () => createClassroomExamInitialValues(classId),
     [classId],
@@ -272,6 +282,8 @@ export function TeacherClassExamCreateScreen({
     isEditMode && detailQuery.isError && detailQuery.data === undefined
       ? getLoadDetailErrorState(detailQuery.error)
       : null;
+
+  useBreadcrumbLabel(classBreadcrumbHref, classBreadcrumbLabel);
 
   useEffect(() => {
     return () => {

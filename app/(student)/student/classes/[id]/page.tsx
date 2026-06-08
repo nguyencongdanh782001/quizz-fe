@@ -25,6 +25,7 @@ import {
 } from '@/lib/student-system-results';
 import { DocumentCard } from '@/components/features/document/document-card';
 import { ExamCard } from '@/components/features/exam/exam-card';
+import { useBreadcrumbLabel } from '@/components/shared/breadcrumb-labels';
 import { Button } from '@/components/ui/button';
 import type { ClassInfo } from '@/types/class.types';
 import type { Document } from '@/types/document.types';
@@ -83,6 +84,12 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
   const [resultsError, setResultsError] = useState<string | null>(null);
   const [documentsError, setDocumentsError] = useState<string | null>(null);
   const [tabRequestKey, setTabRequestKey] = useState(0);
+  const classBreadcrumbHref = `/student/classes/${id}`;
+  const classBreadcrumbLabel = cls?.name?.trim() || (
+    isLoadingClass ? null : 'Chi tiết lớp học'
+  );
+
+  useBreadcrumbLabel(classBreadcrumbHref, classBreadcrumbLabel);
 
   useEffect(() => {
     let isMounted = true;

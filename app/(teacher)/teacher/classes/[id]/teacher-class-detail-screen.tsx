@@ -13,6 +13,7 @@ import { ErrorState } from "./components/error-state";
 import { ExamsTab } from "./components/exams-tab";
 import { LoadingState } from "./components/loading-state";
 import { StudentsTab } from "./components/students-tab";
+import { useBreadcrumbLabel } from "@/components/shared/breadcrumb-labels";
 import { useClassDetail } from "./hooks/use-class-detail";
 
 export function TeacherClassDetailScreen({ classId }: { classId: string }) {
@@ -41,6 +42,14 @@ export function TeacherClassDetailScreen({ classId }: { classId: string }) {
     handleRemoveStudent,
     handleUpdateClassroom,
   } = useClassDetail(classId);
+  const classBreadcrumbHref = `/teacher/classes/${classId}`;
+  const classBreadcrumbLabel = cls?.name?.trim() || (
+    classError || (!isLoadingInitialData && !cls)
+      ? "Chi tiết lớp học"
+      : null
+  );
+
+  useBreadcrumbLabel(classBreadcrumbHref, classBreadcrumbLabel);
 
   if (isLoadingInitialData) {
     return <LoadingState label="dữ liệu lớp học" />;
@@ -130,11 +139,7 @@ export function TeacherClassDetailScreen({ classId }: { classId: string }) {
       />
 
       <section className="space-y-4">
-        <ClassTabs
-          activeTab={activeTab}
-          tabs={tabs}
-          onChange={setActiveTab}
-        />
+        <ClassTabs activeTab={activeTab} tabs={tabs} onChange={setActiveTab} />
 
         {activeTab === "students" ? (
           <StudentsTab

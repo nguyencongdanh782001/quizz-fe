@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, BookOpen, CalendarDays, FileText } from "lucide-react";
+import { useBreadcrumbLabel } from "@/components/shared/breadcrumb-labels";
 import {
   getStudentClassDocument,
   getStudentSystemDocument,
@@ -34,6 +35,12 @@ export default function StudentMaterialDetailPage({
   const classId = searchParams.get("classId");
   const [document, setDocument] = useState<Document | null>(null);
   const [isLoadingDocument, setIsLoadingDocument] = useState(true);
+  const documentBreadcrumbHref = `/student/materials/${id}`;
+  const documentBreadcrumbLabel = document?.title?.trim() || (
+    isLoadingDocument ? null : "Chi tiết tài liệu"
+  );
+
+  useBreadcrumbLabel(documentBreadcrumbHref, documentBreadcrumbLabel);
 
   useEffect(() => {
     let isMounted = true;

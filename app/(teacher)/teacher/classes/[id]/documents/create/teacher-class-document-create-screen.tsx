@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { PageHero } from "@/components/shared/page-hero";
 import { SurfacePanel } from "@/components/shared/surface-panel";
+import { useBreadcrumbLabel } from "@/components/shared/breadcrumb-labels";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -36,10 +37,12 @@ import {
 } from "@/components/ui/toast";
 import { InputField } from "@/components/common/form/input-field";
 import { TextareaField } from "@/components/common/form/textarea-field";
+import { useQuery } from "@tanstack/react-query";
 import { useCreateTeacherClassDocument } from "@/hooks/queries/useCreateTeacherClassDocument";
-import { useTeacherClassrooms } from "@/hooks/queries/useTeacherClassrooms";
 import { APP_MESSAGES } from "@/lib/app-messages";
+import { getTeacherClassById } from "@/lib/teacher-classes";
 import { cn } from "@/lib/utils";
+import { teacherClassDetailQueryKeys } from "../../query-keys";
 
 interface DocumentCreateFormValues {
   is_published: boolean;
@@ -509,16 +512,24 @@ export function TeacherClassDocumentCreateScreen({
 }) {
   const router = useRouter();
   const createMutation = useCreateTeacherClassDocument();
-  const classroomsQuery = useTeacherClassrooms();
+  const classroomQuery = useQuery({
+    queryKey: teacherClassDetailQueryKeys.detail(classId),
+    queryFn: async () => getTeacherClassById(classId),
+  });
   const classroomName =
-    classroomsQuery.data?.find((classroom) => classroom.id === classId)?.name ??
-    `Lớp học #${classId}`;
+    classroomQuery.data?.name?.trim() ?? `Lớp học #${classId}`;
+  const classBreadcrumbHref = `/teacher/classes/${classId}`;
+  const classBreadcrumbLabel = classroomQuery.data?.name?.trim() || (
+    classroomQuery.isPending ? null : "Chi tiết lớp học"
+  );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [toast, setToast] = useState<ScreenToastState | null>(null);
   const redirectTimeoutRef = useRef<number | null>(null);
   const cancelHref = `/teacher/classes/${classId}`;
+
+  useBreadcrumbLabel(classBreadcrumbHref, classBreadcrumbLabel);
 
   useEffect(() => {
     return () => {

@@ -264,7 +264,7 @@ function EmptyState({
       <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
         {hasActiveFilters
           ? "Hãy thử đổi từ khóa tìm kiếm hoặc đặt lại bộ lọc để xem thêm đề thi."
-          : "Khi API trả về dữ liệu, các đề thi sẽ xuất hiện tại đây với đầy đủ thống kê và thao tác quản lý."}
+          : ""}
       </p>
       <div className="mt-6 flex flex-wrap justify-center gap-3">
         {hasActiveFilters ? (

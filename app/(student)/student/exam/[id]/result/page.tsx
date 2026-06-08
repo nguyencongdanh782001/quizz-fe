@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, use, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -21,6 +21,7 @@ import {
   StudentSubmitAttemptResultData,
   writeCachedStudentAttemptResult,
 } from "@/lib/student-system-exams";
+import { useBreadcrumbLabel } from "@/components/shared/breadcrumb-labels";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +31,7 @@ function formatDuration(seconds: number): string {
   return `${m} phút ${s} giây`;
 }
 
-function ResultPageContent() {
+function ResultPageContent({ examId }: { examId: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const attemptId = searchParams.get("attemptId");
@@ -43,6 +44,12 @@ function ResultPageContent() {
   const [retakeToastMessage, setRetakeToastMessage] = useState<string | null>(
     null,
   );
+  const resultBreadcrumbHref = `/student/exam/${examId}`;
+  const resultBreadcrumbLabel = result?.examTitle?.trim() || (
+    isLoading ? null : "Chi tiết đề thi"
+  );
+
+  useBreadcrumbLabel(resultBreadcrumbHref, resultBreadcrumbLabel);
 
   useEffect(() => {
     let isMounted = true;
@@ -361,7 +368,13 @@ function ResultPageContent() {
   );
 }
 
-export default function ExamResultPage() {
+export default function ExamResultPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+
   return (
     <Suspense
       fallback={
@@ -370,7 +383,7 @@ export default function ExamResultPage() {
         </div>
       }
     >
-      <ResultPageContent />
+      <ResultPageContent examId={id} />
     </Suspense>
   );
 }

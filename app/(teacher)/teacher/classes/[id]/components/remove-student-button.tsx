@@ -19,7 +19,7 @@ export function RemoveStudentButton({
       onClick={onClick}
     >
       <UserMinus className="h-3.5 w-3.5" />
-      Mời khỏi lớp
+      Mời rời lớp
     </Button>
   );
 }

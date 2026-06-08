@@ -696,13 +696,13 @@ function ProfilePageSkeleton({ role }: UserInfoPageProps) {
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)">
         <div className="space-y-6">
           <SkeletonCard rows={9} />
           <FormSkeleton />
           <FormSkeleton />
         </div>
-        <SkeletonCard rows={3} />
+        {/* <SkeletonCard rows={3} /> */}
       </div>
     </div>
   );
