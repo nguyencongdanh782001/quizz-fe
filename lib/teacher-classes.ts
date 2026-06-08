@@ -190,6 +190,23 @@ export async function getTeacherClassDocuments(
   return (response.data.items ?? []).map(mapTeacherClassDocument);
 }
 
+export async function deleteTeacherClassDocument(
+  classId: string,
+  documentId: number,
+): Promise<string> {
+  await teacherApi.teacher.classes.deleteDocument(classId, documentId);
+
+  return APP_MESSAGES.DELETE_DOCUMENT_SUCCESS;
+}
+
+export async function createTeacherClassDocument(
+  classId: string,
+  formData: FormData,
+): Promise<string> {
+  await teacherApi.teacher.classes.createDocument(classId, formData);
+  return APP_MESSAGES.CREATE_DOCUMENT_SUCCESS;
+}
+
 export async function getTeacherClassExams(
   classId: string,
 ): Promise<Exam[]> {

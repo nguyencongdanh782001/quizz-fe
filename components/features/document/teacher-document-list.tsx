@@ -2,6 +2,7 @@ import { BookOpenText, CalendarDays, LibraryBig } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getDocumentPublishStatusLabel, getDocumentScopeLabel } from "@/lib/teacher-document-filters";
 import type { Document } from "@/types/document.types";
+import { DocumentContextMenu } from "./document-context-menu";
 
 function formatDocumentDate(value: string): string {
   if (!value) {
@@ -25,9 +26,13 @@ function getPublishedBadgeVariant(isPublished: boolean | undefined) {
 }
 
 export function TeacherDocumentList({
+  deletingDocumentId,
   documents,
+  onDeleteRequest,
 }: {
+  deletingDocumentId: string | null;
   documents: Document[];
+  onDeleteRequest: (document: Document) => void;
 }) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
@@ -36,14 +41,22 @@ export function TeacherDocumentList({
           key={document.id}
           className="rounded-[1.6rem] border border-white/70 bg-white/82 p-5 shadow-[0_22px_70px_-42px_rgba(15,23,42,0.22)] backdrop-blur-xl transition-transform hover:-translate-y-0.5"
         >
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="info">{getDocumentScopeLabel(document.scope)}</Badge>
-            <Badge variant={getPublishedBadgeVariant(document.isPublished)}>
-              {getDocumentPublishStatusLabel(document.isPublished)}
-            </Badge>
-            {document.classroomName ? (
-              <Badge variant="outline">{document.classroomName}</Badge>
-            ) : null}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <Badge variant="info">{getDocumentScopeLabel(document.scope)}</Badge>
+              <Badge variant={getPublishedBadgeVariant(document.isPublished)}>
+                {getDocumentPublishStatusLabel(document.isPublished)}
+              </Badge>
+              {document.classroomName ? (
+                <Badge variant="outline">{document.classroomName}</Badge>
+              ) : null}
+            </div>
+
+            <DocumentContextMenu
+              document={document}
+              isDeleting={deletingDocumentId === document.id}
+              onDeleteRequest={onDeleteRequest}
+            />
           </div>
 
           <h2 className="mt-4 font-display text-xl font-semibold text-on-surface">

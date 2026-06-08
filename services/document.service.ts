@@ -1,21 +1,7 @@
 import { api as teacherApi } from "@/lib/api/endpoints/teacher";
 import { APP_MESSAGES } from "@/lib/app-messages";
-import type {
-  TeacherCreateDocumentRequest,
-  TeacherDocumentSchema,
-} from "@/lib/api/types";
+import type { TeacherDocumentSchema } from "@/lib/api/types";
 import type { Document, TeacherDocumentQuery } from "@/types/document.types";
-
-function normalizeTeacherDocumentPayload(
-  data: TeacherCreateDocumentRequest,
-): TeacherCreateDocumentRequest {
-  return {
-    ...data,
-    title: data.title.trim(),
-    summary: data.summary.trim(),
-    content: data.content.trim(),
-  };
-}
 
 function inferGrade(classroomName: string | null): number {
   if (!classroomName) {
@@ -45,6 +31,7 @@ function mapTeacherDocument(item: TeacherDocumentSchema): Document {
     uploadedByName: "Giáo viên",
     createdAt: item.created_at,
     updatedAt: item.updated_at,
+    fileSize: item.file_size_bytes ?? undefined,
     downloadCount: 0,
     tags: [item.scope, item.is_published ? "published" : "draft"].filter(
       Boolean,
@@ -90,10 +77,17 @@ export async function getTeacherDocuments(
 }
 
 export async function createTeacherDocument(
-  data: TeacherCreateDocumentRequest,
+  formData: FormData,
 ): Promise<string> {
-  const payload = normalizeTeacherDocumentPayload(data);
-  await teacherApi.teacher.documents.create(payload);
+  const response = await teacherApi.teacher.documents.create(formData);
 
-  return APP_MESSAGES.CREATE_DOCUMENT_SUCCESS;
+  return response.data.message || APP_MESSAGES.CREATE_DOCUMENT_SUCCESS;
+}
+
+export async function deleteTeacherDocument(
+  documentId: number,
+): Promise<string> {
+  await teacherApi.teacher.documents.delete(documentId);
+
+  return APP_MESSAGES.DELETE_DOCUMENT_SUCCESS;
 }

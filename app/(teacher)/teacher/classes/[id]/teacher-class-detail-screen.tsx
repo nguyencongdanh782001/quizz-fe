@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Users } from "lucide-react";
+import { ArrowLeft, Plus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ClassHeader } from "./components/class-header";
 import { ClassTabs } from "./components/class-tabs";
@@ -109,6 +109,12 @@ export function TeacherClassDetailScreen({ classId }: { classId: string }) {
         cls={cls}
         actions={
           <div className="flex flex-wrap gap-3">
+            <Button asChild type="button" size="lg">
+              <Link href={`/teacher/classes/${classId}/documents/create`}>
+                <Plus className="mr-2 size-4" />
+                Thêm tài liệu
+              </Link>
+            </Button>
             <EditClassroomDialog
               classroom={cls}
               isSubmitting={isUpdatingClassroom}
@@ -153,6 +159,7 @@ export function TeacherClassDetailScreen({ classId }: { classId: string }) {
 
         {activeTab === "documents" ? (
           <DocumentsTab
+            classId={classId}
             documents={documents}
             isLoading={isLoadingDocuments}
             error={documentsError}

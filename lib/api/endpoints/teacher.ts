@@ -5,7 +5,6 @@ import type {
   TeacherClassDocumentListResponse,
   TeacherClassExamListResponse,
   TeacherClassListResponse,
-  TeacherCreateDocumentRequest,
   TeacherDocumentListResponse,
   TeacherCreateSystemDocumentResponse,
   TeacherCreateClassExamResponse,
@@ -26,11 +25,18 @@ export const api = {
         client.get<TeacherDocumentListResponse>("/teacher/system/documents", {
           params,
         }),
-      create: (data: TeacherCreateDocumentRequest) =>
+      create: (data: FormData) =>
         client.post<TeacherCreateSystemDocumentResponse>(
           "/teacher/documents",
           data,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          },
         ),
+      delete: (documentId: number) =>
+        client.delete<MessageResponse>(`/teacher/documents/${documentId}`),
     },
     classes: {
       list: () => client.get<TeacherClassListResponse>("/teacher/classes"),
@@ -50,6 +56,20 @@ export const api = {
       documents: (classId: string | number) =>
         client.get<TeacherClassDocumentListResponse>(
           `/teacher/classes/${classId}/documents`,
+        ),
+      deleteDocument: (classId: string | number, documentId: string | number) =>
+        client.delete<MessageResponse>(
+          `/teacher/classes/${classId}/documents/${documentId}`,
+        ),
+      createDocument: (classId: string | number, data: FormData) =>
+        client.post<TeacherCreateSystemDocumentResponse>(
+          `/teacher/classes/${classId}/documents`,
+          data,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          },
         ),
       exams: (classId: string | number) =>
         client.get<TeacherClassExamListResponse>(

@@ -1,10 +1,16 @@
-import Link from "next/link";
-import { Pencil } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { DocumentContextMenu } from "@/components/features/document/document-context-menu";
 import type { Document } from "@/types/document.types";
 import { formatDate } from "../utils";
 
-export function DocumentTable({ documents }: { documents: Document[] }) {
+export function DocumentTable({
+  deletingDocumentId,
+  documents,
+  onDeleteRequest,
+}: {
+  deletingDocumentId: string | null;
+  documents: Document[];
+  onDeleteRequest: (document: Document) => void;
+}) {
   return (
     <div className="overflow-hidden rounded-2xl bg-surface-container-lowest shadow-[0_8px_24px_rgba(7,30,39,0.05)]">
       <table className="w-full">
@@ -38,12 +44,13 @@ export function DocumentTable({ documents }: { documents: Document[] }) {
                 {formatDate(document.createdAt)}
               </td>
               <td className="px-5 py-4">
-                <Button asChild type="button" variant="ghost" size="sm">
-                  <Link href="/teacher/documents">
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Chỉnh sửa
-                  </Link>
-                </Button>
+                <div className="flex justify-end">
+                  <DocumentContextMenu
+                    document={document}
+                    isDeleting={deletingDocumentId === document.id}
+                    onDeleteRequest={onDeleteRequest}
+                  />
+                </div>
               </td>
             </tr>
           ))}

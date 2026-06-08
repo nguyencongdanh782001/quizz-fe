@@ -10,33 +10,22 @@ import {
   useRef,
   useState,
 } from "react";
-import { Form, Formik, type FormikErrors, type FormikHelpers } from "formik";
+import { Form, Formik, type FormikHelpers } from "formik";
 import {
-  AlertCircle,
   ArrowLeft,
+  AlertCircle,
   CheckCircle2,
   FileText,
-  Globe2,
   LoaderCircle,
-  RefreshCw,
+  School,
   Trash2,
   UploadCloud,
 } from "lucide-react";
-import { InputField } from "@/components/common/form/input-field";
-import { TextareaField } from "@/components/common/form/textarea-field";
 import { PageHero } from "@/components/shared/page-hero";
 import { SurfacePanel } from "@/components/shared/surface-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Toast,
   ToastClose,
@@ -45,37 +34,26 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast";
-import { useCreateTeacherDocument } from "@/hooks/queries/useCreateTeacherDocument";
+import { InputField } from "@/components/common/form/input-field";
+import { TextareaField } from "@/components/common/form/textarea-field";
+import { useCreateTeacherClassDocument } from "@/hooks/queries/useCreateTeacherClassDocument";
 import { useTeacherClassrooms } from "@/hooks/queries/useTeacherClassrooms";
-import { getApiErrorMessage } from "@/lib/api/error-message";
 import { APP_MESSAGES } from "@/lib/app-messages";
 import { cn } from "@/lib/utils";
 
-type DocumentScope = "system" | "classroom";
-type ToastVariant = "success" | "error";
-
-interface TeacherDocumentCreateFormStatus {
-  submitError?: string;
+interface DocumentCreateFormValues {
+  is_published: boolean;
+  summary: string;
+  title: string;
 }
+
+type ToastVariant = "success" | "error";
 
 interface ScreenToastState {
   description?: string;
   open: boolean;
   title: string;
   variant: ToastVariant;
-}
-
-interface DocumentCreateFormValues {
-  classroom_id: string;
-  is_published: boolean;
-  scope: DocumentScope;
-  summary: string;
-  title: string;
-}
-
-interface ClassroomOption {
-  id: string;
-  name: string;
 }
 
 const CREATE_DOCUMENT_SUCCESS_MESSAGE = APP_MESSAGES.CREATE_DOCUMENT_SUCCESS;
@@ -104,41 +82,8 @@ const DOCUMENT_UPLOAD_ACCEPT = [
 const initialValues: DocumentCreateFormValues = {
   title: "",
   summary: "",
-  scope: "system",
-  classroom_id: "",
   is_published: false,
 };
-
-function validateDocumentForm(
-  values: DocumentCreateFormValues,
-): FormikErrors<DocumentCreateFormValues> {
-  const errors: FormikErrors<DocumentCreateFormValues> = {};
-
-  if (values.scope === "classroom" && !values.classroom_id.trim()) {
-    errors.classroom_id = "Vui lòng chọn lớp học";
-  }
-
-  return errors;
-}
-
-function buildDocumentFormData(
-  values: DocumentCreateFormValues,
-  file: File,
-): FormData {
-  const formData = new FormData();
-
-  formData.append("file", file);
-  formData.append("title", values.title.trim());
-  formData.append("summary", values.summary.trim());
-  formData.append("scope", values.scope);
-  formData.append("is_published", String(values.is_published));
-
-  if (values.scope === "classroom" && values.classroom_id.trim()) {
-    formData.append("classroom_id", values.classroom_id.trim());
-  }
-
-  return formData;
-}
 
 function formatFileSize(bytes: number): string {
   if (bytes <= 0) {
@@ -154,25 +99,33 @@ function formatFileSize(bytes: number): string {
     unitIndex += 1;
   }
 
-  if (unitIndex === 0) {
-    return `${bytes} B`;
-  }
-
-  const formatted = size >= 10 ? size.toFixed(0) : size.toFixed(1);
+  const formatted = unitIndex === 0 ? String(bytes) : size.toFixed(size >= 10 ? 0 : 1);
 
   return `${formatted} ${units[unitIndex]}`;
 }
 
+function getFileTypeLabel(file: File): string {
+  const extension = file.name.split(".").pop()?.trim();
+
+  if (extension) {
+    return extension.toUpperCase();
+  }
+
+  const mimeType = file.type.trim().toUpperCase();
+
+  return mimeType || "TỆP";
+}
+
 function CardHeader({
-  badge,
-  description,
   icon: Icon,
   title,
+  description,
+  badge,
 }: {
-  badge?: React.ReactNode;
-  description?: string;
   icon: typeof FileText;
   title: string;
+  description?: string;
+  badge?: React.ReactNode;
 }) {
   return (
     <div className="flex items-start justify-between gap-4">
@@ -196,6 +149,31 @@ function CardHeader({
   );
 }
 
+function ClassroomInfoCard({
+  classId,
+  classroomName,
+}: {
+  classId: string;
+  classroomName: string;
+}) {
+  return (
+    <SurfacePanel className="space-y-4">
+      <div className="flex items-start gap-3">
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-[1.1rem] bg-secondary/10 text-secondary">
+          <School className="size-5" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-on-surface">Lớp học</p>
+          <p className="mt-1 text-base font-semibold text-on-surface">
+            {classroomName}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">Mã lớp: {classId}</p>
+        </div>
+      </div>
+    </SurfacePanel>
+  );
+}
+
 function UploadDocumentCard({
   disabled,
   error,
@@ -210,7 +188,7 @@ function UploadDocumentCard({
   onRemoveFile: () => void;
 }) {
   const generatedId = useId();
-  const inputId = `teacher-document-file-${generatedId}`;
+  const inputId = `class-document-file-${generatedId}`;
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const hasFile = file !== null;
@@ -273,7 +251,7 @@ function UploadDocumentCard({
       <CardHeader
         icon={UploadCloud}
         title="Tải tài liệu"
-        description="Tải trực tiếp tệp tài liệu vào hệ thống."
+        description="Tải trực tiếp tài liệu vào lớp học này."
         badge={
           <Badge variant={hasFile ? "success" : "secondary"}>
             {hasFile ? "Đã chọn tệp" : "Chưa chọn tài liệu"}
@@ -366,6 +344,10 @@ function UploadDocumentCard({
               <p className="mt-1 text-sm text-muted-foreground">
                 {formatFileSize(file.size)}
               </p>
+              <div className="mt-2 flex items-center gap-2">
+                <Badge variant="outline">{getFileTypeLabel(file)}</Badge>
+                <span className="text-xs text-muted-foreground">Loại tệp</span>
+              </div>
             </div>
           </div>
 
@@ -402,12 +384,12 @@ function DocumentInformationCard({
       <CardHeader
         icon={FileText}
         title="Thông tin tài liệu"
-        description="Bổ sung tên và mô tả ngắn cho tài liệu."
+        description="Bổ sung tiêu đề và tóm tắt cho tài liệu."
       />
 
       <div className="grid gap-5">
         <InputField
-          id="teacher-document-title"
+          id="class-document-title"
           label="Tiêu đề"
           name="title"
           placeholder="Nhập tiêu đề tài liệu"
@@ -417,7 +399,7 @@ function DocumentInformationCard({
         />
 
         <TextareaField
-          id="teacher-document-summary"
+          id="class-document-summary"
           label="Tóm tắt tài liệu"
           name="summary"
           placeholder="Nhập tóm tắt ngắn"
@@ -427,189 +409,6 @@ function DocumentInformationCard({
           onChange={(event) => onSummaryChange(event.target.value)}
         />
       </div>
-    </SurfacePanel>
-  );
-}
-
-function ScopeOption({
-  checked,
-  description,
-  disabled,
-  icon: Icon,
-  id,
-  label,
-  value,
-}: {
-  checked: boolean;
-  description: string;
-  disabled: boolean;
-  icon: typeof Globe2;
-  id: string;
-  label: string;
-  value: DocumentScope;
-}) {
-  return (
-    <Label
-      htmlFor={id}
-      className={cn(
-        "flex cursor-pointer items-start gap-3 rounded-[1.25rem] border border-outline/15 bg-surface-container-lowest p-4 transition-all",
-        checked &&
-          "border-primary/35 bg-primary/6 shadow-[0_18px_44px_-34px_rgba(79,70,229,0.36)]",
-        !checked && "hover:border-primary/25 hover:bg-surface",
-        disabled && "cursor-not-allowed opacity-60",
-      )}
-    >
-      <RadioGroupItem
-        id={id}
-        value={value}
-        disabled={disabled}
-        className="mt-0.5"
-      />
-      <span className="flex min-w-0 flex-1 gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-[1rem] bg-primary/10 text-primary">
-          <Icon className="size-4" />
-        </span>
-        <span className="min-w-0">
-          <span className="block text-sm font-semibold text-on-surface">
-            {label}
-          </span>
-          <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-            {description}
-          </span>
-        </span>
-      </span>
-    </Label>
-  );
-}
-
-function ScopeSelectionCard({
-  classroomError,
-  classroomOptions,
-  disabled,
-  isClassroomsError,
-  isClassroomsLoading,
-  onClassroomChange,
-  onRetryClassrooms,
-  onScopeChange,
-  values,
-}: {
-  classroomError?: string;
-  classroomOptions: ClassroomOption[];
-  disabled: boolean;
-  isClassroomsError: boolean;
-  isClassroomsLoading: boolean;
-  onClassroomChange: (classroomId: string) => void;
-  onRetryClassrooms: () => void;
-  onScopeChange: (scope: DocumentScope) => void;
-  values: DocumentCreateFormValues;
-}) {
-  const isClassroomScope = values.scope === "classroom";
-  const classroomSelectDisabled =
-    disabled || isClassroomsLoading || classroomOptions.length === 0;
-
-  return (
-    <SurfacePanel className="space-y-5">
-      <CardHeader
-        icon={Globe2}
-        title="Phạm vi"
-        description="Chọn nơi tài liệu sẽ được hiển thị."
-      />
-
-      <RadioGroup
-        value={values.scope}
-        onValueChange={(nextValue) => onScopeChange(nextValue as DocumentScope)}
-        className="grid gap-3"
-      >
-        <ScopeOption
-          id="teacher-document-scope-system"
-          value="system"
-          label="Hệ thống"
-          description="Tài liệu dùng chung trong hệ thống."
-          icon={Globe2}
-          checked={values.scope === "system"}
-          disabled={disabled}
-        />
-        {/* <ScopeOption
-          id="teacher-document-scope-classroom"
-          value="classroom"
-          label="Lớp học"
-          description="Tài liệu gắn với một lớp học cụ thể."
-          icon={School}
-          checked={isClassroomScope}
-          disabled={disabled}
-        /> */}
-      </RadioGroup>
-
-      {isClassroomScope ? (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-3">
-            <Label className="text-sm font-medium text-on-surface">
-              Lớp học <span className="text-destructive">*</span>
-            </Label>
-            {isClassroomsLoading ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/8 px-2.5 py-1 text-xs font-medium text-primary">
-                <LoaderCircle className="size-3 animate-spin" />
-                Đang tải
-              </span>
-            ) : null}
-          </div>
-
-          <Select
-            value={values.classroom_id || undefined}
-            onValueChange={onClassroomChange}
-            disabled={classroomSelectDisabled}
-          >
-            <SelectTrigger
-              aria-invalid={Boolean(classroomError)}
-              className={cn(
-                "h-12 rounded-xl border-outline/15 bg-surface-container-lowest shadow-none",
-                classroomError &&
-                  "border-destructive focus-visible:ring-destructive/20",
-              )}
-            >
-              <SelectValue placeholder="Chọn lớp học" />
-            </SelectTrigger>
-            <SelectContent position="popper">
-              {classroomOptions.map((classroom) => (
-                <SelectItem key={classroom.id} value={classroom.id}>
-                  {classroom.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {classroomError ? (
-            <p className="flex items-center gap-2 text-xs text-destructive">
-              <AlertCircle className="size-3.5" />
-              {classroomError}
-            </p>
-          ) : null}
-
-          {isClassroomsError ? (
-            <div className="flex flex-col gap-3 rounded-xl border border-destructive/15 bg-destructive/5 p-3 text-sm text-destructive sm:flex-row sm:items-center sm:justify-between">
-              <span>Không thể tải lớp học.</span>
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                onClick={onRetryClassrooms}
-                disabled={disabled}
-              >
-                <RefreshCw className="size-3.5" />
-                Tải lại
-              </Button>
-            </div>
-          ) : null}
-
-          {!isClassroomsLoading &&
-          !isClassroomsError &&
-          classroomOptions.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              Chưa có lớp học để chọn.
-            </p>
-          ) : null}
-        </div>
-      ) : null}
     </SurfacePanel>
   );
 }
@@ -628,23 +427,23 @@ function PublishSettingsCard({
       <CardHeader
         icon={CheckCircle2}
         title="Trạng thái"
-        description="Quyết định tài liệu được công khai ngay hay lưu nháp."
+        description="Quyết định tài liệu có hiển thị ngay cho học sinh hay không."
       />
 
       <div className="flex items-center justify-between gap-4 rounded-[1.25rem] border border-outline/15 bg-surface-container-lowest p-4">
         <div className="min-w-0">
           <Label
-            htmlFor="teacher-document-published"
+            htmlFor="class-document-published"
             className="text-sm font-semibold text-on-surface"
           >
-            Công khai
+            Công khai cho học sinh
           </Label>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Tắt để lưu tài liệu nhưng chưa hiển thị.
+            Tắt để lưu tài liệu nhưng chưa hiển thị với học sinh.
           </p>
         </div>
         <button
-          id="teacher-document-published"
+          id="class-document-published"
           type="button"
           role="switch"
           aria-checked={checked}
@@ -671,10 +470,12 @@ function ActionFooter({
   disabled,
   isUploading,
   submitLabel,
+  cancelHref,
 }: {
   disabled: boolean;
   isUploading: boolean;
   submitLabel: string;
+  cancelHref: string;
 }) {
   return (
     <SurfacePanel className="flex flex-col-reverse gap-3 p-4 sm:flex-row sm:items-center sm:justify-end">
@@ -684,7 +485,7 @@ function ActionFooter({
         </Button>
       ) : (
         <Button asChild type="button" variant="outline" size="lg">
-          <Link href="/teacher/documents">Hủy</Link>
+          <Link href={cancelHref}>Hủy</Link>
         </Button>
       )}
       <Button type="submit" size="lg" disabled={disabled}>
@@ -701,20 +502,23 @@ function ActionFooter({
   );
 }
 
-export function TeacherDocumentsCreateScreen() {
+export function TeacherClassDocumentCreateScreen({
+  classId,
+}: {
+  classId: string;
+}) {
   const router = useRouter();
-  const createMutation = useCreateTeacherDocument();
+  const createMutation = useCreateTeacherClassDocument();
   const classroomsQuery = useTeacherClassrooms();
+  const classroomName =
+    classroomsQuery.data?.find((classroom) => classroom.id === classId)?.name ??
+    `Lớp học #${classId}`;
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [toast, setToast] = useState<ScreenToastState | null>(null);
   const redirectTimeoutRef = useRef<number | null>(null);
-  const classroomOptions =
-    classroomsQuery.data?.map((classroom) => ({
-      id: classroom.id,
-      name: classroom.name,
-    })) ?? [];
+  const cancelHref = `/teacher/classes/${classId}`;
 
   useEffect(() => {
     return () => {
@@ -746,15 +550,31 @@ export function TeacherDocumentsCreateScreen() {
 
     setFileError(null);
 
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    const trimmedTitle = values.title.trim();
+    const trimmedSummary = values.summary.trim();
+
+    if (trimmedTitle) {
+      formData.append("title", trimmedTitle);
+    }
+
+    if (trimmedSummary) {
+      formData.append("summary", trimmedSummary);
+    }
+
+    formData.append("is_published", String(values.is_published));
+
     try {
-      const formData = buildDocumentFormData(values, selectedFile);
-      const message = await createMutation.mutateAsync(formData);
+      await createMutation.mutateAsync({
+        classId,
+        formData,
+      });
 
       openToast({
         title: CREATE_DOCUMENT_SUCCESS_MESSAGE,
-        description:
-          message ||
-          "Tài liệu đã được lưu. Đang quay lại danh sách tài liệu...",
+        description: "Tài liệu đã được lưu. Đang quay lại lớp học...",
         variant: "success",
       });
 
@@ -764,19 +584,19 @@ export function TeacherDocumentsCreateScreen() {
 
       setIsRedirecting(true);
       redirectTimeoutRef.current = window.setTimeout(() => {
-        router.push("/teacher/documents");
+        router.push(cancelHref);
       }, REDIRECT_DELAY_MS);
     } catch (error) {
-      const message = getApiErrorMessage(error, CREATE_DOCUMENT_ERROR_MESSAGE);
+      console.error(`Failed to create document for class ${classId}`, error);
 
-      helpers.setSubmitting(false);
+      const submitError = CREATE_DOCUMENT_ERROR_MESSAGE;
       helpers.setStatus({
-        submitError: message,
-      } satisfies TeacherDocumentCreateFormStatus);
+        submitError,
+      } satisfies { submitError: string });
 
       openToast({
         title: CREATE_DOCUMENT_ERROR_MESSAGE,
-        description: message,
+        description: APP_MESSAGES.NETWORK_ERROR,
         variant: "error",
       });
     }
@@ -786,117 +606,77 @@ export function TeacherDocumentsCreateScreen() {
     <ToastProvider>
       <div className="space-y-6">
         <Link
-          href="/teacher/documents"
+          href={cancelHref}
           className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-on-surface"
         >
           <ArrowLeft className="size-4" />
-          Quay lại tài liệu
+          Quay lại lớp học
         </Link>
 
         <PageHero
-          eyebrow="Tài liệu giáo viên"
-          title="Tải lên tài liệu"
-          description="Tạo tài liệu mới bằng tệp PDF, DOCX, XLSX, PPTX, TXT và chọn phạm vi hiển thị trước khi lưu."
+          eyebrow="Tài liệu lớp học"
+          title={`Thêm tài liệu cho ${classroomName}`}
+          description="Tải tệp PDF, DOCX, XLSX, PPTX, TXT lên lớp này và chọn trạng thái hiển thị trước khi lưu."
           icon={UploadCloud}
           badgeVariant="info"
         />
 
+        <ClassroomInfoCard classId={classId} classroomName={classroomName} />
+
         <Formik<DocumentCreateFormValues>
           initialValues={initialValues}
-          validate={validateDocumentForm}
           onSubmit={handleSubmit}
         >
           {({
-            errors,
             isSubmitting,
-            setFieldTouched,
-            setFieldValue,
             setStatus,
             status,
-            touched,
+            setFieldValue,
             values,
           }) => {
-            const formStatus = status as
-              | TeacherDocumentCreateFormStatus
-              | undefined;
+            const formStatus = status as { submitError?: string } | undefined;
             const isFormDisabled =
               isSubmitting || createMutation.isPending || isRedirecting;
-            const classroomError =
-              touched.classroom_id && errors.classroom_id
-                ? errors.classroom_id
-                : undefined;
 
             return (
               <Form className="space-y-5">
-                <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] xl:items-start">
-                  <div className="space-y-5">
-                    <UploadDocumentCard
-                      file={selectedFile}
-                      error={fileError}
-                      disabled={isFormDisabled}
-                      onFileSelect={(file) => {
-                        setSelectedFile(file);
-                        setFileError(null);
-                        setStatus(undefined);
-                      }}
-                      onRemoveFile={() => {
-                        setSelectedFile(null);
-                        setFileError(FILE_REQUIRED_MESSAGE);
-                        setStatus(undefined);
-                      }}
-                    />
+                <UploadDocumentCard
+                  file={selectedFile}
+                  error={fileError}
+                  disabled={isFormDisabled}
+                  onFileSelect={(file) => {
+                    setSelectedFile(file);
+                    setFileError(null);
+                    setStatus(undefined);
+                  }}
+                  onRemoveFile={() => {
+                    setSelectedFile(null);
+                    setFileError(FILE_REQUIRED_MESSAGE);
+                    setStatus(undefined);
+                  }}
+                />
 
-                    <DocumentInformationCard
-                      values={values}
-                      disabled={isFormDisabled}
-                      onTitleChange={(title) => {
-                        setStatus(undefined);
-                        void setFieldValue("title", title);
-                      }}
-                      onSummaryChange={(summary) => {
-                        setStatus(undefined);
-                        void setFieldValue("summary", summary);
-                      }}
-                    />
-                  </div>
+                <DocumentInformationCard
+                  values={values}
+                  disabled={isFormDisabled}
+                  onTitleChange={(title) => {
+                    setStatus(undefined);
+                    void setFieldValue("title", title);
+                  }}
+                  onSummaryChange={(summary) => {
+                    setStatus(undefined);
+                    void setFieldValue("summary", summary);
+                  }}
+                />
 
-                  <div className="space-y-5">
-                    <ScopeSelectionCard
-                      values={values}
-                      classroomOptions={classroomOptions}
-                      classroomError={classroomError}
-                      disabled={isFormDisabled}
-                      isClassroomsError={classroomsQuery.isError}
-                      isClassroomsLoading={classroomsQuery.isPending}
-                      onRetryClassrooms={() => {
-                        void classroomsQuery.refetch();
-                      }}
-                      onClassroomChange={(classroomId) => {
-                        setStatus(undefined);
-                        void setFieldValue("classroom_id", classroomId);
-                        void setFieldTouched("classroom_id", true, false);
-                      }}
-                      onScopeChange={(scope) => {
-                        setStatus(undefined);
-                        void setFieldValue("scope", scope);
-
-                        if (scope === "system") {
-                          void setFieldValue("classroom_id", "");
-                          void setFieldTouched("classroom_id", false, false);
-                        }
-                      }}
-                    />
-
-                    <PublishSettingsCard
-                      checked={values.is_published}
-                      disabled={isFormDisabled}
-                      onChange={(checked) => {
-                        setStatus(undefined);
-                        void setFieldValue("is_published", checked);
-                      }}
-                    />
-                  </div>
-                </div>
+                <PublishSettingsCard
+                  checked={values.is_published}
+                  disabled={isFormDisabled}
+                  onChange={(checked) => {
+                    setStatus(undefined);
+                    void setFieldValue("is_published", checked);
+                  }}
+                />
 
                 {formStatus?.submitError ? (
                   <div className="rounded-2xl border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
@@ -918,6 +698,7 @@ export function TeacherDocumentsCreateScreen() {
                   submitLabel={
                     values.is_published ? "Đăng tài liệu" : "Lưu tài liệu"
                   }
+                  cancelHref={cancelHref}
                 />
               </Form>
             );

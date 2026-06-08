@@ -292,6 +292,10 @@ export interface TeacherClassDocumentSchema {
   title: string;
   summary: string;
   content: string;
+  file_url?: string | null;
+  file_name?: string | null;
+  file_content_type?: string | null;
+  file_size_bytes?: number | null;
   scope: string;
   classroom_id: number | null;
   classroom_name: string | null;
@@ -313,15 +317,17 @@ export interface TeacherDocumentListResponse {
 export type TeacherSystemDocumentSchema = TeacherClassDocumentSchema;
 
 export interface TeacherCreateDocumentRequest {
-  title: string;
-  summary: string;
-  content: string;
+  file: File;
+  title?: string;
+  summary?: string;
+  scope: "system" | "classroom";
+  classroom_id?: number;
   is_published: boolean;
 }
 
 export interface TeacherCreateSystemDocumentResponse {
   message: string;
-  document?: TeacherSystemDocumentSchema;
+  document: TeacherSystemDocumentSchema;
 }
 
 export interface TeacherExamOptionSchema {

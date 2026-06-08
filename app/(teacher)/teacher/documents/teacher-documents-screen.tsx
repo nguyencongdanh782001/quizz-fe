@@ -23,8 +23,19 @@ import { AppEmptyState } from "@/components/shared/empty-state";
 import { PageHero } from "@/components/shared/page-hero";
 import { SurfacePanel } from "@/components/shared/surface-panel";
 import { Button } from "@/components/ui/button";
+import {
+  Toast,
+  ToastClose,
+  ToastDescription,
+  ToastProvider,
+  ToastTitle,
+  ToastViewport,
+} from "@/components/ui/toast";
+import { DeleteConfirmDialog } from "@/components/features/document/document-context-menu";
+import { useDeleteTeacherDocument } from "@/hooks/queries/useDeleteTeacherDocument";
 import { useTeacherClassrooms } from "@/hooks/queries/useTeacherClassrooms";
 import { useTeacherDocuments } from "@/hooks/queries/useTeacherDocuments";
+import { APP_MESSAGES } from "@/lib/app-messages";
 import { getApiErrorMessage } from "@/lib/api/error-message";
 import {
   DEFAULT_TEACHER_DOCUMENT_FILTERS,
@@ -32,7 +43,19 @@ import {
   hasActiveTeacherDocumentFilters,
   toTeacherDocumentQuery,
 } from "@/lib/teacher-document-filters";
-import type { TeacherDocumentFilterState } from "@/types/document.types";
+import type {
+  Document,
+  TeacherDocumentFilterState,
+} from "@/types/document.types";
+
+type ToastVariant = "success" | "error";
+
+interface ScreenToastState {
+  description?: string;
+  open: boolean;
+  title: string;
+  variant: ToastVariant;
+}
 
 const DOCUMENTS_ERROR_MESSAGE =
   "Không thể tải danh sách tài liệu. Vui lòng thử lại.";
@@ -73,8 +96,14 @@ export function TeacherDocumentsScreen({
 }: TeacherDocumentsScreenProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const deleteDocumentMutation = useDeleteTeacherDocument();
   const [filters, setFilters] =
     useState<TeacherDocumentFilterState>(initialFilters);
+  const [deleteCandidate, setDeleteCandidate] = useState<Document | null>(null);
+  const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(
+    null,
+  );
+  const [toast, setToast] = useState<ScreenToastState | null>(null);
   const [debouncedSearch] = useDebounce(filters.search, 400);
   const lastSyncedSearchRef = useRef(
     buildTeacherDocumentSearchParams(initialFilters).toString(),
@@ -153,6 +182,73 @@ export function TeacherDocumentsScreen({
   // const classroomDocumentCount = documents.filter(
   //   (document) => document.scope === "classroom",
   // ).length;
+
+  function openToast(nextToast: Omit<ScreenToastState, "open">) {
+    setToast({
+      ...nextToast,
+      open: true,
+    });
+  }
+
+  function handleDeleteRequest(document: Document) {
+    if (deletingDocumentId !== null) {
+      return;
+    }
+
+    setDeleteCandidate(document);
+  }
+
+  async function handleDeleteConfirm() {
+    if (!deleteCandidate) {
+      return false;
+    }
+
+    const documentToDelete = deleteCandidate;
+    const documentId = Number(documentToDelete.id);
+
+    if (!Number.isFinite(documentId)) {
+      openToast({
+        title: APP_MESSAGES.DELETE_DOCUMENT_FAILED,
+        description: APP_MESSAGES.NETWORK_ERROR,
+        variant: "error",
+      });
+      return false;
+    }
+
+    setDeletingDocumentId(documentToDelete.id);
+
+    try {
+      await deleteDocumentMutation.mutateAsync(documentId);
+      openToast({
+        title: APP_MESSAGES.DELETE_DOCUMENT_SUCCESS,
+        variant: "success",
+      });
+      setDeleteCandidate(null);
+      return true;
+    } catch (error) {
+      console.error(`Failed to delete document ${documentToDelete.id}`, error);
+      openToast({
+        title: APP_MESSAGES.DELETE_DOCUMENT_FAILED,
+        description: APP_MESSAGES.NETWORK_ERROR,
+        variant: "error",
+      });
+      return false;
+    } finally {
+      setDeletingDocumentId((current) =>
+        current === documentToDelete.id ? null : current,
+      );
+    }
+  }
+
+  function handleDeleteDialogOpenChange(open: boolean) {
+    if (deletingDocumentId !== null) {
+      return;
+    }
+
+    if (!open) {
+      setDeleteCandidate(null);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -241,15 +337,11 @@ export function TeacherDocumentsScreen({
       ) : documents.length === 0 ? (
         <AppEmptyState
           icon={FileSearch}
-          title={
-            hasActiveFilters
-              ? "Không tìm thấy tài liệu phù hợp"
-              : "Chưa có tài liệu nào"
-          }
+          title={hasActiveFilters ? "Không tìm thấy tài liệu phù hợp" : "Chưa có tài liệu nào"}
           description={
             hasActiveFilters
               ? "Thử đổi phạm vi, trạng thái hoặc xóa bộ lọc hiện tại để xem thêm tài liệu."
-              : "Danh sách tài liệu sẽ xuất hiện tại đây ngay khi hệ thống trả về dữ liệu."
+              : "Tạo tài liệu đầu tiên để bắt đầu quản lý học liệu."
           }
           action={
             hasActiveFilters ? (
@@ -265,7 +357,7 @@ export function TeacherDocumentsScreen({
               <Button asChild size="lg">
                 <Link href="/teacher/documents/create">
                   <Plus className="mr-2 h-4 w-4" />
-                  Tải lên tài liệu
+                  Tạo tài liệu đầu tiên
                 </Link>
               </Button>
             )
@@ -285,9 +377,46 @@ export function TeacherDocumentsScreen({
             ) : null}
           </div>
 
-          <TeacherDocumentList documents={documents} />
+          <TeacherDocumentList
+            documents={documents}
+            deletingDocumentId={deletingDocumentId}
+            onDeleteRequest={handleDeleteRequest}
+          />
         </section>
       )}
+
+      {deleteCandidate ? (
+        <DeleteConfirmDialog
+          documentTitle={deleteCandidate.title}
+          isDeleting={deletingDocumentId === deleteCandidate.id}
+          open={true}
+          onConfirm={handleDeleteConfirm}
+          onOpenChange={handleDeleteDialogOpenChange}
+        />
+      ) : null}
+
+      <ToastProvider duration={3500}>
+        {toast ? (
+          <Toast
+            open={toast.open}
+            variant={toast.variant}
+            onOpenChange={(open) => {
+              setToast((current) => (current ? { ...current, open } : current));
+            }}
+          >
+            <div className="pr-8">
+              <ToastTitle>{toast.title}</ToastTitle>
+              {toast.description ? (
+                <ToastDescription className="mt-1">
+                  {toast.description}
+                </ToastDescription>
+              ) : null}
+            </div>
+            <ToastClose />
+          </Toast>
+        ) : null}
+        <ToastViewport />
+      </ToastProvider>
     </div>
   );
 }
