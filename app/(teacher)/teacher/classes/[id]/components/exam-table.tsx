@@ -130,7 +130,7 @@ export function ExamTable({
                     <DropdownMenuContent align="end" className="w-56">
                       <DropdownMenuItem asChild>
                         <Link
-                          href={`/teacher/classes/${classId}/exams/create?edit=${exam.id}`}
+                          href={`/teacher/classes/${classId}/exams/edit?edit=${exam.id}`}
                           className="flex cursor-pointer items-center gap-2"
                         >
                           <Pencil className="h-4 w-4" />

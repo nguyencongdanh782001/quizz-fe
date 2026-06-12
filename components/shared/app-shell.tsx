@@ -133,6 +133,7 @@ const routeLabelMap: Record<string, string> = {
   materials: "Tài liệu",
   profile: "Hồ sơ",
   create: "Tạo mới",
+  edit: "Chỉnh sửa",
   results: "Kết quả",
   exam: "Bài thi",
   result: "Kết quả",

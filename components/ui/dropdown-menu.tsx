@@ -15,7 +15,10 @@ function DropdownMenuTrigger({
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>) {
   return (
-    <DropdownMenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />
+    <DropdownMenuPrimitive.Trigger
+      data-slot="dropdown-menu-trigger"
+      {...props}
+    />
   );
 }
 
@@ -61,7 +64,7 @@ function DropdownMenuItem({
       data-slot="dropdown-menu-item"
       data-inset={inset}
       className={cn(
-        "relative flex cursor-default items-center gap-2 rounded-xl px-2.5 py-2 text-sm outline-none transition-colors select-none focus:bg-primary/10 focus:text-on-surface data-disabled:pointer-events-none data-disabled:opacity-50 data-[inset=true]:pl-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "cursor-pointer! relative flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm outline-none transition-colors select-none focus:bg-primary/10 focus:text-on-surface data-disabled:pointer-events-none data-disabled:opacity-50 data-[inset=true]:pl-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         destructive &&
           "text-destructive focus:bg-destructive/10 focus:text-destructive",
         className,
@@ -160,7 +163,10 @@ function DropdownMenuShortcut({
 }: React.ComponentProps<"span">) {
   return (
     <span
-      className={cn("ml-auto text-xs tracking-wide text-muted-foreground", className)}
+      className={cn(
+        "ml-auto text-xs tracking-wide text-muted-foreground",
+        className,
+      )}
       {...props}
     />
   );
@@ -215,7 +221,9 @@ function DropdownMenuSubContent({
 function DropdownMenuGroup({
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Group>) {
-  return <DropdownMenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />;
+  return (
+    <DropdownMenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />
+  );
 }
 
 export {

@@ -1,13 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  Copy,
-  Eye,
-  MoreVertical,
-  Pencil,
-  Trash2,
-} from "lucide-react";
+import { Copy, Eye, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -57,9 +51,9 @@ export function ExamContextMenu({
           Xem chi tiết
         </DropdownMenuItem>
 
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem asChild disabled={exam.attempt_count > 0}>
           <Link
-            href={`/teacher/exams/create?edit=${exam.id}`}
+            href={`/teacher/exams/edit?edit=${exam.id}`}
             className="flex cursor-pointer items-center gap-2"
           >
             <Pencil className="size-4" />

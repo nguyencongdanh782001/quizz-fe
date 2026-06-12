@@ -748,12 +748,11 @@ export function TeacherDocumentsCreateScreen() {
 
     try {
       const formData = buildDocumentFormData(values, selectedFile);
-      const message = await createMutation.mutateAsync(formData);
+      await createMutation.mutateAsync(formData);
 
       openToast({
         title: CREATE_DOCUMENT_SUCCESS_MESSAGE,
         description:
-          message ||
           "Tài liệu đã được lưu. Đang quay lại danh sách tài liệu...",
         variant: "success",
       });
