@@ -12,7 +12,6 @@ export function ClassHeader({
 }) {
   return (
     <section className="overflow-hidden rounded-3xl bg-surface-container-lowest shadow-[0_18px_60px_rgba(7,30,39,0.08)]">
-      {/* test */}
       <div className="bg-linear-to-r from-primary/10 via-surface-container-lowest to-secondary/10 p-6 sm:p-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
