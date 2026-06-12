@@ -11,7 +11,13 @@ const LOGOUT_COOLDOWN_MS = 5_000;
 let queryClientRef: QueryClient | null = null;
 
 /** Public API paths that should NOT trigger logout on 401/403. */
-const PUBLIC_PATHS = ["/login", "/register", "/auth/login", "/auth/register"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/register",
+  "/auth/login",
+  "/auth/register",
+  "/analytics",
+];
 
 /** Keys in localStorage that are auth-related and must be cleared. */
 const AUTH_STORAGE_KEYS = ["auth-storage", "auth-session"];

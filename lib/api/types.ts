@@ -143,6 +143,39 @@ export interface MessageResponse {
   message: string;
 }
 
+export interface TrackPageViewRequest {
+  visitor_id: string;
+  session_id: string;
+  path: string;
+  title?: string | null;
+  referrer?: string | null;
+  origin?: string | null;
+  screen_width?: number | null;
+  screen_height?: number | null;
+  user_id?: number | null;
+}
+
+export interface TrackHeartbeatRequest {
+  visitor_id: string;
+  session_id: string;
+  path: string;
+  title?: string | null;
+  origin?: string | null;
+  screen_width?: number | null;
+  screen_height?: number | null;
+  user_id?: number | null;
+}
+
+export interface TrackPageViewResponse {
+  message: string;
+  event_id: number;
+}
+
+export interface TrackHeartbeatResponse {
+  message: string;
+  event_id: number;
+}
+
 export interface HealthResponse {
   status: 'ok';
 }
