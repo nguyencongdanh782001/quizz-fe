@@ -12,6 +12,7 @@ import { APP_MESSAGES } from "@/lib/app-messages";
 import { onboardingSchema } from "../schemas/onboarding.schema";
 import { User, UserGender, UserRole } from "@/types/user.types";
 import { GraduationCap, Loader2, Users } from "lucide-react";
+import { FormikDatePickerField } from "@/features/account/components/user-info/formik-fields";
 
 interface RoleSelectionValues {
   role: UserRole | "";
@@ -98,13 +99,13 @@ export function RoleSelectionForm({ initialUser }: RoleSelectionFormProps) {
         setFieldValue,
         getFieldProps,
       }) => (
-        <Form className="space-y-6">
-          <div className="text-center">
-            <h2 className="font-display text-2xl font-bold text-on-surface">
-              Chọn vai trò cuả bạn
+        <Form className="space-y-7">
+          <div className="space-y-3 text-center">
+            <h2 className="font-display text-2xl font-bold text-on-surface sm:text-3xl">
+              Chọn vai trò của bạn
             </h2>
-            <p className="mt-2 text-sm text-on-surface-variant">
-              Hoàn tất thông tin để bắt đầu sử dụng tài khoản Google.
+            <p className="mx-auto max-w-md text-sm leading-relaxed text-on-surface-variant">
+              Hoàn tất vài thông tin cuối cùng để cá nhân hoá trải nghiệm ngay từ lần đầu đăng nhập.
             </p>
           </div>
 
@@ -180,41 +181,55 @@ export function RoleSelectionForm({ initialUser }: RoleSelectionFormProps) {
             <p className="px-1 text-xs text-destructive">{errors.role}</p>
           )}
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <InputField
-              label="Ngày sinh"
-              type="date"
-              error={touched.date_of_birth ? errors.date_of_birth : undefined}
-              {...getFieldProps("date_of_birth")}
-            />
+          <section className="rounded-[2rem] border border-outline/10 bg-surface-container-lowest/75 p-5 shadow-[0_16px_44px_-34px_rgba(7,30,39,0.22)] sm:p-6">
+            <div className="mb-5 space-y-1">
+              <h3 className="font-display text-lg font-semibold text-on-surface">
+                Thông tin cá nhân
+              </h3>
+              <p className="text-sm text-on-surface-variant">
+                Chúng tôi chỉ cần những thông tin cơ bản để hoàn thiện hồ sơ ban đầu.
+              </p>
+            </div>
 
-            <SelectField
-              label="Giới tính"
-              placeholder="Chọn giới tính"
-              options={[
-                { value: "male", label: "Nam" },
-                { value: "female", label: "Nữ" },
-                { value: "other", label: "Khác" },
-              ]}
-              value={values.gender}
-              onValueChange={(value) => {
-                void setFieldValue("gender", value);
-              }}
-              onBlur={() => {
-                void setFieldTouched("gender", true, false);
-              }}
-              error={touched.gender ? errors.gender : undefined}
-              required
-            />
-          </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <FormikDatePickerField
+                name="date_of_birth"
+                label="Ngày sinh"
+                placeholder="Chọn ngày sinh"
+                helperText="Chọn ngày sinh của bạn để hoàn tất hồ sơ."
+                required
+              />
 
-          <InputField
-            label="Trường học"
-            placeholder="Tên trường học của bạn"
-            error={touched.school_name ? errors.school_name : undefined}
-            helperText="Trường học là tuỳ chọn, bạn có thể bổ sung sau."
-            {...getFieldProps("school_name")}
-          />
+              <SelectField
+                label="Giới tính"
+                placeholder="Chọn giới tính"
+                options={[
+                  { value: "male", label: "Nam" },
+                  { value: "female", label: "Nữ" },
+                  { value: "other", label: "Khác" },
+                ]}
+                value={values.gender}
+                onValueChange={(value) => {
+                  void setFieldValue("gender", value);
+                }}
+                onBlur={() => {
+                  void setFieldTouched("gender", true, false);
+                }}
+                error={touched.gender ? errors.gender : undefined}
+                required
+              />
+            </div>
+
+            <div className="mt-4">
+              <InputField
+                label="Trường học"
+                placeholder="Tên trường học của bạn"
+                error={touched.school_name ? errors.school_name : undefined}
+                helperText="Trường học là tuỳ chọn, bạn có thể bổ sung sau."
+                {...getFieldProps("school_name")}
+              />
+            </div>
+          </section>
 
           {submitError && (
             <p className="text-center text-sm text-destructive">

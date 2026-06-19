@@ -58,6 +58,7 @@ import {
 } from "./user-info/constants";
 import {
   FormikInputField,
+  FormikDatePickerField,
   FormikPasswordField,
   FormikSelectField,
 } from "./user-info/formik-fields";
@@ -533,10 +534,11 @@ function ProfileForm({
                   placeholder="Nhập số điện thoại"
                   autoComplete="tel"
                 />
-                <FormikInputField
+                <FormikDatePickerField
                   name="date_of_birth"
                   label="Ngày sinh"
-                  type="date"
+                  placeholder="Chọn ngày sinh"
+                  helperText="Dùng lịch để chọn hoặc xóa để chọn lại."
                   required
                 />
                 <FormikSelectField
