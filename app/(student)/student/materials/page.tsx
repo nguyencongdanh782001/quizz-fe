@@ -1,53 +1,51 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Download, FileText, Search, Sparkles } from "lucide-react";
-import { DocumentCard } from "@/components/features/document/document-card";
-import { getStudentSystemDocuments } from "@/lib/student-system-documents";
-import type { Document } from "@/types/document.types";
-// import { DocumentType } from "@/types/document.types";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { BookOpenText, RefreshCcw, Sparkles, FileText } from "lucide-react";
 import { PageHero } from "@/components/shared/page-hero";
+import { Button } from "@/components/ui/button";
 import { SurfacePanel } from "@/components/shared/surface-panel";
-import { AppEmptyState } from "@/components/shared/empty-state";
-// import { cn } from "@/lib/utils";
-
-// const typeFilters: { value: DocumentType | ""; label: string }[] = [
-//   { value: "", label: "Tất cả" },
-//   { value: "doc", label: "DOC" },
-// ];
-
-const ALL_CLASSROOMS = "__all_classrooms__";
-const ALL_GRADES = "__all_grades__";
+import type { Document } from "@/types/document.types";
+import {
+  getStudentSystemDocuments,
+  getDocumentPreviewKind,
+  type StudentDocumentSortOption,
+} from "@/lib/student-system-documents";
+import { DocumentList } from "@/components/features/document/document-list";
+import { DocumentToastProvider } from "@/components/features/document/document-toast";
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [classroom, setClassroom] = useState("");
-  const [grade, setGrade] = useState<number | "">("");
-  // const [type, setType] = useState<DocumentType | "">("");
+  const [sortBy, setSortBy] = useState<StudentDocumentSortOption>("recent");
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const deferredSearch = useDeferredValue(search);
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadDocuments() {
+      setIsLoadingDocuments(true);
+      setLoadError(null);
+
       try {
-        const items = await getStudentSystemDocuments();
+        const items = await getStudentSystemDocuments({ throwOnError: true });
 
         if (!isMounted) {
           return;
         }
 
         setDocuments(items);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setDocuments([]);
+        setLoadError(getErrorMessage(error, "Không thể tải thư viện tài liệu."));
       } finally {
         if (isMounted) {
           setIsLoadingDocuments(false);
@@ -60,184 +58,118 @@ export default function DocumentsPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [reloadKey]);
 
-  const classroomOptions = useMemo(
+  const classroomCount = useMemo(
     () =>
-      Array.from(
-        new Set(
-          documents
-            .map((document) => document.classroomName?.trim())
-            .filter((value): value is string => Boolean(value)),
-        ),
-      ).sort((a, b) => a.localeCompare(b, "vi")),
+      new Set(
+        documents
+          .map((document) => document.classroomName?.trim())
+          .filter((value): value is string => Boolean(value)),
+      ).size,
     [documents],
   );
 
-  const gradeOptions = useMemo(
+  const previewReadyCount = useMemo(
     () =>
-      Array.from(
-        new Set(
-          documents
-            .map((document) => document.grade)
-            .filter((value) => value > 0),
-        ),
-      ).sort((a, b) => a - b),
+      documents.filter((document) => getDocumentPreviewKind(document) !== "other")
+        .length,
     [documents],
   );
 
-  const filtered = documents.filter((document) => {
-    if (
-      search &&
-      ![
-        document.title,
-        document.description,
-        document.content ?? "",
-        document.classroomName ?? "",
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(search.toLowerCase())
-    ) {
-      return false;
-    }
-    if (classroom && document.classroomName !== classroom) return false;
-    if (grade && document.grade !== grade) return false;
-    // if (type && document.type !== type) return false;
-    return true;
-  });
+  function retryLoadDocuments() {
+    setReloadKey((value) => value + 1);
+  }
 
   return (
-    <div className="space-y-6">
-      <PageHero
-        eyebrow="Thư viện tài liệu"
-        title="Kho học liệu được tổ chức để bạn đọc và quay lại dễ dàng"
-        description="Tìm tài liệu theo lớp học, khối lớp và loại nội dung trong cùng một trải nghiệm đọc thống nhất với phần còn lại của nền tảng."
-        icon={Sparkles}
-        actions={
-          <Button asChild variant="outline" size="lg">
-            <a href="#bo-loc-tai-lieu">Đi đến bộ lọc</a>
-          </Button>
-        }
-        metrics={[
-          {
-            label: "Tài liệu đang có",
-            value: isLoadingDocuments ? "--" : documents.length,
-            description: "Học liệu hệ thống sẵn sàng cho việc ôn tập.",
-            icon: FileText,
-            tone: "primary",
-          },
-          {
-            label: "Khối lớp xuất hiện",
-            value: gradeOptions.length || "--",
-            description: "Số nhóm khối lớp có tài liệu trong thư viện.",
-            icon: Download,
-            tone: "secondary",
-          },
-        ]}
-      />
-
-      <SurfacePanel tone="muted" className="relative">
-        <Search className="absolute left-9 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="Tìm kiếm tài liệu..."
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          className="h-12 rounded-2xl border-outline/15 bg-surface-container-lowest pl-10 pr-4 shadow-none"
-        />
-      </SurfacePanel>
-
-      <SurfacePanel
-        tone="muted"
-        className="grid grid-cols-1 gap-3 sm:grid-cols-2"
-      >
-        <Select
-          value={classroom || ALL_CLASSROOMS}
-          onValueChange={(value) =>
-            setClassroom(value === ALL_CLASSROOMS ? "" : value)
-          }
-        >
-          <SelectTrigger className="h-12 rounded-2xl border-outline/15 bg-surface-container-lowest shadow-none">
-            <SelectValue placeholder="Tất cả lớp học" />
-          </SelectTrigger>
-          <SelectContent position="popper">
-            <SelectItem value={ALL_CLASSROOMS}>Tất cả lớp học</SelectItem>
-            {classroomOptions.map((item) => (
-              <SelectItem key={item} value={item}>
-                {item}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={grade === "" ? ALL_GRADES : String(grade)}
-          onValueChange={(value) =>
-            setGrade(value === ALL_GRADES ? "" : Number(value))
-          }
-        >
-          <SelectTrigger className="h-12 rounded-2xl border-outline/15 bg-surface-container-lowest shadow-none">
-            <SelectValue placeholder="Tất cả khối" />
-          </SelectTrigger>
-          <SelectContent position="popper">
-            <SelectItem value={ALL_GRADES}>Tất cả khối</SelectItem>
-            {gradeOptions.map((gradeOption) => (
-              <SelectItem key={gradeOption} value={String(gradeOption)}>
-                Lớp {gradeOption}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* <div className="flex gap-2">
-          {typeFilters.map((filter) => (
-            <button
-              key={filter.value}
-              onClick={() => setType(filter.value)}
-              className={cn(
-                "cursor-pointer flex-1 py-2 rounded-xl text-xs font-medium border transition-colors",
-                type === filter.value
-                  ? "bg-primary text-white border-primary"
-                  : "bg-surface-container-lowest text-on-surface border-outline/20 hover:bg-surface-container-low",
-              )}
+    <DocumentToastProvider>
+      <div className="space-y-6">
+        <PageHero
+          eyebrow="Thư viện tài liệu"
+          title="Kho học liệu hiện đại dành cho học sinh"
+          description="Tìm, xem trước và tải xuống tài liệu học tập trong một trải nghiệm rõ ràng, nhanh và phù hợp trên mọi thiết bị."
+          icon={Sparkles}
+          actions={
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              onClick={retryLoadDocuments}
             >
-              {filter.label}
-            </button>
-          ))}
-        </div> */}
-      </SurfacePanel>
-
-      {isLoadingDocuments ? (
-        <SurfacePanel className="text-sm text-muted-foreground">
-          Đang tải tài liệu hệ thống...
-        </SurfacePanel>
-      ) : filtered.length === 0 ? (
-        <AppEmptyState
-          icon={FileText}
-          title={
-            documents.length === 0
-              ? "Chưa có tài liệu hệ thống khả dụng"
-              : "Không tìm thấy tài liệu nào"
+              <RefreshCcw className="size-4" />
+              Làm mới
+            </Button>
           }
-          description={
-            documents.length === 0
-              ? "Thư viện sẽ hiển thị học liệu mới tại đây ngay khi hệ thống cập nhật."
-              : "Thử điều chỉnh bộ lọc để tìm đúng tài liệu bạn đang cần."
-          }
+          metrics={[
+            {
+              label: "Tài liệu hiện có",
+              value: isLoadingDocuments ? "--" : documents.length,
+              description: "Học liệu hệ thống và theo lớp học.",
+              icon: FileText,
+              tone: "primary",
+            },
+            {
+              label: "Lớp học có tài liệu",
+              value: isLoadingDocuments ? "--" : classroomCount || "0",
+              description: "Số lớp đang chia sẻ học liệu.",
+              icon: BookOpenText,
+              tone: "secondary",
+            },
+            {
+              label: "Xem trước hỗ trợ",
+              value: isLoadingDocuments ? "--" : previewReadyCount,
+              description: "PDF, hình ảnh và văn bản hỗ trợ xem nhanh.",
+              icon: Sparkles,
+              tone: "tertiary",
+            },
+          ]}
         />
-      ) : (
-        <>
-          <p className="text-sm text-muted-foreground">
-            Hiển thị {filtered.length} trong {documents.length} tài liệu
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filtered.map((document) => (
-              <DocumentCard key={document.id} doc={document} />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
+
+        {loadError ? (
+          <SurfacePanel tone="muted" className="border border-red-200/70 bg-red-50/70">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="font-semibold text-red-800 dark:text-red-200">
+                  Không thể tải thư viện tài liệu
+                </p>
+                <p className="mt-2 text-sm leading-7 text-red-700/90 dark:text-red-200/90">
+                  {loadError}
+                </p>
+              </div>
+              <Button type="button" variant="outline" onClick={retryLoadDocuments}>
+                Thử lại
+              </Button>
+            </div>
+          </SurfacePanel>
+        ) : null}
+
+        <DocumentList
+          documents={documents}
+          isLoading={isLoadingDocuments}
+          search={deferredSearch}
+          sortBy={sortBy}
+          onSearchChange={setSearch}
+          onSortChange={setSortBy}
+          selectedDocument={selectedDocument}
+          onSelectedDocumentChange={setSelectedDocument}
+          emptyTitle="Chưa có học liệu nào"
+          emptyDescription="Hiện chưa có tài liệu học tập nào được xuất bản cho học sinh. Hãy quay lại sau khi giáo viên cập nhật thêm nội dung."
+        />
+      </div>
+    </DocumentToastProvider>
   );
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string" &&
+    error.message.trim()
+  ) {
+    return error.message;
+  }
+
+  return fallback;
 }

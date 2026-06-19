@@ -216,6 +216,10 @@ export interface StudentSystemDocumentSchema {
   title: string;
   summary: string;
   content: string;
+  file_url?: string | null;
+  file_name?: string | null;
+  file_content_type?: string | null;
+  file_size_bytes?: number | null;
   scope: string;
   classroom_id: number;
   classroom_name: string | null;
