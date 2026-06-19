@@ -33,7 +33,7 @@ export function Logo({ className, size = "md", showText = true }: LogoProps) {
       )}
     >
       <Image
-        src="/image/logo.jpg"
+        src="/image/logo.png"
         alt={APP_NAME}
         width={width}
         height={height}
