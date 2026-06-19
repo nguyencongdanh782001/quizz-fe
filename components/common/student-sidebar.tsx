@@ -37,7 +37,7 @@ export function StudentSidebar() {
       )}
     >
       <div className="flex items-center gap-3 px-5 py-4">
-        <Logo size="sm" />
+        <Logo size="md" />
       </div>
 
       <div className="mx-4 mt-1">

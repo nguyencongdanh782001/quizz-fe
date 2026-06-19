@@ -463,7 +463,7 @@ function SidebarContent({
     <div className="surface-panel relative flex h-[calc(100vh-1.5rem)] flex-col rounded-[2rem] px-4 py-5">
       {mobileCloseButton}
       <div className="flex items-center gap-3 px-2">
-        <Logo size="sm" />
+        <Logo size="md" />
       </div>
 
       <div className="mt-6 rounded-[1.7rem] border border-white/70 bg-linear-to-br from-primary/10 via-white/80 to-secondary/10 p-4 shadow-[0_22px_60px_-44px_rgba(79,70,229,0.42)]">
