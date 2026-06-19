@@ -9,6 +9,7 @@ import { InputField } from "@/components/common/form/input-field";
 import { useAuth } from "@/hooks/useAuth";
 import { useUpdateAvatar } from "@/hooks/useUpdateAvatar";
 import { APP_MESSAGES } from "@/lib/app-messages";
+import { getPostAuthDestination } from "@/lib/auth/onboarding";
 import { cn } from "@/lib/utils";
 import { registerSchema } from "../schemas/register.schema";
 import { FormikAutofillSync } from "./FormikAutofillSync";
@@ -101,14 +102,7 @@ export function RegisterForm() {
           });
         }
       }
-
-      if (user.needs_onboarding || !user.role_name) {
-        window.location.href = "/role";
-        return;
-      }
-
-      window.location.href =
-        user.role_name === "teacher" ? "/teacher" : "/student";
+      window.location.href = getPostAuthDestination(user);
     } catch (err) {
       helpers.setSubmitting(false);
       console.error("Failed to submit register form", err);

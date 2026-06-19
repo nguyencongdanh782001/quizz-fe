@@ -4,6 +4,7 @@ import type { User } from "@/types/user.types";
 export function mapUserSchemaToUser(user: UserSchema): User {
   return {
     id: user.id,
+    role_id: user.role_id ?? null,
     full_name: user.full_name,
     username: user.username,
     email: user.email,

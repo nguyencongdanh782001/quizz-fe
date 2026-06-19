@@ -9,6 +9,7 @@ import { User } from "@/types/user.types";
 import { api } from "@/lib/api/endpoints/auth";
 import { APP_MESSAGES } from "@/lib/app-messages";
 import { mapUserSchemaToUser } from "@/lib/auth/user-mapper";
+import { extractUserFromProfileResponse } from "@/lib/auth/response";
 
 const SESSION_COOKIE = "auth-session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
@@ -28,6 +29,7 @@ function setSessionCookie(user: User): void {
           id: user.id,
           full_name: user.full_name,
           username: user.username,
+          role_id: user.role_id,
           role_name: user.role_name,
           needs_onboarding: user.needs_onboarding,
           avatar_url: user.avatar_url,
@@ -53,6 +55,7 @@ function applyAuthenticatedUser(
 ) {
   set({
     user,
+    role_id: user.role_id ?? null,
     role_name: user.role_name,
     needs_onboarding: user.needs_onboarding,
     isAuthenticated: true,
@@ -65,6 +68,7 @@ function applyAuthenticatedUser(
 function clearAuthState(set: (partial: Partial<PersistedAuthState>) => void) {
   set({
     user: null,
+    role_id: null,
     role_name: null,
     needs_onboarding: false,
     isAuthenticated: false,
@@ -78,6 +82,7 @@ export const useAuthStore = create<PersistedAuthState>()(
   persist(
     (set) => ({
       user: null,
+      role_id: null,
       role_name: null,
       needs_onboarding: false,
       isAuthenticated: false,
@@ -88,7 +93,15 @@ export const useAuthStore = create<PersistedAuthState>()(
         set({ isLoading: true, fetchError: null });
         try {
           const res = await api.auth.login({ email, password });
-          const user = mapUserSchemaToUser(res.data.user);
+          let user = mapUserSchemaToUser(res.data.user);
+
+          try {
+            const profileRes = await api.auth.profile();
+            user = extractUserFromProfileResponse(profileRes.data);
+          } catch (profileErr) {
+            console.warn("Falling back to login response after profile fetch failed", profileErr);
+          }
+
           applyAuthenticatedUser(set, user);
           return user;
         } catch (err) {
@@ -108,7 +121,15 @@ export const useAuthStore = create<PersistedAuthState>()(
             password: data.password,
             confirm_password: data.confirmPassword,
           });
-          const user = mapUserSchemaToUser(res.data.user);
+          let user = mapUserSchemaToUser(res.data.user);
+
+          try {
+            const profileRes = await api.auth.profile();
+            user = extractUserFromProfileResponse(profileRes.data);
+          } catch (profileErr) {
+            console.warn("Falling back to register response after profile fetch failed", profileErr);
+          }
+
           applyAuthenticatedUser(set, user);
           return user;
         } catch (err) {
@@ -122,8 +143,8 @@ export const useAuthStore = create<PersistedAuthState>()(
       fetchMe: async () => {
         set({ isLoading: true, fetchError: null });
         try {
-          const res = await api.auth.me();
-          const user = mapUserSchemaToUser(res.data.user);
+          const res = await api.auth.profile();
+          const user = extractUserFromProfileResponse(res.data);
           applyAuthenticatedUser(set, user);
           return user;
         } catch {
@@ -136,7 +157,18 @@ export const useAuthStore = create<PersistedAuthState>()(
         set({ isLoading: true, fetchError: null });
         try {
           const res = await api.auth.onboarding.complete(data);
-          const user = mapUserSchemaToUser(res.data.user);
+          let user = mapUserSchemaToUser(res.data.user);
+
+          try {
+            const profileRes = await api.auth.profile();
+            user = extractUserFromProfileResponse(profileRes.data);
+          } catch (profileErr) {
+            console.warn(
+              "Falling back to onboarding response after profile refresh failed",
+              profileErr,
+            );
+          }
+
           applyAuthenticatedUser(set, user);
           return user;
         } catch (err) {
@@ -167,6 +199,7 @@ export const useAuthStore = create<PersistedAuthState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         user: state.user,
+        role_id: state.role_id,
         role_name: state.role_name,
         needs_onboarding: state.needs_onboarding,
         isAuthenticated: state.isAuthenticated,

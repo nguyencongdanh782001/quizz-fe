@@ -4,13 +4,18 @@ import { useEffect, useState } from "react";
 import { Form, Formik, FormikHelpers } from "formik";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  getRoleDashboardPath,
+  isOnboardingIncomplete,
+} from "@/lib/auth/onboarding";
 import { cn } from "@/lib/utils";
 import { SurfaceCard } from "@/components/common/SurfaceCard";
 import { InputField } from "@/components/common/form/input-field";
 import { SelectField } from "@/components/common/form/select-field";
 import { APP_MESSAGES } from "@/lib/app-messages";
 import { onboardingSchema } from "../schemas/onboarding.schema";
-import { User, UserGender, UserRole } from "@/types/user.types";
+import type { User } from "@/types/user.types";
+import { UserGender, UserRole } from "@/types/user.types";
 import { GraduationCap, Loader2, Users } from "lucide-react";
 import { FormikDatePickerField } from "@/features/account/components/user-info/formik-fields";
 
@@ -19,10 +24,6 @@ interface RoleSelectionValues {
   date_of_birth: string;
   gender: UserGender | "";
   school_name: string;
-}
-
-function getDestination(roleName: UserRole | null) {
-  return roleName === "teacher" ? "/teacher" : "/student";
 }
 
 interface RoleSelectionFormProps {
@@ -40,10 +41,10 @@ export function RoleSelectionForm({ initialUser }: RoleSelectionFormProps) {
   }, [fetchMe]);
 
   useEffect(() => {
-    if (!currentUser.needs_onboarding && currentUser.role_name) {
-      router.replace(getDestination(currentUser.role_name));
+    if (!isOnboardingIncomplete(currentUser)) {
+      router.replace(getRoleDashboardPath(currentUser.role_name));
     }
-  }, [currentUser.needs_onboarding, currentUser.role_name, router]);
+  }, [currentUser, router]);
 
   const initialValues: RoleSelectionValues = {
     role: currentUser.role_name ?? "",
@@ -67,7 +68,7 @@ export function RoleSelectionForm({ initialUser }: RoleSelectionFormProps) {
         school_name: values.school_name.trim() || null,
       });
 
-      router.replace(getDestination(nextUser.role_name));
+      router.replace(getRoleDashboardPath(nextUser.role_name));
     } catch (error) {
       console.error("Failed to submit onboarding form", error);
       helpers.setSubmitting(false);
@@ -75,7 +76,7 @@ export function RoleSelectionForm({ initialUser }: RoleSelectionFormProps) {
     }
   };
 
-  if (!currentUser.needs_onboarding && currentUser.role_name) {
+  if (!isOnboardingIncomplete(currentUser)) {
     return (
       <div className="flex min-h-80 items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />

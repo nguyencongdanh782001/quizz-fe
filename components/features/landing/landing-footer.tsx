@@ -11,7 +11,7 @@ const footerGroups = {
   truyCap: [
     { label: 'Đăng ký', href: '/register' },
     { label: 'Đăng nhập', href: '/login' },
-    { label: 'Vai trò người dùng', href: '/role' },
+    { label: 'Vai trò người dùng', href: '/select-role' },
   ],
   hoTro: [
     { label: 'Điều khoản sử dụng', href: '#' },

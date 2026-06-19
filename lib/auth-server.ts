@@ -1,14 +1,10 @@
 import { cookies, headers } from "next/headers";
-import { UserSchema } from "@/lib/api/types";
-import { User } from "@/types/user.types";
+import type { UserSchema } from "@/lib/api/types";
+import type { User } from "@/types/user.types";
 import { mapUserSchemaToUser } from "@/lib/auth/user-mapper";
 
 const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL!;
 const SESSION_COOKIE = "auth-session";
-
-type MeResponse = {
-  user: UserSchema;
-};
 
 type MirroredSessionPayload = {
   id: number;
@@ -18,6 +14,7 @@ type MirroredSessionPayload = {
   auth_type?: string;
   avatar_url?: string | null;
   updated_at?: string;
+  role_id?: number | null;
   role?: "teacher" | "student" | null;
   role_name?: "teacher" | "student" | null;
   needs_onboarding?: boolean;
@@ -47,8 +44,12 @@ function decodeMirroredSession(value: string): User | null {
       auth_type: payload.auth_type ?? "",
       avatar_url: payload.avatar_url ?? null,
       updated_at: payload.updated_at ?? "",
+      role_id: payload.role_id ?? null,
       role_name: roleName,
-      needs_onboarding: payload.needs_onboarding ?? !roleName,
+      needs_onboarding:
+        payload.needs_onboarding === true ||
+        payload.role_id == null ||
+        !roleName,
       created_at: "",
       profile: null,
     };
@@ -64,10 +65,10 @@ export async function getServerSession(): Promise<User | null> {
     cookieStore.get(SESSION_COOKIE)?.value ?? "",
   );
 
-  // Try /auth/me first for fresh data
+  // Try /auth/profile first for fresh onboarding-aware data
   if (cookieHeader) {
     try {
-      const res = await fetch(`${API_URL}/auth/me`, {
+      const res = await fetch(`${API_URL}/auth/profile`, {
         headers: {
           cookie: cookieHeader,
         },
@@ -75,8 +76,9 @@ export async function getServerSession(): Promise<User | null> {
       });
 
       if (res.ok) {
-        const data = (await res.json()) as MeResponse;
-        return data.user ? mapServerUser(data.user) : mirroredSession;
+        const data = (await res.json()) as { user: UserSchema } | UserSchema;
+        const user = "user" in data ? data.user : data;
+        return user ? mapServerUser(user) : mirroredSession;
       }
     } catch {
       // Fall through to mirrored session
