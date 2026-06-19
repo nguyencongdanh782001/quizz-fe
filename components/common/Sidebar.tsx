@@ -58,10 +58,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
           collapsed ? "justify-center" : "px-5",
         )}
       >
-        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-          <span className="text-white font-display font-bold text-sm">SC</span>
-        </div>
-        {!collapsed && <Logo />}
+        <Logo size="sm" showText={!collapsed} />
       </div>
 
       {!collapsed && role_name && (

@@ -1,6 +1,7 @@
 "use client";
 
 import { UserAvatar } from "@/components/common/user-avatar";
+import { Logo } from "@/components/common/Logo";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -178,14 +179,6 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href;
 }
 
-function BrandMark() {
-  return (
-    <div className="flex h-11 w-11 items-center justify-center rounded-[1.35rem] bg-linear-to-br from-primary to-tertiary text-sm font-bold text-primary-foreground shadow-[0_18px_36px_-18px_rgba(79,70,229,0.58)]">
-      SC
-    </div>
-  );
-}
-
 export function AppShell({ role, children }: AppShellProps) {
   const pathname = usePathname();
   useBreadcrumbLabelStoreVersion();
@@ -232,6 +225,13 @@ export function AppShell({ role, children }: AppShellProps) {
         <div className="min-w-0 flex-1">
           <header className="surface-panel sticky top-3 z-40 rounded-[1.7rem] px-4 py-3 sm:px-5">
             <div className="flex items-center gap-3">
+              <Link
+                href={role === "teacher" ? "/teacher" : "/student"}
+                className="inline-flex shrink-0 lg:hidden"
+                aria-label={APP_NAME}
+              >
+                <Logo size="sm" showText={false} />
+              </Link>
               <Button
                 type="button"
                 variant="outline"
@@ -463,15 +463,7 @@ function SidebarContent({
     <div className="surface-panel relative flex h-[calc(100vh-1.5rem)] flex-col rounded-[2rem] px-4 py-5">
       {mobileCloseButton}
       <div className="flex items-center gap-3 px-2">
-        <BrandMark />
-        <div className="min-w-0">
-          <p className="font-display text-lg font-semibold text-on-surface">
-            {APP_NAME}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Nền tảng giáo dục số hiện đại
-          </p>
-        </div>
+        <Logo size="sm" />
       </div>
 
       <div className="mt-6 rounded-[1.7rem] border border-white/70 bg-linear-to-br from-primary/10 via-white/80 to-secondary/10 p-4 shadow-[0_22px_60px_-44px_rgba(79,70,229,0.42)]">
