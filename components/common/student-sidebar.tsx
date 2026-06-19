@@ -78,6 +78,7 @@ export function StudentSidebar() {
           <UserAvatar
             avatarUrl={user?.avatar_url}
             fullName={user?.full_name}
+            avatarCacheKey={user?.updated_at}
             className="h-8 w-8"
             fallbackClassName="text-sm"
           />

@@ -13,6 +13,7 @@ import type {
   ChangePasswordRequest,
   ProfileResponse,
   UpdateProfileResponse,
+  UploadAvatarResponse,
   MessageResponse,
   HealthResponse,
   DbCheckResponse,
@@ -28,6 +29,20 @@ export const api = {
 
     updateProfile: (data: UpdateProfileRequest) =>
       client.put<UpdateProfileResponse>("/auth/profile", data),
+
+    updateAvatar: (file: File) => {
+      const formData = new FormData();
+
+      formData.append("image", file);
+
+      return client.put<UploadAvatarResponse>("/auth/profile/avatar", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+    },
+
+    uploadAvatar: (file: File) => api.auth.updateAvatar(file),
 
     changePassword: (data: ChangePasswordRequest) =>
       client.put<MessageResponse>("/auth/password", data),

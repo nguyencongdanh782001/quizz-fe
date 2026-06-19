@@ -220,6 +220,7 @@ export function AppShell({ role, children }: AppShellProps) {
               userName={userName}
               userFullName={user?.full_name}
               userAvatarUrl={user?.avatar_url}
+              userAvatarCacheKey={user?.updated_at}
               roleTitle={roleTitle}
               roleDescription={roleDescription}
               onNavigate={() => undefined}
@@ -329,6 +330,7 @@ export function AppShell({ role, children }: AppShellProps) {
                       <UserAvatar
                         avatarUrl={user?.avatar_url}
                         fullName={user?.full_name}
+                        avatarCacheKey={user?.updated_at}
                         className="size-10 shadow-[0_14px_28px_-18px_rgba(79,70,229,0.55)]"
                         fallbackClassName="text-sm"
                       />
@@ -403,6 +405,7 @@ export function AppShell({ role, children }: AppShellProps) {
                   userName={userName}
                   userFullName={user?.full_name}
                   userAvatarUrl={user?.avatar_url}
+                  userAvatarCacheKey={user?.updated_at}
                   roleTitle={roleTitle}
                   roleDescription={roleDescription}
                   onNavigate={() => setMobileOpen(false)}
@@ -436,6 +439,7 @@ function SidebarContent({
   userName,
   userFullName,
   userAvatarUrl,
+  userAvatarCacheKey,
   roleTitle,
   roleDescription,
   onNavigate,
@@ -448,6 +452,7 @@ function SidebarContent({
   userName: string;
   userFullName?: string | null;
   userAvatarUrl?: string | null;
+  userAvatarCacheKey?: string | null;
   roleTitle: string;
   roleDescription: string;
   onNavigate: () => void;
@@ -537,6 +542,7 @@ function SidebarContent({
           <UserAvatar
             avatarUrl={userAvatarUrl}
             fullName={userFullName}
+            avatarCacheKey={userAvatarCacheKey}
             className="size-11"
             fallbackClassName="text-sm"
           />

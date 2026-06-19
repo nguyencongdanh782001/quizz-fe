@@ -7,8 +7,8 @@ import {
 } from "@/types/auth.types";
 import { User } from "@/types/user.types";
 import { api } from "@/lib/api/endpoints/auth";
-import { UserSchema } from "@/lib/api/types";
 import { APP_MESSAGES } from "@/lib/app-messages";
+import { mapUserSchemaToUser } from "@/lib/auth/user-mapper";
 
 const SESSION_COOKIE = "auth-session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
@@ -30,6 +30,8 @@ function setSessionCookie(user: User): void {
           username: user.username,
           role_name: user.role_name,
           needs_onboarding: user.needs_onboarding,
+          avatar_url: user.avatar_url,
+          updated_at: user.updated_at,
           email: user.email,
           auth_type: user.auth_type,
         }),
@@ -43,29 +45,6 @@ function setSessionCookie(user: User): void {
 function clearSessionCookie(): void {
   if (typeof document === "undefined") return;
   document.cookie = `${SESSION_COOKIE}=; path=/; max-age=0`;
-}
-
-function userFromSchema(user: UserSchema): User {
-  return {
-    id: user.id,
-    full_name: user.full_name,
-    username: user.username,
-    email: user.email,
-    auth_type: user.auth_type,
-    role_name: user.role_name ?? null,
-    needs_onboarding: user.needs_onboarding,
-    avatar_url: user.avatar_url ?? null,
-    created_at: user.created_at,
-    profile: user.profile
-      ? {
-          date_of_birth: user.profile.date_of_birth,
-          age: user.profile.age,
-          gender: user.profile.gender,
-          school_name: user.profile.school_name ?? null,
-          onboarding_completed_at: user.profile.onboarding_completed_at,
-        }
-      : null,
-  };
 }
 
 function applyAuthenticatedUser(
@@ -109,7 +88,7 @@ export const useAuthStore = create<PersistedAuthState>()(
         set({ isLoading: true, fetchError: null });
         try {
           const res = await api.auth.login({ email, password });
-          const user = userFromSchema(res.data.user);
+          const user = mapUserSchemaToUser(res.data.user);
           applyAuthenticatedUser(set, user);
           return user;
         } catch (err) {
@@ -129,7 +108,7 @@ export const useAuthStore = create<PersistedAuthState>()(
             password: data.password,
             confirm_password: data.confirmPassword,
           });
-          const user = userFromSchema(res.data.user);
+          const user = mapUserSchemaToUser(res.data.user);
           applyAuthenticatedUser(set, user);
           return user;
         } catch (err) {
@@ -144,7 +123,7 @@ export const useAuthStore = create<PersistedAuthState>()(
         set({ isLoading: true, fetchError: null });
         try {
           const res = await api.auth.me();
-          const user = userFromSchema(res.data.user);
+          const user = mapUserSchemaToUser(res.data.user);
           applyAuthenticatedUser(set, user);
           return user;
         } catch {
@@ -157,7 +136,7 @@ export const useAuthStore = create<PersistedAuthState>()(
         set({ isLoading: true, fetchError: null });
         try {
           const res = await api.auth.onboarding.complete(data);
-          const user = userFromSchema(res.data.user);
+          const user = mapUserSchemaToUser(res.data.user);
           applyAuthenticatedUser(set, user);
           return user;
         } catch (err) {

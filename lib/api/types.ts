@@ -114,6 +114,11 @@ export interface CompleteOnboardingResponse {
   user: UserSchema;
 }
 
+export interface UploadAvatarResponse {
+  avatar_url: string;
+  user: UserSchema;
+}
+
 export type ProfileGender = "male" | "female";
 
 export interface UpdateProfileRequest {
