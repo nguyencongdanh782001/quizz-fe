@@ -1,6 +1,5 @@
 export const TEACHER_EXAM_QUESTION_TYPES = [
   "single_choice",
-  "multiple_choice",
   "text",
 ] as const;
 
@@ -26,6 +25,7 @@ export interface TeacherExamQuestionFormValues {
   client_id: string;
   question_type: TeacherExamQuestionType;
   prompt: string;
+  explanation: string;
   image_url: string;
   order_index: number;
   points: number;

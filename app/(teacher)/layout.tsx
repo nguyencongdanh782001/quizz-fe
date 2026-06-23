@@ -2,11 +2,6 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "@/lib/auth-server";
 import { AuthHydrator } from "@/components/common/AuthHydrator";
 import { AppShell } from "@/components/shared/app-shell";
-import {
-  SELECT_ROLE_PATH,
-  getRoleDashboardPath,
-  isOnboardingIncomplete,
-} from "@/lib/auth/onboarding";
 
 export default async function TeacherLayout({
   children,
@@ -19,11 +14,11 @@ export default async function TeacherLayout({
     redirect("/login");
   }
 
-  if (isOnboardingIncomplete(session)) {
-    redirect(SELECT_ROLE_PATH);
+  if (session.needs_onboarding || !session.role_name) {
+    redirect("/role");
   }
 
-  if (getRoleDashboardPath(session.role_name) !== "/teacher") {
+  if (session.role_name !== "teacher") {
     redirect("/student");
   }
 

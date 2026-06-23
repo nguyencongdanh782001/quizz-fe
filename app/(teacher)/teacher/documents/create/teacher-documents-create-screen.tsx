@@ -657,7 +657,7 @@ function PublishSettingsCard({
         >
           <span
             className={cn(
-              "block size-5.5 rounded-full bg-white shadow-[0_4px_12px_-5px_rgba(7,30,39,0.7)] transition-transform",
+              "block size-6 rounded-full bg-white shadow-[0_4px_12px_-5px_rgba(7,30,39,0.7)] transition-transform",
               checked && "translate-x-6",
             )}
           />

@@ -36,7 +36,6 @@ export const EXAM_FLOW_MESSAGES = {
   },
   questionTypes: {
     single: "Một đáp án",
-    multiple: "Nhiều đáp án",
     text: "Tự luận",
   },
   placeholders: {
@@ -125,10 +124,6 @@ export function getExamClassroomLabel(classroomId: number | null): string {
 export function getTeacherExamQuestionTypeLabel(
   questionType: TeacherExamQuestionType,
 ): string {
-  if (questionType === "multiple_choice") {
-    return EXAM_FLOW_MESSAGES.questionTypes.multiple;
-  }
-
   if (questionType === "text") {
     return EXAM_FLOW_MESSAGES.questionTypes.text;
   }

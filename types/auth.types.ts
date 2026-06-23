@@ -17,7 +17,6 @@ export interface CompleteOnboardingData {
 
 export interface AuthState {
   user: User | null;
-  role_id: number | null;
   role_name: UserRole | null;
   needs_onboarding: boolean;
   isAuthenticated: boolean;

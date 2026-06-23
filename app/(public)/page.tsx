@@ -9,21 +9,16 @@ import { LandingActivity } from "@/components/features/landing/landing-activity"
 import { LandingTestimonials } from "@/components/features/landing/landing-testimonials";
 import { LandingCTA } from "@/components/features/landing/landing-cta";
 import { LandingFooter } from "@/components/features/landing/landing-footer";
-import {
-  SELECT_ROLE_PATH,
-  getRoleDashboardPath,
-  isOnboardingIncomplete,
-} from "@/lib/auth/onboarding";
 
 export default async function LandingPage() {
   const session = await getServerSession();
 
   if (session) {
-    if (isOnboardingIncomplete(session)) {
-      redirect(SELECT_ROLE_PATH);
+    if (session.needs_onboarding || !session.role_name) {
+      redirect("/role");
     }
 
-    redirect(getRoleDashboardPath(session.role_name));
+    redirect(session.role_name === "teacher" ? "/teacher" : "/student");
   }
 
   return (

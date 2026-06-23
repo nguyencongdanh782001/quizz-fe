@@ -3,33 +3,27 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import {
-  ArrowLeft,
-  BookOpenText,
-  Maximize2,
-  FileText,
-  Sparkles,
-} from "lucide-react";
+import { ArrowLeft, BookOpen, CalendarDays, FileText } from "lucide-react";
 import { useBreadcrumbLabel } from "@/components/shared/breadcrumb-labels";
-import { PageHero } from "@/components/shared/page-hero";
-import { SurfacePanel } from "@/components/shared/surface-panel";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   getStudentClassDocument,
   getStudentSystemDocument,
-  formatDocumentDateTime,
-  formatDocumentTypeLabel,
-  formatFileSize,
 } from "@/lib/student-system-documents";
 import type { Document } from "@/types/document.types";
-import {
-  DocumentPreviewContent,
-  DocumentViewer,
-  useDocumentPreview,
-} from "@/components/features/document/document-viewer";
-import { DocumentDownloadButton } from "@/components/features/document/document-download-button";
-import { DocumentToastProvider } from "@/components/features/document/document-toast";
+
+function formatDate(value: string): string {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
 
 export default function StudentMaterialDetailPage({
   params,
@@ -41,7 +35,6 @@ export default function StudentMaterialDetailPage({
   const classId = searchParams.get("classId");
   const [document, setDocument] = useState<Document | null>(null);
   const [isLoadingDocument, setIsLoadingDocument] = useState(true);
-  const [isViewerOpen, setIsViewerOpen] = useState(false);
   const documentBreadcrumbHref = `/student/materials/${id}`;
   const documentBreadcrumbLabel = document?.title?.trim() || (
     isLoadingDocument ? null : "Chi tiết tài liệu"
@@ -77,148 +70,73 @@ export default function StudentMaterialDetailPage({
     };
   }, [classId, id]);
 
-  const previewState = useDocumentPreview(document, Boolean(document));
-
   if (isLoadingDocument) {
     return (
-      <div className="space-y-6">
-        <PageHero
-          eyebrow="Tài liệu"
-          title="Đang tải tài liệu..."
-          description="Chỉ mất một chút thời gian để kéo thông tin và bản xem trước của học liệu."
-          icon={Sparkles}
-        />
-        <SurfacePanel className="py-20 text-center text-muted-foreground">
-          Đang tải tài liệu...
-        </SurfacePanel>
+      <div className="text-center py-20 text-muted-foreground">
+        Đang tải tài liệu...
       </div>
     );
   }
 
   if (!document) {
     return (
-      <div className="space-y-6">
+      <div className="text-center py-20 text-muted-foreground">
+        <p className="font-medium">Không tìm thấy tài liệu</p>
         <Link
           href="/student/materials"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-on-surface"
+          className="text-primary text-sm mt-2 inline-block"
         >
-          <ArrowLeft className="size-4" />
-          Quay lại thư viện tài liệu
+          ← Quay lại thư viện tài liệu
         </Link>
-
-        <SurfacePanel className="py-20 text-center text-muted-foreground">
-          <p className="font-medium text-on-surface">Không tìm thấy tài liệu</p>
-          <p className="mt-2 text-sm">
-            Tài liệu này có thể đã được gỡ bỏ hoặc bạn không còn quyền truy cập.
-          </p>
-        </SurfacePanel>
       </div>
     );
   }
 
   return (
-    <DocumentToastProvider>
-      <div className="space-y-6">
-        <Link
-          href="/student/materials"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-on-surface"
-        >
-          <ArrowLeft className="size-4" />
-          Quay lại thư viện tài liệu
-        </Link>
+    <div className="space-y-6">
+      <Link
+        href="/student/materials"
+        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-on-surface transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Quay lại thư viện tài liệu
+      </Link>
 
-        <PageHero
-          eyebrow="Chi tiết tài liệu"
-          title={document.title}
-          description={document.description || "Tài liệu học tập dành cho học sinh."}
-          icon={BookOpenText}
-          actions={
-            <>
-              <Button type="button" variant="outline" size="lg" onClick={() => setIsViewerOpen(true)}>
-                <Maximize2 className="size-4" />
-                Mở toàn màn hình
-              </Button>
-              <DocumentDownloadButton document={document} label="Tải xuống" size="lg" />
-            </>
-          }
-          metrics={[
-            {
-              label: "Loại file",
-              value: formatDocumentTypeLabel(document),
-              description: "Định dạng tài liệu được hệ thống ghi nhận.",
-              icon: BookOpenText,
-              tone: "primary",
-            },
-            {
-              label: "Dung lượng",
-              value: formatFileSize(document.fileSize),
-              description: "Dung lượng gốc của file tài liệu.",
-              icon: FileText,
-              tone: "secondary",
-            },
-          ]}
-        />
-
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-          <SurfacePanel className="space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="info">Xem trước</Badge>
-              {document.classroomName ? (
-                <Badge variant="outline">{document.classroomName}</Badge>
-              ) : null}
-              <Badge variant="outline">
-                {formatDocumentDateTime(document.createdAt)}
-              </Badge>
-            </div>
-
-            <DocumentPreviewContent
-              document={document}
-              textContent={previewState.textContent}
-              isLoadingText={previewState.isLoadingText}
-              textError={previewState.textError}
-            />
-          </SurfacePanel>
-
-          <SurfacePanel className="space-y-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Thông tin tài liệu
-              </p>
-              <h2 className="mt-2 font-display text-2xl font-semibold text-on-surface">
-                Xem nhanh mọi chi tiết
-              </h2>
-            </div>
-
-            <div className="space-y-3 text-sm text-muted-foreground">
-              <DetailRow label="Tiêu đề" value={document.title} />
-              <DetailRow label="Mô tả" value={document.description || "Chưa có mô tả"} />
-              <DetailRow label="Tên file" value={document.fileName || "Chưa có"} />
-              <DetailRow label="Loại file" value={formatDocumentTypeLabel(document)} />
-              <DetailRow label="Dung lượng" value={formatFileSize(document.fileSize)} />
-              <DetailRow label="Ngày đăng" value={formatDocumentDateTime(document.createdAt)} />
-              <DetailRow label="Lớp học" value={document.classroomName || "Tài liệu hệ thống"} />
-              <DetailRow label="Người đăng" value={document.uploadedByName || "Chưa rõ"} />
-            </div>
-          </SurfacePanel>
+      <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest p-6">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mb-4">
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-primary">
+            <FileText className="w-3.5 h-3.5" />
+            Tài liệu
+          </span>
+          {document.classroomName && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-low px-2.5 py-1">
+              <BookOpen className="w-3.5 h-3.5" />
+              {document.classroomName}
+            </span>
+          )}
+          <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-low px-2.5 py-1">
+            <CalendarDays className="w-3.5 h-3.5" />
+            {formatDate(document.createdAt)}
+          </span>
         </div>
 
-        <DocumentViewer
-          document={document}
-          open={isViewerOpen}
-          onOpenChange={setIsViewerOpen}
-        />
-      </div>
-    </DocumentToastProvider>
-  );
-}
+        <h1 className="font-display font-bold text-2xl text-on-surface mb-3">
+          {document.title}
+        </h1>
 
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[1.1rem] bg-surface-container-lowest px-4 py-3">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-1 break-words text-sm text-on-surface">{value}</p>
+        <p className="text-sm text-muted-foreground mb-6">
+          {document.description}
+        </p>
+
+        <div className="rounded-2xl bg-surface-container-low p-5">
+          <h2 className="font-display font-semibold text-lg text-on-surface mb-3">
+            Nội dung
+          </h2>
+          <div className="whitespace-pre-wrap text-sm leading-7 text-on-surface">
+            {document.content || "Tài liệu này hiện chưa có nội dung hiển thị."}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

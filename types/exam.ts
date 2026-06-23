@@ -1,7 +1,4 @@
-export type TeacherExamQuestionType =
-  | "single_choice"
-  | "multiple_choice"
-  | "text";
+export type TeacherExamQuestionType = "single_choice" | "text";
 
 export type TeacherExamSortKey =
   | "created_at"
@@ -28,6 +25,7 @@ export interface TeacherExamQuestion {
   question_type: TeacherExamQuestionType;
   order_index: number;
   prompt: string;
+  explanation: string;
   image_url: string | null;
   points: number;
   options: TeacherExamOption[];

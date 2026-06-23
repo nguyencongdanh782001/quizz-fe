@@ -15,7 +15,10 @@ export function AuthCard({ children }: AuthCardProps) {
 
       <div className="relative w-full max-w-md">
         <div className="text-center mb-8">
-          <Logo size="lg" className="justify-center mb-4" />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4">
+            <span className="text-white font-display font-bold text-xl">SC</span>
+          </div>
+          <Logo className="text-2xl" />
           <p className="mt-2 text-on-surface-variant text-sm">
             Cổng Giải Đề Trực Tuyến
           </p>
