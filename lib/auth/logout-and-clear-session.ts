@@ -65,7 +65,6 @@ export function logoutAndClearSession(requestUrl?: string): void {
   // 1. Reset Zustand auth state directly (no backend call).
   useAuthStore.setState({
     user: null,
-    role_id: null,
     role_name: null,
     needs_onboarding: false,
     isAuthenticated: false,

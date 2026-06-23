@@ -1,4 +1,4 @@
-export type DocumentType = 'pdf' | 'doc' | 'text' | 'video' | 'link' | 'image';
+export type DocumentType = 'pdf' | 'doc' | 'video' | 'link' | 'image';
 export type DocumentScope = 'system' | 'classroom';
 
 export interface Document {
@@ -7,9 +7,6 @@ export interface Document {
   description: string;
   type: DocumentType;
   url: string;
-  fileName?: string | null;
-  fileUrl?: string | null;
-  fileContentType?: string | null;
   thumbnailUrl?: string;
   subject: string;
   grade: number;

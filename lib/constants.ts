@@ -1,4 +1,4 @@
-export const APP_NAME = "";
+export const APP_NAME = "Scholar Clarity";
 export const APP_DESCRIPTION = "Cổng Giải Đề Trực Tuyến";
 
 // Route paths
@@ -11,8 +11,7 @@ export const ROUTES = {
   AUTH: {
     LOGIN: "/login",
     REGISTER: "/register",
-    SELECT_ROLE: "/select-role",
-    ROLE: "/select-role",
+    ROLE: "/role",
   },
   TEACHER: {
     HOME: "/teacher",

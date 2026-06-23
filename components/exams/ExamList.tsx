@@ -12,6 +12,7 @@ import {
   LoaderCircle,
   Plus,
   RefreshCw,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,6 +30,7 @@ import { DeleteExamDialog } from "@/components/exams/DeleteExamDialog";
 import { ExamContextMenu } from "@/components/exams/ExamContextMenu";
 import { useDeleteExam } from "@/hooks/queries/useDeleteExam";
 import { useTeacherExams } from "@/hooks/queries/useTeacherExams";
+import { getApiErrorMessage } from "@/lib/api/error-message";
 import { APP_MESSAGES } from "@/lib/app-messages";
 import type {
   TeacherExam,
@@ -487,10 +489,10 @@ export function ExamList() {
     });
   }
 
-  function handleToggleError(_message: string) {
+  function handleToggleError(message: string) {
     addToast({
       title: APP_MESSAGES.UPDATE_EXAM_VISIBILITY_FAILED,
-      description: APP_MESSAGES.NETWORK_ERROR,
+      description: message,
       variant: "error",
     });
   }
@@ -521,10 +523,12 @@ export function ExamList() {
 
       setDeleteCandidate(null);
     } catch (mutationError) {
-      console.error(`Failed to delete exam ${examToDelete.id}`, mutationError);
       addToast({
         title: APP_MESSAGES.DELETE_EXAM_FAILED,
-        description: APP_MESSAGES.DELETE_FAILED,
+        description: getApiErrorMessage(
+          mutationError,
+          APP_MESSAGES.DELETE_FAILED,
+        ),
         variant: "error",
       });
     }
@@ -560,12 +564,25 @@ export function ExamList() {
               </div>
             </div>
 
-            <Button asChild size="lg" className="h-11 rounded-2xl px-5">
-              <Link href="/teacher/exams/create">
-                <Plus className="mr-2 size-4" />
-                {EXAM_FLOW_MESSAGES.titles.create}
-              </Link>
-            </Button>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="h-11 rounded-2xl px-5"
+              >
+                <Link href="/teacher/ai-exams">
+                  <Sparkles className="mr-2 size-4" />
+                  AI tạo đề
+                </Link>
+              </Button>
+              <Button asChild size="lg" className="h-11 rounded-2xl px-5">
+                <Link href="/teacher/exams/create">
+                  <Plus className="mr-2 size-4" />
+                  {EXAM_FLOW_MESSAGES.titles.create}
+                </Link>
+              </Button>
+            </div>
           </section>
 
           <ExamFilters

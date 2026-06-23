@@ -115,9 +115,7 @@ function getCompletedQuestionCount(values: TeacherExamFormValues): number {
     return (
       hasEnoughOptions &&
       hasOptionText &&
-      (questionType === "single_choice"
-        ? correctOptionCount === 1
-        : correctOptionCount >= 1)
+      correctOptionCount === 1
     );
   }).length;
 }
@@ -135,6 +133,7 @@ function buildQuestionTouchedState(
   return values.questions.map((question) => ({
     question_type: true,
     prompt: true,
+    explanation: true,
     image_url: true,
     order_index: true,
     points: true,
@@ -234,11 +233,6 @@ function ExamFormBody({
     (question) =>
       normalizeTeacherExamQuestionType(question.question_type) ===
       "single_choice",
-  ).length;
-  const multipleChoiceCount = values.questions.filter(
-    (question) =>
-      normalizeTeacherExamQuestionType(question.question_type) ===
-      "multiple_choice",
   ).length;
   const textQuestionCount = values.questions.filter(
     (question) =>
@@ -346,9 +340,6 @@ function ExamFormBody({
                 <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
                   {singleChoiceCount} một đáp án
                 </span>
-                <span className="inline-flex items-center rounded-full bg-tertiary/12 px-2.5 py-1 text-xs font-semibold text-tertiary">
-                  {multipleChoiceCount} nhiều đáp án
-                </span>
                 <span className="inline-flex items-center rounded-full bg-secondary/12 px-2.5 py-1 text-xs font-semibold text-secondary">
                   {textQuestionCount} tự luận
                 </span>
@@ -455,7 +446,6 @@ function ExamFormBody({
     currentStep.id,
     formErrorCount,
     isValid,
-    multipleChoiceCount,
     questionCount,
     singleChoiceCount,
     submitContextLabel,
