@@ -55,7 +55,7 @@ export function isTextQuestionType(
 export function isChoiceQuestionType(
   questionType: TeacherExamQuestionType,
 ): questionType is Exclude<TeacherExamQuestionType, "text"> {
-  return questionType === "single_choice" || questionType === "multiple_choice";
+  return questionType === "single_choice";
 }
 
 function createDefaultChoiceOptions(
@@ -151,6 +151,7 @@ export function createEmptyQuestion(
     client_id: createFormId("question"),
     question_type: normalizedQuestionType,
     prompt: "",
+    explanation: "",
     image_url: "",
     order_index: orderIndex,
     points: 1,
@@ -184,7 +185,7 @@ function normalizeOptionalText(value: string): string | null {
 export function normalizeTeacherExamQuestionType(
   questionType: string | null | undefined,
 ): TeacherExamQuestionType {
-  if (questionType === "text" || questionType === "multiple_choice") {
+  if (questionType === "text") {
     return questionType;
   }
 
@@ -223,6 +224,7 @@ function mapQuestion(
   return {
     question_type: questionType,
     prompt: question.prompt.trim(),
+    explanation: question.explanation.trim(),
     image_url: normalizeOptionalText(question.image_url),
     order_index: index + 1,
     points: question.points,
@@ -290,6 +292,7 @@ export function mapTeacherExamDetailToFormValues(
           client_id: createFormId("question"),
           question_type: questionType,
           prompt: question.prompt,
+          explanation: question.explanation ?? "",
           image_url: question.image_url ?? "",
           order_index: question.order_index || index + 1,
           points: question.points,
@@ -356,6 +359,7 @@ export const teacherExamFormSchema = Yup.object({
         prompt: Yup.string()
           .trim()
           .required(EXAM_FLOW_MESSAGES.validation.questionPromptRequired),
+        explanation: Yup.string(),
         image_url: Yup.string()
           .url("Link hình ảnh không hợp lệ")
           .optional()
@@ -375,8 +379,7 @@ export const teacherExamFormSchema = Yup.object({
           }),
         options: Yup.array().when("question_type", {
           is: (questionType: TeacherExamQuestionType) =>
-            questionType === "single_choice" ||
-            questionType === "multiple_choice",
+            questionType === "single_choice",
           then: (schema) =>
             schema
               .of(
@@ -437,9 +440,9 @@ export const teacherExamFormSchema = Yup.object({
                   const correctOptionCount =
                     options?.filter((option) => option.is_correct).length ?? 0;
 
-                  return questionType === "text"
-                    ? true
-                    : correctOptionCount >= 1;
+                  return questionType === "single_choice"
+                    ? correctOptionCount >= 1
+                    : true;
                 },
               ),
           otherwise: (schema) => schema.max(0).default([]),

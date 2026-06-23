@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   FileSpreadsheet,
   RefreshCw,
+  Sparkles,
   TriangleAlert,
 } from "lucide-react";
 import { EXAM_FLOW_MESSAGES } from "@/components/exams/exam-flow-messages";
@@ -254,16 +255,30 @@ export function TeacherSystemExamCreateScreen({
           </div>
 
           {!isEditMode ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              onClick={() => setIsImportDialogOpen(true)}
-              className="w-full sm:w-auto"
-            >
-              <FileSpreadsheet className="size-4" />
-              Tạo đề thi từ Excel
-            </Button>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end">
+              <Button
+                asChild
+                type="button"
+                variant="outline"
+                size="lg"
+                className="w-full sm:w-auto"
+              >
+                <Link href="/teacher/ai-exams">
+                  <Sparkles className="size-4" />
+                  AI tạo đề
+                </Link>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                onClick={() => setIsImportDialogOpen(true)}
+                className="w-full sm:w-auto"
+              >
+                <FileSpreadsheet className="size-4" />
+                Tạo đề thi từ Excel
+              </Button>
+            </div>
           ) : null}
         </div>
 

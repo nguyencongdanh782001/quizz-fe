@@ -65,11 +65,6 @@ export function QuestionBuilderStep() {
       normalizeTeacherExamQuestionType(question.question_type) ===
       "single_choice",
   ).length;
-  const multipleChoiceCount = values.questions.filter(
-    (question) =>
-      normalizeTeacherExamQuestionType(question.question_type) ===
-      "multiple_choice",
-  ).length;
   const textQuestionCount = values.questions.filter(
     (question) =>
       normalizeTeacherExamQuestionType(question.question_type) === "text",
@@ -175,9 +170,6 @@ export function QuestionBuilderStep() {
           </span>
           <span className="inline-flex items-center rounded-full bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant">
             {singleChoiceCount} một đáp án
-          </span>
-          <span className="inline-flex items-center rounded-full bg-tertiary/12 px-2.5 py-1 text-xs font-medium text-tertiary">
-            {multipleChoiceCount} nhiều đáp án
           </span>
           <span className="inline-flex items-center rounded-full bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant">
             {textQuestionCount} tự luận

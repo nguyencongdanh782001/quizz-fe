@@ -7,9 +7,8 @@ import {
 } from "@/types/auth.types";
 import { User } from "@/types/user.types";
 import { api } from "@/lib/api/endpoints/auth";
+import { UserSchema } from "@/lib/api/types";
 import { APP_MESSAGES } from "@/lib/app-messages";
-import { mapUserSchemaToUser } from "@/lib/auth/user-mapper";
-import { extractUserFromProfileResponse } from "@/lib/auth/response";
 
 const SESSION_COOKIE = "auth-session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
@@ -29,11 +28,8 @@ function setSessionCookie(user: User): void {
           id: user.id,
           full_name: user.full_name,
           username: user.username,
-          role_id: user.role_id,
           role_name: user.role_name,
           needs_onboarding: user.needs_onboarding,
-          avatar_url: user.avatar_url,
-          updated_at: user.updated_at,
           email: user.email,
           auth_type: user.auth_type,
         }),
@@ -49,13 +45,35 @@ function clearSessionCookie(): void {
   document.cookie = `${SESSION_COOKIE}=; path=/; max-age=0`;
 }
 
+function userFromSchema(user: UserSchema): User {
+  return {
+    id: user.id,
+    full_name: user.full_name,
+    username: user.username,
+    email: user.email,
+    auth_type: user.auth_type,
+    role_name: user.role_name ?? null,
+    needs_onboarding: user.needs_onboarding,
+    avatar_url: user.avatar_url ?? null,
+    created_at: user.created_at,
+    profile: user.profile
+      ? {
+          date_of_birth: user.profile.date_of_birth,
+          age: user.profile.age,
+          gender: user.profile.gender,
+          school_name: user.profile.school_name ?? null,
+          onboarding_completed_at: user.profile.onboarding_completed_at,
+        }
+      : null,
+  };
+}
+
 function applyAuthenticatedUser(
   set: (partial: Partial<PersistedAuthState>) => void,
   user: User,
 ) {
   set({
     user,
-    role_id: user.role_id ?? null,
     role_name: user.role_name,
     needs_onboarding: user.needs_onboarding,
     isAuthenticated: true,
@@ -68,7 +86,6 @@ function applyAuthenticatedUser(
 function clearAuthState(set: (partial: Partial<PersistedAuthState>) => void) {
   set({
     user: null,
-    role_id: null,
     role_name: null,
     needs_onboarding: false,
     isAuthenticated: false,
@@ -82,7 +99,6 @@ export const useAuthStore = create<PersistedAuthState>()(
   persist(
     (set) => ({
       user: null,
-      role_id: null,
       role_name: null,
       needs_onboarding: false,
       isAuthenticated: false,
@@ -93,15 +109,7 @@ export const useAuthStore = create<PersistedAuthState>()(
         set({ isLoading: true, fetchError: null });
         try {
           const res = await api.auth.login({ email, password });
-          let user = mapUserSchemaToUser(res.data.user);
-
-          try {
-            const profileRes = await api.auth.profile();
-            user = extractUserFromProfileResponse(profileRes.data);
-          } catch (profileErr) {
-            console.warn("Falling back to login response after profile fetch failed", profileErr);
-          }
-
+          const user = userFromSchema(res.data.user);
           applyAuthenticatedUser(set, user);
           return user;
         } catch (err) {
@@ -121,15 +129,7 @@ export const useAuthStore = create<PersistedAuthState>()(
             password: data.password,
             confirm_password: data.confirmPassword,
           });
-          let user = mapUserSchemaToUser(res.data.user);
-
-          try {
-            const profileRes = await api.auth.profile();
-            user = extractUserFromProfileResponse(profileRes.data);
-          } catch (profileErr) {
-            console.warn("Falling back to register response after profile fetch failed", profileErr);
-          }
-
+          const user = userFromSchema(res.data.user);
           applyAuthenticatedUser(set, user);
           return user;
         } catch (err) {
@@ -143,8 +143,8 @@ export const useAuthStore = create<PersistedAuthState>()(
       fetchMe: async () => {
         set({ isLoading: true, fetchError: null });
         try {
-          const res = await api.auth.profile();
-          const user = extractUserFromProfileResponse(res.data);
+          const res = await api.auth.me();
+          const user = userFromSchema(res.data.user);
           applyAuthenticatedUser(set, user);
           return user;
         } catch {
@@ -157,18 +157,7 @@ export const useAuthStore = create<PersistedAuthState>()(
         set({ isLoading: true, fetchError: null });
         try {
           const res = await api.auth.onboarding.complete(data);
-          let user = mapUserSchemaToUser(res.data.user);
-
-          try {
-            const profileRes = await api.auth.profile();
-            user = extractUserFromProfileResponse(profileRes.data);
-          } catch (profileErr) {
-            console.warn(
-              "Falling back to onboarding response after profile refresh failed",
-              profileErr,
-            );
-          }
-
+          const user = userFromSchema(res.data.user);
           applyAuthenticatedUser(set, user);
           return user;
         } catch (err) {
@@ -199,7 +188,6 @@ export const useAuthStore = create<PersistedAuthState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         user: state.user,
-        role_id: state.role_id,
         role_name: state.role_name,
         needs_onboarding: state.needs_onboarding,
         isAuthenticated: state.isAuthenticated,

@@ -31,7 +31,12 @@ import { teacherExamQueryKeys } from "@/hooks/queries/exam.query-keys";
 import { getApiErrorMessage } from "@/lib/api/error-message";
 import { cn } from "@/lib/utils";
 import { getTeacherSystemExamDetail } from "@/services/exam.service";
-import type { TeacherExam, TeacherExamQuery } from "@/types/exam";
+import type {
+  TeacherExam,
+  TeacherExamOption,
+  TeacherExamQuery,
+  TeacherExamQuestion,
+} from "@/types/exam";
 
 interface SystemExamSelectorDialogProps {
   onOpenChange: (open: boolean) => void;
@@ -40,6 +45,197 @@ interface SystemExamSelectorDialogProps {
 }
 
 const PAGE_SIZE = 5;
+const OPTION_KEYS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+interface ExtractedQuestionOptions {
+  options: string[];
+  prompt: string;
+}
+
+function stripOptionLabel(value: string): string {
+  return value.trim().replace(/^[A-Z]\s*[\.)]\s*/i, "").trim();
+}
+
+function normalizeOptionTextForCompare(value: string): string {
+  return stripOptionLabel(value)
+    .replace(/[\s,;:.]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function cleanEmbeddedOptionText(value: string): string {
+  return stripOptionLabel(
+    value.replace(/^[\s,;:]+/, "").replace(/[\s,;:]+$/, ""),
+  );
+}
+
+function cleanQuestionPrompt(value: string): string {
+  return value.replace(/[\s,;:]+$/, "").trim();
+}
+
+function isChoiceQuestion(question: TeacherExamQuestion): boolean {
+  return question.question_type !== "text";
+}
+
+function extractEmbeddedOptionsFromPrompt(
+  prompt: string,
+): ExtractedQuestionOptions | null {
+  const optionMarkers: { index: number; key: string; valueStart: number }[] = [];
+  const optionMarkerRegex = /(^|[\s,;:])([A-Z])\s*[\.)]\s*/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = optionMarkerRegex.exec(prompt)) !== null) {
+    optionMarkers.push({
+      index: match.index + match[1].length,
+      key: match[2].toUpperCase(),
+      valueStart: optionMarkerRegex.lastIndex,
+    });
+  }
+
+  for (let startIndex = 0; startIndex < optionMarkers.length; startIndex += 1) {
+    const firstMarker = optionMarkers[startIndex];
+
+    if (firstMarker.key !== "A") {
+      continue;
+    }
+
+    const sequence = [firstMarker];
+    let expectedOptionIndex = 1;
+
+    for (
+      let markerIndex = startIndex + 1;
+      markerIndex < optionMarkers.length;
+      markerIndex += 1
+    ) {
+      const optionIndex = OPTION_KEYS.indexOf(optionMarkers[markerIndex].key);
+
+      if (optionIndex === expectedOptionIndex) {
+        sequence.push(optionMarkers[markerIndex]);
+        expectedOptionIndex += 1;
+        continue;
+      }
+
+      if (optionIndex > expectedOptionIndex) {
+        break;
+      }
+    }
+
+    if (sequence.length < 2) {
+      continue;
+    }
+
+    const options = sequence.map((marker, index) => {
+      const nextMarker = sequence[index + 1];
+      const optionEnd = nextMarker?.index ?? prompt.length;
+
+      return cleanEmbeddedOptionText(prompt.slice(marker.valueStart, optionEnd));
+    });
+
+    if (options.every(Boolean)) {
+      return {
+        prompt: cleanQuestionPrompt(prompt.slice(0, sequence[0].index)),
+        options,
+      };
+    }
+  }
+
+  return null;
+}
+
+function stripTrailingOptionListFromPrompt(
+  prompt: string,
+  options: TeacherExamOption[],
+): string {
+  if (options.length < 2 || !prompt.includes(":")) {
+    return prompt.trim();
+  }
+
+  const colonIndex = prompt.lastIndexOf(":");
+  const head = prompt.slice(0, colonIndex).trim();
+  const tail = prompt.slice(colonIndex + 1).trim();
+  const tailItems = tail
+    .split(/[,;]+/)
+    .map(normalizeOptionTextForCompare)
+    .filter(Boolean);
+  const optionItems = options
+    .map((option) => normalizeOptionTextForCompare(option.option_text))
+    .filter(Boolean);
+
+  if (
+    head &&
+    tailItems.length === optionItems.length &&
+    tailItems.every((item, index) => item === optionItems[index])
+  ) {
+    return head;
+  }
+
+  return prompt.trim();
+}
+
+function isPlaceholderOption(option: TeacherExamOption, index: number): boolean {
+  const optionKey = option.option_key || OPTION_KEYS[index] || "";
+  const normalizedOptionText = normalizeOptionTextForCompare(option.option_text);
+
+  return (
+    normalizedOptionText === "" ||
+    normalizedOptionText === optionKey.trim().toLowerCase()
+  );
+}
+
+function buildExtractedOptions(
+  options: string[],
+  question: TeacherExamQuestion,
+): TeacherExamOption[] {
+  return options.map((optionText, index) => ({
+    id: question.options[index]?.id ?? index + 1,
+    option_key: question.options[index]?.option_key || OPTION_KEYS[index] || "",
+    option_text: optionText,
+    image_url: question.options[index]?.image_url ?? null,
+    is_correct: question.options[index]?.is_correct ?? false,
+  }));
+}
+
+function normalizePreviewQuestion(
+  question: TeacherExamQuestion,
+): TeacherExamQuestion {
+  if (!isChoiceQuestion(question)) {
+    return question;
+  }
+
+  const cleanedOptions = question.options.map((option) => ({
+    ...option,
+    option_text: stripOptionLabel(option.option_text),
+  }));
+  const extractedOptions = extractEmbeddedOptionsFromPrompt(question.prompt);
+  const shouldUseExtractedOptions =
+    extractedOptions !== null &&
+    (cleanedOptions.length === 0 ||
+      cleanedOptions.every((option, index) => isPlaceholderOption(option, index)));
+  const options = shouldUseExtractedOptions
+    ? buildExtractedOptions(extractedOptions.options, question)
+    : cleanedOptions;
+  const prompt = extractedOptions
+    ? extractedOptions.prompt
+    : stripTrailingOptionListFromPrompt(question.prompt, options);
+
+  return {
+    ...question,
+    prompt,
+    options,
+  };
+}
+
+function normalizeSystemExamForCopy(exam: TeacherExam): TeacherExam {
+  if (!exam.questions?.length) {
+    return exam;
+  }
+
+  return {
+    ...exam,
+    questions: exam.questions.map(normalizePreviewQuestion),
+  };
+}
 
 function formatDate(value: string): string {
   if (!value) {
@@ -66,12 +262,20 @@ function getQuestionTypeCount(exam: TeacherExam): string {
     return "Chưa tải danh sách câu hỏi";
   }
 
+  const singleChoiceQuestionCount = questions.filter(
+    (question) => question.question_type === "single_choice",
+  ).length;
   const textQuestionCount = questions.filter(
     (question) => question.question_type === "text",
   ).length;
-  const choiceQuestionCount = questions.length - textQuestionCount;
+  const parts = [
+    singleChoiceQuestionCount > 0
+      ? `${singleChoiceQuestionCount} câu một đáp án`
+      : null,
+    textQuestionCount > 0 ? `${textQuestionCount} câu tự luận` : null,
+  ].filter(Boolean);
 
-  return `${choiceQuestionCount} câu trắc nghiệm, ${textQuestionCount} câu tự luận`;
+  return parts.join(", ");
 }
 
 export function SystemExamSelectorDialog({
@@ -121,7 +325,10 @@ export function SystemExamSelectorDialog({
     },
     enabled: open && activeSelectedExamId !== null,
   });
-  const selectedPreview = selectedDetailQuery.data ?? selectedSummary;
+  const selectedDetail = selectedDetailQuery.data
+    ? normalizeSystemExamForCopy(selectedDetailQuery.data)
+    : undefined;
+  const selectedPreview = selectedDetail ?? selectedSummary;
   const detailErrorMessage = selectedDetailQuery.isError
     ? getApiErrorMessage(
         selectedDetailQuery.error,
@@ -140,17 +347,17 @@ export function SystemExamSelectorDialog({
   }
 
   function handleSelect() {
-    if (!selectedDetailQuery.data || selectedDetailQuery.isLoading) {
+    if (!selectedDetail || selectedDetailQuery.isLoading) {
       return;
     }
 
-    onSelectExam(selectedDetailQuery.data);
+    onSelectExam(selectedDetail);
     handleOpenChange(false);
   }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="w-[min(100%-1rem,78rem)] gap-0 p-0">
+      <DialogContent className="flex max-h-[92vh] w-[calc(100%-1rem)] max-w-7xl flex-col gap-0 p-0">
         <div className="border-b border-outline/10 px-5 py-5 sm:px-7">
           <DialogHeader className="pr-10">
             <DialogTitle>Chọn đề thi từ hệ thống</DialogTitle>
@@ -161,8 +368,8 @@ export function SystemExamSelectorDialog({
           </DialogHeader>
         </div>
 
-        <div className="grid max-h-[calc(85vh-10rem)] overflow-hidden lg:grid-cols-[1fr_0.82fr]">
-          <div className="min-h-0 border-b border-outline/10 p-5 lg:border-r lg:border-b-0 sm:p-7">
+        <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[1fr_0.82fr]">
+          <div className="flex min-h-0 flex-col border-b border-outline/10 p-5 lg:border-r lg:border-b-0 sm:p-7">
             <div className="relative">
               <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -177,7 +384,7 @@ export function SystemExamSelectorDialog({
               />
             </div>
 
-            <div className="mt-4 h-[28rem] overflow-y-auto pr-1">
+            <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
               {examsQuery.isLoading ? (
                 <div className="space-y-3">
                   {Array.from({ length: 4 }).map((_, index) => (
@@ -321,22 +528,102 @@ export function SystemExamSelectorDialog({
                   </p>
 
                   {selectedPreview.questions?.length ? (
-                    <div className="mt-4 max-h-64 space-y-2 overflow-y-auto">
-                      {selectedPreview.questions.map((question, index) => (
-                        <div
-                          key={question.id}
-                          className="rounded-xl border border-outline/10 bg-surface-container-lowest p-3"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <p className="line-clamp-2 text-sm font-medium text-on-surface">
-                              Câu {index + 1}: {question.prompt}
-                            </p>
-                            <span className="shrink-0 text-xs font-medium text-muted-foreground">
-                              {question.points} điểm
-                            </span>
+                    <div className="mt-4 space-y-3">
+                      {selectedPreview.questions.map((question, index) => {
+                        const isTextQuestion = question.question_type === "text";
+                        const correctOptions = question.options.filter(
+                          (option) => option.is_correct,
+                        );
+
+                        return (
+                          <div
+                            key={question.id}
+                            className="rounded-xl border border-outline/10 bg-surface-container-lowest p-3"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <Badge variant="secondary">
+                                    Câu {index + 1}
+                                  </Badge>
+                                  <Badge variant="outline">
+                                    {isTextQuestion ? "Tự luận" : "Trắc nghiệm"}
+                                  </Badge>
+                                </div>
+                                <p className="mt-2 text-sm font-medium leading-5 text-on-surface">
+                                  {question.prompt}
+                                </p>
+                              </div>
+                              <span className="shrink-0 text-xs font-medium text-muted-foreground">
+                                {question.points} điểm
+                              </span>
+                            </div>
+
+                            {isTextQuestion ? (
+                              question.accepted_answers.length > 0 ? (
+                                <div className="mt-3 rounded-lg border border-outline/10 bg-surface px-3 py-2 text-xs text-muted-foreground">
+                                  Đáp án:{" "}
+                                  <span className="font-medium text-on-surface">
+                                    {question.accepted_answers.join("; ")}
+                                  </span>
+                                </div>
+                              ) : null
+                            ) : question.options.length > 0 ? (
+                              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                                {question.options.map((option, optionIndex) => (
+                                  <div
+                                    key={`${question.id}-${option.option_key}-${optionIndex}`}
+                                    className={cn(
+                                      "flex items-start gap-2 rounded-lg border px-3 py-2 text-xs",
+                                      option.is_correct
+                                        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                                        : "border-outline/10 bg-surface text-on-surface",
+                                    )}
+                                  >
+                                    <span
+                                      className={cn(
+                                        "flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
+                                        option.is_correct
+                                          ? "bg-emerald-100 text-emerald-700"
+                                          : "bg-primary/10 text-primary",
+                                      )}
+                                    >
+                                      {option.option_key ||
+                                        OPTION_KEYS[optionIndex]}
+                                    </span>
+                                    <span className="min-w-0 leading-5">
+                                      {option.option_text || "Chưa có nội dung"}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null}
+
+                            {!isTextQuestion && correctOptions.length > 0 ? (
+                              <div className="mt-3 text-xs text-muted-foreground">
+                                Đáp án đúng:{" "}
+                                <span className="font-medium text-emerald-700">
+                                  {correctOptions
+                                    .map(
+                                      (option) =>
+                                        `${option.option_key}. ${option.option_text}`,
+                                    )
+                                    .join("; ")}
+                                </span>
+                              </div>
+                            ) : null}
+
+                            {question.explanation.trim() ? (
+                              <div className="mt-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900">
+                                <p className="font-medium">Giải thích</p>
+                                <p className="mt-1 whitespace-pre-wrap break-words leading-5">
+                                  {question.explanation}
+                                </p>
+                              </div>
+                            ) : null}
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : null}
                 </div>
@@ -356,7 +643,7 @@ export function SystemExamSelectorDialog({
           <Button
             type="button"
             onClick={handleSelect}
-            disabled={!selectedDetailQuery.data || selectedDetailQuery.isLoading}
+            disabled={!selectedDetail || selectedDetailQuery.isLoading}
           >
             {selectedDetailQuery.isLoading ? (
               <Loader2 className="animate-spin" />

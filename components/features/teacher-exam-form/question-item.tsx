@@ -33,10 +33,6 @@ const QUESTION_TYPE_OPTIONS: Array<{
     label: EXAM_FLOW_MESSAGES.questionTypes.single,
   },
   {
-    value: "multiple_choice",
-    label: EXAM_FLOW_MESSAGES.questionTypes.multiple,
-  },
-  {
     value: "text",
     label: EXAM_FLOW_MESSAGES.questionTypes.text,
   },
@@ -49,10 +45,6 @@ const QUESTION_TYPE_BADGE_CONFIG: Record<
   single_choice: {
     badgeClassName: "bg-primary/10 text-primary",
     label: getTeacherExamQuestionTypeLabel("single_choice"),
-  },
-  multiple_choice: {
-    badgeClassName: "bg-tertiary/12 text-tertiary",
-    label: getTeacherExamQuestionTypeLabel("multiple_choice"),
   },
   text: {
     badgeClassName: "bg-secondary/15 text-secondary",
@@ -301,6 +293,21 @@ export function QuestionItem({
           placeholder={EXAM_FLOW_MESSAGES.placeholders.question}
           rows={4}
           helperText="Viết rõ yêu cầu để học sinh có thể trả lời mà không cần đoán ý."
+        />
+
+        <TextareaField
+          id={`question-${question.client_id}-explanation`}
+          label="Giải thích đáp án"
+          value={question.explanation}
+          onChange={(event) =>
+            void setFieldValue(
+              `questions.${questionIndex}.explanation`,
+              event.target.value,
+            )
+          }
+          placeholder="Ví dụ: vì sao đáp án này đúng, dấu hiệu nhận biết, cách loại trừ..."
+          rows={3}
+          helperText="Phần này sẽ hiện trong màn hình kết quả sau khi học sinh nộp bài."
         />
 
         <div className="grid gap-4 md:grid-cols-2">

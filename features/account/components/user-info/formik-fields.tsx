@@ -2,7 +2,6 @@ import type { ChangeEvent } from "react";
 import { useState } from "react";
 import { useField } from "formik";
 import { Eye, EyeOff } from "lucide-react";
-import { DatePicker } from "@/components/common/form/date-picker";
 import { InputField } from "@/components/common/form/input-field";
 import { SelectField } from "@/components/common/form/select-field";
 import { cn } from "@/lib/utils";
@@ -117,49 +116,6 @@ export function FormikSelectField({
       disabled={disabled}
       value={field.value ?? ""}
       onValueChange={(value) => {
-        helpers.setValue(value);
-        helpers.setTouched(true);
-        onValueChange?.();
-      }}
-      onBlur={() => {
-        helpers.setTouched(true);
-      }}
-      error={meta.touched ? meta.error : undefined}
-    />
-  );
-}
-
-interface FormikDatePickerFieldProps {
-  name: string;
-  label: string;
-  placeholder?: string;
-  helperText?: string;
-  required?: boolean;
-  disabled?: boolean;
-  onValueChange?: () => void;
-}
-
-export function FormikDatePickerField({
-  name,
-  label,
-  placeholder,
-  helperText,
-  required,
-  disabled,
-  onValueChange,
-}: FormikDatePickerFieldProps) {
-  const [field, meta, helpers] = useField<string>(name);
-
-  return (
-    <DatePicker
-      id={name}
-      label={label}
-      placeholder={placeholder}
-      helperText={helperText}
-      required={required}
-      disabled={disabled}
-      value={field.value ?? ""}
-      onChange={(value) => {
         helpers.setValue(value);
         helpers.setTouched(true);
         onValueChange?.();

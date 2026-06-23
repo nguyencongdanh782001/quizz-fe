@@ -11,7 +11,6 @@ export interface UserProfile {
 
 export interface User {
   id: number;
-  role_id: number | null;
   full_name: string;
   username: string;
   email: string;
@@ -19,7 +18,6 @@ export interface User {
   role_name: UserRole | null;
   needs_onboarding: boolean;
   avatar_url: string | null;
-  updated_at: string;
   created_at: string;
   profile: UserProfile | null;
 }

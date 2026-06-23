@@ -3,11 +3,14 @@
 import { useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import type { User } from "@/types/user.types";
-import { getPostAuthDestination } from "@/lib/auth/onboarding";
+import { User } from "@/types/user.types";
 
-function getDestination(user: Pick<User, "role_name" | "needs_onboarding" | "role_id">) {
-  return getPostAuthDestination(user);
+function getDestination(user: Pick<User, "role_name" | "needs_onboarding">) {
+  if (user.needs_onboarding || !user.role_name) {
+    return "/role";
+  }
+
+  return user.role_name === "teacher" ? "/teacher" : "/student";
 }
 
 export function AuthCallbackRedirect() {

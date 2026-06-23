@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Logo } from '@/components/common/Logo';
 import {
   Reveal,
   fadeUpVariants,
@@ -63,7 +62,6 @@ export function LandingHero() {
       <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
         <div className="relative z-10">
           <Reveal className="space-y-8">
-            <Logo size="lg" className="mb-2" />
             <Badge
               variant="secondary"
               className="rounded-full border-white/70 bg-white/75 px-4 py-1.5 text-sm shadow-sm backdrop-blur"
