@@ -73,7 +73,7 @@ export async function getTeacherSystemExamDetail(
 export async function deleteTeacherSystemExam(
   examId: number | string,
 ): Promise<string> {
-  await client.delete<MessageResponse>(`/teacher/exams/${examId}`);
+  await client.delete<MessageResponse>(`/teacher/system/exams/${examId}`);
 
   return APP_MESSAGES.DELETE_EXAM_SUCCESS;
 }

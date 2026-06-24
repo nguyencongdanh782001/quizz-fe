@@ -20,6 +20,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
+import { AvatarUploadField } from "@/components/common/avatar-upload-field";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,6 +36,7 @@ import {
   useProfile,
   useUpdateProfileMutation,
 } from "@/hooks/queries/useProfile";
+import { useUpdateAvatar } from "@/hooks/useUpdateAvatar";
 import type {
   ChangePasswordRequest,
   ProfileGender,
@@ -42,9 +44,9 @@ import type {
   UserSchema,
 } from "@/lib/api/types";
 import { APP_MESSAGES } from "@/lib/app-messages";
+import { mapUserSchemaToUser } from "@/lib/auth/user-mapper";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
-import type { User } from "@/types/user.types";
 import {
   changePasswordSchema,
   profileFormSchema,
@@ -56,6 +58,7 @@ import {
 } from "./user-info/constants";
 import {
   FormikInputField,
+  FormikDatePickerField,
   FormikPasswordField,
   FormikSelectField,
 } from "./user-info/formik-fields";
@@ -67,7 +70,7 @@ import type {
   UserInfoRoleContent,
 } from "./user-info/types";
 
-type ProfileToastVariant = "success" | "error";
+type ProfileToastVariant = "success" | "error" | "warning";
 
 interface ProfileToastState {
   id: number;
@@ -166,32 +169,6 @@ function getGenderLabel(gender: string | null | undefined): string {
   return "Chưa cập nhật";
 }
 
-function toAuthUser(user: UserSchema): User {
-  return {
-    id: user.id,
-    full_name: user.full_name,
-    username: user.username,
-    email: user.email,
-    auth_type: user.auth_type,
-    role_name:
-      user.role_name === "teacher" || user.role_name === "student"
-        ? user.role_name
-        : null,
-    needs_onboarding: user.needs_onboarding,
-    avatar_url: user.avatar_url ?? null,
-    created_at: user.created_at,
-    profile: user.profile
-      ? {
-          date_of_birth: user.profile.date_of_birth,
-          age: user.profile.age,
-          gender: user.profile.gender,
-          school_name: user.profile.school_name ?? null,
-          onboarding_completed_at: user.profile.onboarding_completed_at,
-        }
-      : null,
-  };
-}
-
 function isProfileGender(
   value: ProfileFormValues["gender"],
 ): value is ProfileGender {
@@ -242,6 +219,7 @@ function ProfileAvatar({
     <UserAvatar
       avatarUrl={user.avatar_url}
       fullName={user.full_name}
+      avatarCacheKey={user.updated_at}
       className={cn("ring-1 ring-white/30", sizeClassName, className)}
     />
   );
@@ -406,6 +384,85 @@ function ProfileInformationCard({ user, role }: ProfileSectionProps) {
   );
 }
 
+function AvatarUploadCard({
+  user,
+  onToast,
+}: Pick<ProfileSectionProps, "user"> & ToastAwareProps) {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const uploadAvatarMutation = useUpdateAvatar();
+  const isUploading = uploadAvatarMutation.isPending;
+
+  async function handleUploadAvatar() {
+    if (!selectedFile) {
+      onToast("warning", "Vui lòng chọn một ảnh trước khi tải lên.");
+      return;
+    }
+
+    try {
+      await uploadAvatarMutation.mutateAsync(selectedFile);
+      setSelectedFile(null);
+      onToast("success", APP_MESSAGES.UPLOAD_AVATAR_SUCCESS);
+    } catch {
+      onToast("warning", APP_MESSAGES.UPLOAD_AVATAR_FAILED);
+    }
+  }
+
+  return (
+    <section className="rounded-2xl border border-outline/10 bg-surface-container-lowest p-5 shadow-[0_10px_38px_-30px_rgba(7,30,39,0.45)] sm:p-6">
+      <div className="flex items-center gap-3">
+        <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <UserRound className="size-5" />
+        </div>
+        <div>
+          <h2 className="font-display text-xl font-semibold text-on-surface">
+            Ảnh đại diện
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Cập nhật ảnh đại diện mới để thông tin tài khoản đồng bộ ngay.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-6 space-y-5">
+        <AvatarUploadField
+          fullName={user.full_name}
+          currentAvatarUrl={user.avatar_url}
+          currentAvatarCacheKey={user.updated_at}
+          selectedFile={selectedFile}
+          onSelectedFileChange={setSelectedFile}
+          helperText="Ảnh mới sẽ được áp dụng ngay sau khi tải lên thành công."
+          isUploading={isUploading}
+          previewClassName="sm:size-32"
+        />
+
+        <div className="flex flex-col-reverse gap-3 border-t border-outline/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted-foreground">
+            {selectedFile
+              ? `Tệp đã chọn: ${selectedFile.name}`
+              : "Chưa có ảnh mới nào được chọn."}
+          </p>
+
+          <Button
+            type="button"
+            className="h-11 rounded-xl px-5"
+            disabled={!selectedFile || isUploading}
+            onClick={() => {
+              void handleUploadAvatar();
+            }}
+          >
+            {isUploading ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Save className="size-4" />
+            )}
+            Tải ảnh lên
+          </Button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ProfileForm({
   user,
   onToast,
@@ -477,10 +534,11 @@ function ProfileForm({
                   placeholder="Nhập số điện thoại"
                   autoComplete="tel"
                 />
-                <FormikInputField
+                <FormikDatePickerField
                   name="date_of_birth"
                   label="Ngày sinh"
-                  type="date"
+                  placeholder="Chọn ngày sinh"
+                  helperText="Dùng lịch để chọn hoặc xóa để chọn lại."
                   required
                 />
                 <FormikSelectField
@@ -696,7 +754,7 @@ function ProfilePageSkeleton({ role }: UserInfoPageProps) {
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)]">
         <div className="space-y-6">
           <SkeletonCard rows={9} />
           <FormSkeleton />
@@ -821,7 +879,7 @@ export function ProfilePage({ role }: UserInfoPageProps) {
 
   useEffect(() => {
     if (user) {
-      hydrateFromUser(toAuthUser(user));
+      hydrateFromUser(mapUserSchemaToUser(user));
     }
   }, [hydrateFromUser, user]);
 
@@ -852,8 +910,9 @@ export function ProfilePage({ role }: UserInfoPageProps) {
       <div className="space-y-6">
         <ProfileHero user={user} content={content} role={role} />
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)]">
           <div className="space-y-6">
+            <AvatarUploadCard user={user} onToast={showToast} />
             <ProfileInformationCard user={user} content={content} role={role} />
             <ProfileForm user={user} onToast={showToast} />
             <ChangePasswordCard onToast={showToast} />

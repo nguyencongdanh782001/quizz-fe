@@ -16,8 +16,13 @@ const publicSans = Public_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Scholar Clarity — Cổng Giải Đề Trực Tuyến",
+  title: "QuizzVn — Cổng Giải Đề Trực Tuyến",
   description: "Nền tảng thi trực tuyến hàng đầu Việt Nam",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({

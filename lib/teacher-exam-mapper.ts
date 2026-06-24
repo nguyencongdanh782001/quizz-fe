@@ -71,7 +71,7 @@ function toBooleanValue(value: unknown, fallback = false): boolean {
 }
 
 function toQuestionType(value: unknown): TeacherExamQuestionType {
-  if (value === "text") {
+  if (value === "text" || value === "multiple_choice") {
     return value;
   }
 
@@ -107,7 +107,6 @@ function mapExamQuestion(
     question_type: toQuestionType(question.question_type),
     order_index: toNumberValue(question.order_index, index + 1),
     prompt: toStringValue(question.prompt),
-    explanation: toStringValue(question.explanation),
     image_url: toNullableString(question.image_url),
     points: toNumberValue(question.points),
     options: (question.options ?? []).map(mapExamOption),

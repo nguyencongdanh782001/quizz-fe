@@ -15,11 +15,9 @@ import {
   Trophy,
 } from "lucide-react";
 import {
-  getStudentExamDetail,
   getStudentAttemptResult,
   readCachedStudentAttemptResult,
   startStudentExamAttempt,
-  StudentExamDetailData,
   StudentSubmitAttemptResultData,
   writeCachedStudentAttemptResult,
 } from "@/lib/student-system-exams";
@@ -31,40 +29,6 @@ function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${m} phút ${s} giây`;
-}
-
-function hasMissingExplanations(result: StudentSubmitAttemptResultData): boolean {
-  return result.answers.some((answer) => !answer.explanation?.trim());
-}
-
-function mergeResultExplanations(
-  result: StudentSubmitAttemptResultData,
-  examDetail: StudentExamDetailData | null,
-): StudentSubmitAttemptResultData {
-  if (!examDetail?.questions.length) {
-    return result;
-  }
-
-  const explanationsByQuestionId = new Map(
-    examDetail.questions
-      .map((question) => [question.id, question.explanation?.trim() ?? ""] as const)
-      .filter(([, explanation]) => explanation.length > 0),
-  );
-
-  if (explanationsByQuestionId.size === 0) {
-    return result;
-  }
-
-  return {
-    ...result,
-    answers: result.answers.map((answer) => ({
-      ...answer,
-      explanation:
-        answer.explanation?.trim() ||
-        explanationsByQuestionId.get(answer.questionId) ||
-        answer.explanation,
-    })),
-  };
 }
 
 function ResultPageContent({ examId }: { examId: string }) {
@@ -109,29 +73,12 @@ function ResultPageContent({ examId }: { examId: string }) {
         return;
       }
 
-      let resolvedResult = liveResult ?? cachedResult;
-
-      if (resolvedResult && hasMissingExplanations(resolvedResult)) {
-        const examDetail = await getStudentExamDetail(examId);
-
-        if (!isMounted) {
-          return;
-        }
-
-        resolvedResult = mergeResultExplanations(resolvedResult, examDetail);
-      }
-
       if (liveResult) {
-        if (resolvedResult) {
-          writeCachedStudentAttemptResult(resolvedResult);
-          setResult(resolvedResult);
-        }
+        writeCachedStudentAttemptResult(liveResult);
+        setResult(liveResult);
         setLoadError(null);
       } else if (!cachedResult) {
         setLoadError("Không tìm thấy kết quả");
-      } else if (resolvedResult) {
-        writeCachedStudentAttemptResult(resolvedResult);
-        setResult(resolvedResult);
       }
 
       setIsLoading(false);
@@ -142,7 +89,7 @@ function ResultPageContent({ examId }: { examId: string }) {
     return () => {
       isMounted = false;
     };
-  }, [attemptId, examId]);
+  }, [attemptId]);
 
   useEffect(() => {
     if (!retakeToastMessage) {
@@ -371,45 +318,34 @@ function ResultPageContent({ examId }: { examId: string }) {
                     ) : (
                       <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
                     )}
-                    <div className="grid flex-1 min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.44fr)]">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-on-surface">
-                          Câu {i + 1}: {answer.prompt}
-                        </p>
-                        <div className="mt-1 space-y-1 text-xs text-muted-foreground">
-                          {answer.selectedOptionText && (
-                            <p>Đã chọn: {answer.selectedOptionText}</p>
-                          )}
-                          {answer.submittedAnswerText && (
-                            <div className="mt-2 rounded-xl border border-outline/10 bg-surface/70 p-3">
-                              <p className="font-medium text-on-surface">
-                                Câu trả lời của bạn:
-                              </p>
-                              <p className="mt-1 whitespace-pre-wrap break-words leading-5 text-muted-foreground">
-                                {answer.submittedAnswerText}
-                              </p>
-                            </div>
-                          )}
-                          {answer.correctOptionText && (
-                            <p>Đáp án đúng: {answer.correctOptionText}</p>
-                          )}
-                          {answer.acceptedAnswers.length > 0 && (
-                            <p>
-                              Đáp án chấp nhận:{" "}
-                              {answer.acceptedAnswers.join(", ")}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-on-surface">
+                        Câu {i + 1}: {answer.prompt}
+                      </p>
+                      <div className="mt-1 space-y-1 text-xs text-muted-foreground">
+                        {answer.selectedOptionText && (
+                          <p>Đã chọn: {answer.selectedOptionText}</p>
+                        )}
+                        {answer.submittedAnswerText && (
+                          <div className="mt-2 rounded-xl border border-outline/10 bg-surface/70 p-3">
+                            <p className="font-medium text-on-surface">
+                              Câu trả lời của bạn:
                             </p>
-                          )}
-                        </div>
-                      </div>
-
-                      {answer.explanation?.trim() ? (
-                        <div className="rounded-xl border border-sky-200 bg-sky-50/80 p-3 text-xs text-sky-900 dark:border-sky-800/40 dark:bg-sky-950/20 dark:text-sky-100">
-                          <p className="font-semibold">Giải thích đáp án</p>
-                          <p className="mt-1 whitespace-pre-wrap break-words leading-5">
-                            {answer.explanation}
+                            <p className="mt-1 whitespace-pre-wrap break-words leading-5 text-muted-foreground">
+                              {answer.submittedAnswerText}
+                            </p>
+                          </div>
+                        )}
+                        {answer.correctOptionText && (
+                          <p>Đáp án đúng: {answer.correctOptionText}</p>
+                        )}
+                        {answer.acceptedAnswers.length > 0 && (
+                          <p>
+                            Đáp án chấp nhận:{" "}
+                            {answer.acceptedAnswers.join(", ")}
                           </p>
-                        </div>
-                      ) : null}
+                        )}
+                      </div>
                     </div>
                     <span
                       className={cn(

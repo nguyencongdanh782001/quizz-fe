@@ -1,30 +1,31 @@
-import Link from 'next/link';
-import { Globe, Mail, MessageCircle, Phone, Play, Radio } from 'lucide-react';
+import Link from "next/link";
+import { Globe, Mail, MessageCircle, Phone, Play, Radio } from "lucide-react";
+import { Logo } from "@/components/common/Logo";
 
 const footerGroups = {
   sanPham: [
-    { label: 'Tổng quan', href: '#tong-quan' },
-    { label: 'Tính năng', href: '#tinh-nang' },
-    { label: 'Bảng điều khiển', href: '#dashboard' },
-    { label: 'Phản hồi', href: '#phan-hoi' },
+    { label: "Tổng quan", href: "#tong-quan" },
+    { label: "Tính năng", href: "#tinh-nang" },
+    { label: "Bảng điều khiển", href: "#dashboard" },
+    { label: "Phản hồi", href: "#phan-hoi" },
   ],
   truyCap: [
-    { label: 'Đăng ký', href: '/register' },
-    { label: 'Đăng nhập', href: '/login' },
-    { label: 'Vai trò người dùng', href: '/role' },
+    { label: "Đăng ký", href: "/register" },
+    { label: "Đăng nhập", href: "/login" },
+    { label: "Vai trò người dùng", href: "/select-role" },
   ],
   hoTro: [
-    { label: 'Điều khoản sử dụng', href: '#' },
-    { label: 'Chính sách bảo mật', href: '#' },
-    { label: 'Trung tâm trợ giúp', href: '#' },
+    { label: "Điều khoản sử dụng", href: "#" },
+    { label: "Chính sách bảo mật", href: "#" },
+    { label: "Trung tâm trợ giúp", href: "#" },
   ],
 } as const;
 
 const socials = [
-  { label: 'Trang thông tin', href: '#', icon: Globe },
-  { label: 'Kênh video', href: '#', icon: Play },
-  { label: 'Hỗ trợ chat', href: '#', icon: MessageCircle },
-  { label: 'Bản tin', href: '#', icon: Radio },
+  { label: "Trang thông tin", href: "#", icon: Globe },
+  { label: "Kênh video", href: "#", icon: Play },
+  { label: "Hỗ trợ chat", href: "#", icon: MessageCircle },
+  { label: "Bản tin", href: "#", icon: Radio },
 ] as const;
 
 export function LandingFooter() {
@@ -34,30 +35,29 @@ export function LandingFooter() {
         <div className="grid gap-10 border-b border-white/10 pb-10 lg:grid-cols-[1.1fr_0.9fr_0.8fr_0.8fr]">
           <div className="space-y-5">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-sm font-bold text-white">
-                SC
-              </div>
-              <div>
-                <p className="font-display text-lg font-semibold text-white">
-                  Scholar Clarity
-                </p>
-                <p className="text-sm text-white/55">
-                  Nền tảng học tập và quản lý lớp học hiện đại
-                </p>
-              </div>
+              <Logo size="md" className="text-white" />
+              <p className="text-sm text-white/55">
+                Nền tảng học tập và quản lý lớp học hiện đại
+              </p>
             </div>
 
             <p className="max-w-md text-sm leading-7 text-white/65">
-              Kết nối bài thi, lớp học, tài liệu và phân tích học tập trong
-              một trải nghiệm nhất quán để giáo viên và học sinh cùng tiến bộ.
+              Kết nối bài thi, lớp học, tài liệu và phân tích học tập trong một
+              trải nghiệm nhất quán để giáo viên và học sinh cùng tiến bộ.
             </p>
 
             <div className="space-y-3 text-sm text-white/70">
-              <a href="mailto:support@scholarclarity.vn" className="flex items-center gap-3 hover:text-white">
+              <a
+                href="mailto:support@quizzvn.vn"
+                className="flex items-center gap-3 hover:text-white"
+              >
                 <Mail className="h-4 w-4" />
-                <span>support@scholarclarity.vn</span>
+                <span>support@quizzvn.vn</span>
               </a>
-              <a href="tel:19001234" className="flex items-center gap-3 hover:text-white">
+              <a
+                href="tel:19001234"
+                className="flex items-center gap-3 hover:text-white"
+              >
                 <Phone className="h-4 w-4" />
                 <span>1900 1234</span>
               </a>
@@ -129,8 +129,11 @@ export function LandingFooter() {
         </div>
 
         <div className="flex flex-col gap-3 pt-6 text-sm text-white/45 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} Scholar Clarity. Mọi quyền được bảo lưu.</p>
-          <p>Thiết kế lại để mang lại trải nghiệm giáo dục số hiện đại, rõ ràng và giàu dữ liệu hơn.</p>
+          <p>© {new Date().getFullYear()} QuizzVn. Mọi quyền được bảo lưu.</p>
+          <p>
+            Thiết kế lại để mang lại trải nghiệm giáo dục số hiện đại, rõ ràng
+            và giàu dữ liệu hơn.
+          </p>
         </div>
       </div>
     </footer>

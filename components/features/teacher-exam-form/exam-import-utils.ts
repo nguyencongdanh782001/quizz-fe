@@ -35,7 +35,6 @@ type NormalizedSpreadsheetRow = Record<string, string>;
 
 interface ImportQuestionDraft {
   acceptedAnswers: string[];
-  explanation: string;
   options: ImportOptionDraft[];
   orderIndex: number;
   points: number;
@@ -53,6 +52,7 @@ interface ImportOptionDraft {
 
 const SUPPORTED_QUESTION_TYPES = [
   "single_choice",
+  "multiple_choice",
   "text",
 ] as const satisfies readonly TeacherExamQuestionType[];
 
@@ -257,7 +257,6 @@ function parseQuestionRows(
     const orderIndex = Number(orderValue);
     const questionType = parseQuestionType(getCell(normalizedRow, "question_type"));
     const prompt = getCell(normalizedRow, "prompt");
-    const explanation = getCell(normalizedRow, "explanation");
     const points = parsePositiveNumber(getCell(normalizedRow, "points"));
 
     if (!Number.isInteger(orderIndex) || orderIndex <= 0) {
@@ -332,11 +331,20 @@ function parseQuestionRows(
           ),
         );
       }
+
+      if (safeQuestionType === "multiple_choice" && correctOptionCount < 1) {
+        errors.push(
+          formatRowError(
+            "questions",
+            rowNumber,
+            "Câu hỏi nhiều đáp án phải có ít nhất 1 đáp án đúng",
+          ),
+        );
+      }
     }
 
     questions.push({
       acceptedAnswers,
-      explanation,
       options,
       orderIndex: safeOrderIndex,
       points: points ?? 1,
@@ -375,7 +383,6 @@ function mapQuestionDraftsToFormValues(
             questionDraft.questionType === "text"
               ? questionDraft.acceptedAnswers
               : [],
-          explanation: questionDraft.explanation,
           options:
             questionDraft.questionType === "text"
               ? []

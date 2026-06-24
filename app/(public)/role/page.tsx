@@ -1,22 +1,21 @@
-import { redirect } from 'next/navigation';
-import { AuthCard } from '@/features/auth/components/AuthCard';
-import { RoleSelectionForm } from '@/features/auth/components/RoleSelectionForm';
-import { getServerSession } from '@/lib/auth-server';
+import { redirect } from "next/navigation";
+import { getServerSession } from "@/lib/auth-server";
+import {
+  SELECT_ROLE_PATH,
+  getRoleDashboardPath,
+  isOnboardingIncomplete,
+} from "@/lib/auth/onboarding";
 
 export default async function RolePage() {
   const session = await getServerSession();
 
   if (!session) {
-    redirect('/login');
+    redirect("/login");
   }
 
-  if (!session.needs_onboarding && session.role_name) {
-    redirect(session.role_name === 'teacher' ? '/teacher' : '/student');
+  if (isOnboardingIncomplete(session)) {
+    redirect(SELECT_ROLE_PATH);
   }
 
-  return (
-    <AuthCard>
-      <RoleSelectionForm initialUser={session} />
-    </AuthCard>
-  );
+  redirect(getRoleDashboardPath(session.role_name));
 }
