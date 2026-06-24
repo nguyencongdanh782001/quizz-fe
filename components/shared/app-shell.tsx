@@ -1,6 +1,7 @@
 "use client";
 
 import { UserAvatar } from "@/components/common/user-avatar";
+import { Logo } from "@/components/common/Logo";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -24,7 +25,6 @@ import {
   Library,
   LogOut,
   Menu,
-  Sparkles,
   UserRound,
   Users,
   X,
@@ -71,12 +71,6 @@ const teacherNav: NavItem[] = [
     label: "Bài thi",
     description: "Tạo, chỉnh sửa và xuất bản đề thi",
     icon: FileCheck,
-  },
-  {
-    href: "/teacher/ai-exams",
-    label: "AI tạo đề",
-    description: "Sinh câu hỏi nháp và lưu thành đề thi",
-    icon: Sparkles,
   },
   {
     href: "/teacher/documents",
@@ -136,7 +130,6 @@ const routeLabelMap: Record<string, string> = {
   student: "Học sinh",
   classes: "Lớp học",
   exams: "Bài thi",
-  "ai-exams": "AI tạo đề",
   documents: "Tài liệu",
   materials: "Tài liệu",
   profile: "Hồ sơ",
@@ -186,14 +179,6 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href;
 }
 
-function BrandMark() {
-  return (
-    <div className="flex h-11 w-11 items-center justify-center rounded-[1.35rem] bg-linear-to-br from-primary to-tertiary text-sm font-bold text-primary-foreground shadow-[0_18px_36px_-18px_rgba(79,70,229,0.58)]">
-      SC
-    </div>
-  );
-}
-
 export function AppShell({ role, children }: AppShellProps) {
   const pathname = usePathname();
   useBreadcrumbLabelStoreVersion();
@@ -228,6 +213,7 @@ export function AppShell({ role, children }: AppShellProps) {
               userName={userName}
               userFullName={user?.full_name}
               userAvatarUrl={user?.avatar_url}
+              userAvatarCacheKey={user?.updated_at}
               roleTitle={roleTitle}
               roleDescription={roleDescription}
               onNavigate={() => undefined}
@@ -239,6 +225,13 @@ export function AppShell({ role, children }: AppShellProps) {
         <div className="min-w-0 flex-1">
           <header className="surface-panel sticky top-3 z-40 rounded-[1.7rem] px-4 py-3 sm:px-5">
             <div className="flex items-center gap-3">
+              <Link
+                href={role === "teacher" ? "/teacher" : "/student"}
+                className="inline-flex shrink-0 lg:hidden"
+                aria-label={APP_NAME}
+              >
+                <Logo size="sm" showText={false} />
+              </Link>
               <Button
                 type="button"
                 variant="outline"
@@ -337,6 +330,7 @@ export function AppShell({ role, children }: AppShellProps) {
                       <UserAvatar
                         avatarUrl={user?.avatar_url}
                         fullName={user?.full_name}
+                        avatarCacheKey={user?.updated_at}
                         className="size-10 shadow-[0_14px_28px_-18px_rgba(79,70,229,0.55)]"
                         fallbackClassName="text-sm"
                       />
@@ -411,6 +405,7 @@ export function AppShell({ role, children }: AppShellProps) {
                   userName={userName}
                   userFullName={user?.full_name}
                   userAvatarUrl={user?.avatar_url}
+                  userAvatarCacheKey={user?.updated_at}
                   roleTitle={roleTitle}
                   roleDescription={roleDescription}
                   onNavigate={() => setMobileOpen(false)}
@@ -444,6 +439,7 @@ function SidebarContent({
   userName,
   userFullName,
   userAvatarUrl,
+  userAvatarCacheKey,
   roleTitle,
   roleDescription,
   onNavigate,
@@ -456,6 +452,7 @@ function SidebarContent({
   userName: string;
   userFullName?: string | null;
   userAvatarUrl?: string | null;
+  userAvatarCacheKey?: string | null;
   roleTitle: string;
   roleDescription: string;
   onNavigate: () => void;
@@ -466,15 +463,7 @@ function SidebarContent({
     <div className="surface-panel relative flex h-[calc(100vh-1.5rem)] flex-col rounded-[2rem] px-4 py-5">
       {mobileCloseButton}
       <div className="flex items-center gap-3 px-2">
-        <BrandMark />
-        <div className="min-w-0">
-          <p className="font-display text-lg font-semibold text-on-surface">
-            {APP_NAME}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Nền tảng giáo dục số hiện đại
-          </p>
-        </div>
+        <Logo size="lg" />
       </div>
 
       <div className="mt-6 rounded-[1.7rem] border border-white/70 bg-linear-to-br from-primary/10 via-white/80 to-secondary/10 p-4 shadow-[0_22px_60px_-44px_rgba(79,70,229,0.42)]">
@@ -545,6 +534,7 @@ function SidebarContent({
           <UserAvatar
             avatarUrl={userAvatarUrl}
             fullName={userFullName}
+            avatarCacheKey={userAvatarCacheKey}
             className="size-11"
             fallbackClassName="text-sm"
           />

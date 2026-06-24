@@ -23,7 +23,8 @@ import {
   getStudentClassResults,
   type StudentSystemResultListData,
 } from '@/lib/student-system-results';
-import { DocumentCard } from '@/components/features/document/document-card';
+import { DocumentList } from '@/components/features/document/document-list';
+import { DocumentToastProvider } from '@/components/features/document/document-toast';
 import { ExamCard } from '@/components/features/exam/exam-card';
 import { useBreadcrumbLabel } from '@/components/shared/breadcrumb-labels';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ import type { ClassInfo } from '@/types/class.types';
 import type { Document } from '@/types/document.types';
 import type { Exam } from '@/types/exam.types';
 import { cn } from '@/lib/utils';
+import type { StudentDocumentSortOption } from '@/lib/student-system-documents';
 
 type ClassTab = 'exams' | 'results' | 'documents';
 
@@ -73,6 +75,9 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
   const [activeTab, setActiveTab] = useState<ClassTab>('exams');
   const [exams, setExams] = useState<Exam[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [documentSearch, setDocumentSearch] = useState('');
+  const [documentSort, setDocumentSort] = useState<StudentDocumentSortOption>('recent');
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [resultsData, setResultsData] = useState<StudentSystemResultListData>(
     () => createEmptyStudentSystemResults(),
   );
@@ -277,6 +282,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
   ];
 
   return (
+    <DocumentToastProvider>
     <div className="space-y-8">
       <Link
         href="/student/classes"
@@ -565,11 +571,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
               </span>
             </div>
 
-            {isLoadingDocuments ? (
-              <div className="rounded-xl bg-surface-container-lowest p-5 text-sm text-muted-foreground">
-                Đang tải tài liệu của lớp...
-              </div>
-            ) : documentsError ? (
+            {documentsError ? (
               <div className="rounded-xl border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
@@ -590,26 +592,27 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                   </Button>
                 </div>
               </div>
-            ) : documents.length === 0 ? (
-              <div className="rounded-xl bg-surface-container-lowest p-5 text-sm text-muted-foreground">
-                Chưa có tài liệu nào cho lớp này.
-              </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {documents.map((document) => (
-                  <DocumentCard
-                    key={document.id}
-                    doc={{
-                      ...document,
-                      url: `/student/materials/${document.id}?classId=${cls.id}`,
-                    }}
-                  />
-                ))}
-              </div>
+              <DocumentList
+                documents={documents.map((document) => ({
+                  ...document,
+                  url: `/student/materials/${document.id}?classId=${cls.id}`,
+                }))}
+                isLoading={isLoadingDocuments}
+                search={documentSearch}
+                sortBy={documentSort}
+                onSearchChange={setDocumentSearch}
+                onSortChange={setDocumentSort}
+                selectedDocument={selectedDocument}
+                onSelectedDocumentChange={setSelectedDocument}
+                emptyTitle="Chưa có tài liệu nào cho lớp này"
+                emptyDescription="Khi giáo viên đăng học liệu cho lớp, tài liệu sẽ xuất hiện ở đây để bạn xem trước hoặc tải xuống."
+              />
             )}
           </div>
         )}
       </section>
     </div>
+    </DocumentToastProvider>
   );
 }

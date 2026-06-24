@@ -1,127 +1,126 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import { FileText, Video, Image as ImageIcon, Link2, Download } from 'lucide-react';
-import { Document as Doc } from '@/types/document.types';
-import { cn } from '@/lib/utils';
-
-const typeIcon = {
-  pdf: FileText,
-  video: Video,
-  image: ImageIcon,
-  doc: FileText,
-  link: Link2,
-};
-
-const typeColor = {
-  pdf: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
-  video: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
-  image: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
-  doc: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-  link: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400',
-};
-
-const typeLabel = {
-  pdf: 'PDF',
-  video: 'Video',
-  image: 'Hình ảnh',
-  doc: 'DOC',
-  link: 'Liên kết',
-};
-
-function formatFileSize(bytes?: number): string {
-  if (!bytes) return '';
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+import type { ComponentType } from "react";
+import {
+  BookOpenText,
+  CalendarDays,
+  FileText,
+  LibraryBig,
+  MessageSquareText,
+  Eye,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { SurfacePanel } from "@/components/shared/surface-panel";
+import { cn } from "@/lib/utils";
+import type { Document } from "@/types/document.types";
+import {
+  formatDocumentDateTime,
+  formatDocumentTypeLabel,
+  formatFileSize,
+} from "@/lib/student-system-documents";
+import { DocumentDownloadButton } from "./document-download-button";
 
 interface DocumentCardProps {
-  doc: Doc;
+  document: Document;
+  onView: (document: Document) => void;
+  className?: string;
 }
 
-export function DocumentCard({ doc }: DocumentCardProps) {
-  const Icon = typeIcon[doc.type];
-  const actionLabel = doc.actionLabel ?? 'Tải về';
-
+export function DocumentCard({
+  document,
+  onView,
+  className,
+}: DocumentCardProps) {
   return (
-    <div
+    <SurfacePanel
+      as="article"
       className={cn(
-        'flex flex-col overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/82',
-        'shadow-[0_22px_80px_-42px_rgba(15,23,42,0.24)] backdrop-blur-xl',
-        'transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_90px_-40px_rgba(15,23,42,0.28)]'
+        "group flex h-full flex-col gap-4 p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_90px_-40px_rgba(15,23,42,0.28)]",
+        className,
       )}
     >
-      {doc.thumbnailUrl && doc.type === 'video' && (
-        <div className="relative h-36 overflow-hidden">
-          <Image
-            src={doc.thumbnailUrl}
-            alt={doc.title}
-            fill
-            sizes="(max-width: 768px) 100vw, 33vw"
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-            <Video className="w-8 h-8 text-white" />
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="info" className="rounded-full px-3 py-1">
+              {formatDocumentTypeLabel(document)}
+            </Badge>
+            {document.classroomName ? (
+              <Badge variant="outline" className="rounded-full px-3 py-1">
+                {document.classroomName}
+              </Badge>
+            ) : null}
           </div>
-        </div>
-      )}
 
-      <div className="flex flex-1 flex-col p-5">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <span
-            className={cn(
-              'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium shadow-sm',
-              typeColor[doc.type]
-            )}
-          >
-            <Icon className="w-3 h-3" />
-            {typeLabel[doc.type]}
-          </span>
-          {doc.grade > 0 ? (
-            <span className="text-xs text-muted-foreground font-medium">
-              Lớp {doc.grade}
-            </span>
-          ) : doc.classroomName ? (
-            <span className="text-xs text-muted-foreground font-medium">
-              {doc.classroomName}
-            </span>
-          ) : null}
+          <h3 className="line-clamp-2 font-display text-xl font-semibold leading-tight text-on-surface">
+            {document.title}
+          </h3>
         </div>
 
-        <h3 className="font-display font-semibold text-on-surface text-base leading-snug mb-2 line-clamp-2 flex-1">
-          {doc.title}
-        </h3>
-
-        <p className="text-sm leading-7 text-muted-foreground line-clamp-2 mb-4">
-          {doc.description}
-        </p>
-
-        <div className="mb-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-          {doc.fileSize && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-low px-3 py-1.5">
-              <FileText className="w-3 h-3" />
-              {formatFileSize(doc.fileSize)}
-            </span>
-          )}
-          {doc.downloadCount > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-low px-3 py-1.5">
-              <Download className="w-3 h-3" />
-              {doc.downloadCount}
-            </span>
-          )}
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <FileText className="size-5" />
         </div>
+      </div>
 
-        <a
-          href={doc.url}
-          className={cn(
-            'mt-auto flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold',
-            'bg-linear-to-r from-primary to-tertiary text-white shadow-[0_18px_36px_-20px_rgba(79,70,229,0.52)] transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_42px_-18px_rgba(79,70,229,0.42)]'
-          )}
+      <p className="line-clamp-3 text-sm leading-7 text-muted-foreground">
+        {document.description || "Tài liệu này chưa có phần mô tả."}
+      </p>
+
+      <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+        <MetaPill icon={MessageSquareText} label="Tên file" value={document.fileName || "Chưa có"} />
+        <MetaPill icon={LibraryBig} label="Loại file" value={formatDocumentTypeLabel(document)} />
+        <MetaPill icon={CalendarDays} label="Ngày đăng" value={formatDocumentDateTime(document.createdAt)} />
+        <MetaPill icon={BookOpenText} label="Dung lượng" value={formatFileSize(document.fileSize)} />
+      </div>
+
+      {document.uploadedByName ? (
+        <div className="rounded-[1.1rem] bg-white/72 px-4 py-3 text-sm text-muted-foreground">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            Được đăng bởi
+          </p>
+          <p className="mt-1 font-medium text-on-surface">{document.uploadedByName}</p>
+        </div>
+      ) : null}
+
+      <div className="mt-auto grid gap-3 pt-1 sm:grid-cols-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 rounded-xl"
+          onClick={() => onView(document)}
         >
-          <Download className="w-4 h-4" />
-          {actionLabel}
-        </a>
+          <Eye className="size-4" />
+          Xem tài liệu
+        </Button>
+        <DocumentDownloadButton
+          document={document}
+          variant="default"
+          label="Tải xuống"
+          className="h-11 rounded-xl"
+        />
+      </div>
+    </SurfacePanel>
+  );
+}
+
+function MetaPill({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-start gap-2 rounded-[1rem] bg-surface-container-lowest px-3 py-2.5">
+      <Icon className="mt-0.5 size-4 shrink-0 text-primary" />
+      <div className="min-w-0">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          {label}
+        </p>
+        <p className="mt-1 line-clamp-1 text-sm text-on-surface">{value}</p>
       </div>
     </div>
   );

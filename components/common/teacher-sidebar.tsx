@@ -35,10 +35,7 @@ export function TeacherSidebar() {
       )}
     >
       <div className="flex items-center gap-3 px-5 py-4">
-        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-          <span className="text-white font-display font-bold text-sm">SC</span>
-        </div>
-        <Logo />
+        <Logo size="md" />
       </div>
 
       <div className="mx-4 mt-1">
@@ -76,6 +73,7 @@ export function TeacherSidebar() {
           <UserAvatar
             avatarUrl={user?.avatar_url}
             fullName={user?.full_name}
+            avatarCacheKey={user?.updated_at}
             className="h-8 w-8"
             fallbackClassName="text-sm"
           />

@@ -109,7 +109,6 @@ function mapStudentExamQuestions(
       text: question.prompt,
       type: mapStudentQuestionType(question.question_type),
       points: question.points,
-      explanation: question.explanation ?? undefined,
       options: (question.options ?? []).map((option) => ({
         id: String(option.id),
         text: option.option_text,
@@ -155,7 +154,6 @@ export interface StudentSubmittedAnswerData {
   questionId: string;
   questionType: QuestionType;
   prompt: string;
-  explanation?: string | null;
   selectedOptionId: string | null;
   selectedOptionText: string | null;
   submittedAnswerText: string | null;
@@ -207,7 +205,6 @@ function mapSubmittedAnswer(
     questionId: String(answer.question_id),
     questionType: mapStudentQuestionType(answer.question_type),
     prompt: answer.prompt,
-    explanation: answer.explanation ?? null,
     selectedOptionId:
       answer.selected_option_id !== null
         ? String(answer.selected_option_id)

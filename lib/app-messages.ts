@@ -16,6 +16,7 @@ export const APP_MESSAGES = {
 
   UPDATE_PROFILE_SUCCESS: "Cập nhật thông tin thành công",
   CHANGE_PASSWORD_SUCCESS: "Đổi mật khẩu thành công",
+  UPLOAD_AVATAR_SUCCESS: "Cập nhật ảnh đại diện thành công",
 
   LOGIN_SUCCESS: "Đăng nhập thành công",
   LOGOUT_SUCCESS: "Đăng xuất thành công",
@@ -49,6 +50,8 @@ export const APP_MESSAGES = {
 
   UPDATE_PROFILE_FAILED: "Không thể cập nhật thông tin",
   CHANGE_PASSWORD_FAILED: "Không thể đổi mật khẩu",
+  UPLOAD_AVATAR_FAILED:
+    "Không thể cập nhật ảnh đại diện. Bạn vẫn có thể thay đổi sau trong Hồ sơ.",
   LOGIN_FAILED: "Đăng nhập thất bại",
   REGISTER_FAILED: "Đăng ký thất bại",
   COMPLETE_ONBOARDING_FAILED: "Không thể hoàn tất thông tin",

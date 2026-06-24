@@ -13,19 +13,50 @@ import { cn } from "@/lib/utils";
 interface UserAvatarProps extends React.ComponentProps<typeof Avatar> {
   avatarUrl?: string | null;
   fullName?: string | null;
+  avatarCacheKey?: string | number | null;
   imageClassName?: string;
   fallbackClassName?: string;
+}
+
+function withAvatarCacheKey(
+  avatarUrl: string,
+  cacheKey: string | number | null | undefined,
+): string {
+  if (
+    avatarUrl.startsWith("blob:") ||
+    avatarUrl.startsWith("data:") ||
+    avatarUrl.startsWith("file:")
+  ) {
+    return avatarUrl;
+  }
+
+  if (cacheKey === null || cacheKey === undefined || cacheKey === "") {
+    return avatarUrl;
+  }
+
+  try {
+    const url = new URL(avatarUrl);
+    url.searchParams.set("v", String(cacheKey));
+    return url.toString();
+  } catch {
+    const separator = avatarUrl.includes("?") ? "&" : "?";
+    return `${avatarUrl}${separator}v=${encodeURIComponent(String(cacheKey))}`;
+  }
 }
 
 export function UserAvatar({
   avatarUrl,
   fullName,
+  avatarCacheKey,
   className,
   imageClassName,
   fallbackClassName,
   ...props
 }: UserAvatarProps) {
   const trimmedAvatarUrl = avatarUrl?.trim();
+  const resolvedAvatarUrl = trimmedAvatarUrl
+    ? withAvatarCacheKey(trimmedAvatarUrl, avatarCacheKey)
+    : null;
   const displayName = fullName?.trim();
   const initials = getInitials(displayName);
   const alt = displayName
@@ -34,9 +65,9 @@ export function UserAvatar({
 
   return (
     <Avatar className={cn("rounded-full", className)} {...props}>
-      {trimmedAvatarUrl ? (
+      {resolvedAvatarUrl ? (
         <AvatarImage
-          src={trimmedAvatarUrl}
+          src={resolvedAvatarUrl}
           alt={alt}
           className={imageClassName}
         />

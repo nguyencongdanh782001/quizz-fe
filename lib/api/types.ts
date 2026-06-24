@@ -114,6 +114,11 @@ export interface CompleteOnboardingResponse {
   user: UserSchema;
 }
 
+export interface UploadAvatarResponse {
+  avatar_url: string;
+  user: UserSchema;
+}
+
 export type ProfileGender = "male" | "female";
 
 export interface UpdateProfileRequest {
@@ -211,6 +216,10 @@ export interface StudentSystemDocumentSchema {
   title: string;
   summary: string;
   content: string;
+  file_url?: string | null;
+  file_name?: string | null;
+  file_content_type?: string | null;
+  file_size_bytes?: number | null;
   scope: string;
   classroom_id: number;
   classroom_name: string | null;
@@ -373,9 +382,8 @@ export interface TeacherExamOptionSchema {
 
 export interface TeacherExamQuestionSchema {
   id: number;
-  question_type: "single_choice" | "text";
+  question_type: "single_choice" | "multiple_choice" | "text";
   prompt: string;
-  explanation?: string | null;
   image_url: string | null;
   order_index: number;
   points: number;
@@ -445,9 +453,8 @@ export interface TeacherCreateExamOptionRequest {
 }
 
 export interface TeacherCreateExamQuestionRequest {
-  question_type: "single_choice" | "text";
+  question_type: "single_choice" | "multiple_choice" | "text";
   prompt: string;
-  explanation?: string;
   image_url?: string | null;
   order_index: number;
   points: number;
@@ -487,100 +494,6 @@ export interface TeacherCreateSystemExamResponse {
   exam: TeacherSystemExamDetailResponse;
 }
 
-export type AIExamQuestionType =
-  | "multiple_choice"
-  | "true_false"
-  | "short_answer"
-  | "essay";
-
-export type AIExamDifficulty = "easy" | "medium" | "hard";
-
-export interface GenerateExamRequest {
-  subject: string;
-  grade: string;
-  topic: string;
-  duration_minutes: number;
-  question_count: number;
-  question_types: AIExamQuestionType[];
-  difficulty_distribution?: Partial<Record<AIExamDifficulty, number>>;
-  language?: string;
-  additional_instructions?: string;
-}
-
-export interface GenerateMoreQuestionsRequest {
-  count: number;
-  question_types?: AIExamQuestionType[] | null;
-  difficulty_distribution?: Partial<Record<AIExamDifficulty, number>>;
-  additional_instructions?: string;
-}
-
-export interface AIQuestionDraftResponse {
-  id: number;
-  question_type: AIExamQuestionType;
-  content: string;
-  options: string[];
-  correct_answer: unknown | null;
-  explanation: string;
-  difficulty: AIExamDifficulty;
-  points: number;
-  topic: string;
-  order: number;
-  is_approved: boolean;
-  created_at?: string | null;
-  updated_at?: string | null;
-}
-
-export interface AIExamGenerationJobResponse {
-  id: number;
-  status: string;
-  subject: string;
-  grade: string;
-  topic: string;
-  duration_minutes: number;
-  question_count: number;
-  question_types: AIExamQuestionType[];
-  difficulty_distribution: Record<string, number>;
-  language: string;
-  additional_instructions: string;
-  title?: string | null;
-  description?: string | null;
-  total_points: number;
-  provider: string;
-  model: string;
-  error_message?: string;
-  created_at?: string | null;
-  updated_at?: string | null;
-  question_drafts: AIQuestionDraftResponse[];
-}
-
-export interface UpdateAIQuestionDraftRequest {
-  question_type?: AIExamQuestionType | null;
-  content?: string | null;
-  options?: string[] | null;
-  correct_answer?: unknown | null;
-  explanation?: string | null;
-  difficulty?: AIExamDifficulty | null;
-  points?: number | null;
-  topic?: string | null;
-  is_approved?: boolean | null;
-}
-
-export interface SaveAIExamToQuizRequest {
-  title?: string | null;
-  description?: string | null;
-  scope?: "system" | "class";
-  classroom_id?: number | null;
-  duration_minutes?: number | null;
-  is_published?: boolean;
-  is_active?: boolean;
-}
-
-export interface SaveAIExamToQuizResponse {
-  quiz_id: number;
-  exam_id: number;
-  message: string;
-}
-
 export interface TeacherExamImageSchema {
   filename: string;
   content_type: string;
@@ -605,7 +518,6 @@ export interface StudentExamQuestionSchema {
   question_type: string;
   order_index: number;
   prompt: string;
-  explanation?: string | null;
   points: number;
   options: StudentExamOptionSchema[] | null;
 }
@@ -662,7 +574,6 @@ export interface StudentSubmittedAnswerSchema {
   question_id: number;
   question_type: string;
   prompt: string;
-  explanation?: string | null;
   selected_option_id: number | null;
   selected_option_text: string | null;
   submitted_answer_text: string | null;
