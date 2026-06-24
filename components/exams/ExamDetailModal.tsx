@@ -325,6 +325,15 @@ export function ExamDetailModal({
                             </div>
                           ) : null}
 
+                          {question.explanation.trim() ? (
+                            <div className="mt-5 rounded-[24px] border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900">
+                              <p className="font-semibold">Giải thích đáp án</p>
+                              <p className="mt-2 whitespace-pre-wrap break-words leading-relaxed">
+                                {question.explanation}
+                              </p>
+                            </div>
+                          ) : null}
+
                           {question.question_type === "text" ? (
                             <div className="mt-5 rounded-[24px] border border-outline/10 bg-surface p-4">
                               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">

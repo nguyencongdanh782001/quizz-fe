@@ -1,10 +1,13 @@
 import { cookies, headers } from "next/headers";
-import type { UserSchema } from "@/lib/api/types";
-import type { User } from "@/types/user.types";
-import { mapUserSchemaToUser } from "@/lib/auth/user-mapper";
+import { UserSchema } from "@/lib/api/types";
+import { User } from "@/types/user.types";
 
 const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL!;
 const SESSION_COOKIE = "auth-session";
+
+type MeResponse = {
+  user: UserSchema;
+};
 
 type MirroredSessionPayload = {
   id: number;
@@ -12,16 +15,32 @@ type MirroredSessionPayload = {
   username?: string;
   email: string;
   auth_type?: string;
-  avatar_url?: string | null;
-  updated_at?: string;
-  role_id?: number | null;
   role?: "teacher" | "student" | null;
   role_name?: "teacher" | "student" | null;
   needs_onboarding?: boolean;
 };
 
 function mapServerUser(user: UserSchema): User {
-  return mapUserSchemaToUser(user);
+  return {
+    id: user.id,
+    full_name: user.full_name,
+    username: user.username,
+    email: user.email,
+    auth_type: user.auth_type,
+    role_name: user.role_name ?? null,
+    needs_onboarding: user.needs_onboarding,
+    avatar_url: user.avatar_url ?? null,
+    created_at: user.created_at,
+    profile: user.profile
+      ? {
+          date_of_birth: user.profile.date_of_birth,
+          age: user.profile.age,
+          gender: user.profile.gender,
+          school_name: user.profile.school_name ?? null,
+          onboarding_completed_at: user.profile.onboarding_completed_at,
+        }
+      : null,
+  };
 }
 
 function decodeMirroredSession(value: string): User | null {
@@ -42,14 +61,9 @@ function decodeMirroredSession(value: string): User | null {
       username: payload.username ?? "",
       email: payload.email,
       auth_type: payload.auth_type ?? "",
-      avatar_url: payload.avatar_url ?? null,
-      updated_at: payload.updated_at ?? "",
-      role_id: payload.role_id ?? null,
       role_name: roleName,
-      needs_onboarding:
-        payload.needs_onboarding === true ||
-        payload.role_id == null ||
-        !roleName,
+      needs_onboarding: payload.needs_onboarding ?? !roleName,
+      avatar_url: null,
       created_at: "",
       profile: null,
     };
@@ -65,10 +79,10 @@ export async function getServerSession(): Promise<User | null> {
     cookieStore.get(SESSION_COOKIE)?.value ?? "",
   );
 
-  // Try /auth/profile first for fresh onboarding-aware data
+  // Try /auth/me first for fresh data
   if (cookieHeader) {
     try {
-      const res = await fetch(`${API_URL}/auth/profile`, {
+      const res = await fetch(`${API_URL}/auth/me`, {
         headers: {
           cookie: cookieHeader,
         },
@@ -76,9 +90,8 @@ export async function getServerSession(): Promise<User | null> {
       });
 
       if (res.ok) {
-        const data = (await res.json()) as { user: UserSchema } | UserSchema;
-        const user = "user" in data ? data.user : data;
-        return user ? mapServerUser(user) : mirroredSession;
+        const data = (await res.json()) as MeResponse;
+        return data.user ? mapServerUser(data.user) : mirroredSession;
       }
     } catch {
       // Fall through to mirrored session

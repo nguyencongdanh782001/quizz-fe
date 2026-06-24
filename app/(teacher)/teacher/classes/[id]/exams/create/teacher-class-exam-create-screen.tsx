@@ -10,6 +10,7 @@ import {
   FileSpreadsheet,
   PencilLine,
   RefreshCw,
+  Sparkles,
   TriangleAlert,
 } from "lucide-react";
 import { EXAM_FLOW_MESSAGES } from "@/components/exams/exam-flow-messages";
@@ -439,6 +440,18 @@ export function TeacherClassExamCreateScreen({
                 <PencilLine className="size-4" />
                 Tạo thủ công
               </div>
+              <Button
+                asChild
+                type="button"
+                variant="outline"
+                size="lg"
+                className="w-full sm:w-auto"
+              >
+                <Link href={`/teacher/ai-exams?scope=class&classId=${classId}`}>
+                  <Sparkles className="size-4" />
+                  AI tạo đề
+                </Link>
+              </Button>
               <Button
                 type="button"
                 variant="outline"

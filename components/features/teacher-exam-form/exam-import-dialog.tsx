@@ -100,20 +100,15 @@ async function downloadExamImportTemplate() {
         order_index: 1,
         question_type: "single_choice",
         prompt: "REST là viết tắt của cụm từ nào?",
+        explanation: "REST là viết tắt của Representational State Transfer.",
         points: 1,
         accepted_answers: "",
       },
       {
         order_index: 2,
-        question_type: "multiple_choice",
-        prompt: "Những phương thức HTTP nào thường dùng trong REST?",
-        points: 2,
-        accepted_answers: "",
-      },
-      {
-        order_index: 3,
         question_type: "text",
         prompt: "Hãy giải thích khái niệm REST API.",
+        explanation: "Câu trả lời cần nêu được REST API giao tiếp qua HTTP.",
         points: 3,
         accepted_answers: "REST API là kiến trúc giao tiếp qua HTTP",
       },
@@ -123,6 +118,7 @@ async function downloadExamImportTemplate() {
         "order_index",
         "question_type",
         "prompt",
+        "explanation",
         "points",
         "accepted_answers",
       ],
@@ -142,24 +138,6 @@ async function downloadExamImportTemplate() {
         option_text: "Remote State Transaction",
         is_correct: false,
       },
-      {
-        question_order: 2,
-        option_key: "A",
-        option_text: "GET",
-        is_correct: true,
-      },
-      {
-        question_order: 2,
-        option_key: "B",
-        option_text: "POST",
-        is_correct: true,
-      },
-      {
-        question_order: 2,
-        option_key: "C",
-        option_text: "TRACE",
-        is_correct: false,
-      },
     ],
     {
       header: ["question_order", "option_key", "option_text", "is_correct"],
@@ -173,10 +151,6 @@ async function downloadExamImportTemplate() {
 }
 
 function getQuestionTypeLabel(questionType: string): string {
-  if (questionType === "multiple_choice") {
-    return "Nhiều đáp án";
-  }
-
   if (questionType === "text") {
     return "Tự luận";
   }
