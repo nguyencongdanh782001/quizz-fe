@@ -107,9 +107,9 @@ export default function ExamDetailPage({
   const [isStartingAttempt, setIsStartingAttempt] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const examBreadcrumbHref = `/student/exam/${id}`;
-  const examBreadcrumbLabel = examDetail?.exam.title?.trim() || (
-    isLoadingExam ? null : "Chi tiết đề thi"
-  );
+  const examBreadcrumbLabel =
+    examDetail?.exam.title?.trim() ||
+    (isLoadingExam ? null : "Chi tiết đề thi");
 
   useBreadcrumbLabel(examBreadcrumbHref, examBreadcrumbLabel);
 
@@ -320,7 +320,7 @@ export default function ExamDetailPage({
         </div>
       )}
 
-      <section className="space-y-4">
+      {/* <section className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="font-display text-lg font-semibold text-on-surface">
@@ -345,7 +345,7 @@ export default function ExamDetailPage({
             />
           ))}
         </div>
-      </section>
+      </section> */}
     </div>
   );
 }
