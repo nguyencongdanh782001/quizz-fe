@@ -268,7 +268,7 @@ export function ReviewStep() {
                       {question.explanation.trim() ? (
                         <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
                           <p className="font-semibold">Giải thích đáp án</p>
-                          <p className="mt-1 whitespace-pre-wrap break-words leading-6">
+                          <p className="mt-1 whitespace-pre-wrap wrap-break-word leading-6">
                             {question.explanation}
                           </p>
                         </div>

@@ -41,9 +41,7 @@ export function createOptionKey(index: number): string {
 }
 
 export function normalizeAcceptedAnswers(acceptedAnswers: string[]): string[] {
-  return acceptedAnswers
-    .map((answer) => answer.trim())
-    .filter(Boolean);
+  return acceptedAnswers.map((answer) => answer.trim()).filter(Boolean);
 }
 
 export function isTextQuestionType(
@@ -196,7 +194,9 @@ export function reindexTeacherExamQuestions(
   questions: TeacherExamQuestionFormValues[],
 ): TeacherExamQuestionFormValues[] {
   return questions.map((question, index) => {
-    const questionType = normalizeTeacherExamQuestionType(question.question_type);
+    const questionType = normalizeTeacherExamQuestionType(
+      question.question_type,
+    );
 
     return {
       ...question,
@@ -240,7 +240,9 @@ function mapQuestion(
   };
 }
 
-function buildExamPayload(values: TeacherExamFormValues): TeacherCreateExamRequest {
+function buildExamPayload(
+  values: TeacherExamFormValues,
+): TeacherCreateExamRequest {
   return {
     title: values.title.trim(),
     description: normalizeOptionalText(values.description),
@@ -292,7 +294,7 @@ export function mapTeacherExamDetailToFormValues(
           client_id: createFormId("question"),
           question_type: questionType,
           prompt: question.prompt,
-          explanation: question.explanation ?? "",
+          explanation: question?.explanation ?? "",
           image_url: question.image_url ?? "",
           order_index: question.order_index || index + 1,
           points: question.points,
@@ -333,7 +335,10 @@ export const teacherExamFormSchema = Yup.object({
   description: Yup.string(),
   scope: Yup.string().trim().required(),
   classroom_id: Yup.number().nullable(),
-  image_url: Yup.string().url("Link hình ảnh không hợp lệ").optional().nullable(),
+  image_url: Yup.string()
+    .url("Link hình ảnh không hợp lệ")
+    .optional()
+    .nullable(),
   duration_minutes: Yup.number()
     .typeError("Thời lượng phải là số")
     .moreThan(0, EXAM_FLOW_MESSAGES.validation.durationGreaterThanZero)
@@ -351,10 +356,7 @@ export const teacherExamFormSchema = Yup.object({
               ? DEFAULT_TEACHER_EXAM_QUESTION_TYPE
               : value,
           )
-          .oneOf(
-            [...TEACHER_EXAM_QUESTION_TYPES],
-            "Loại câu hỏi không hợp lệ",
-          )
+          .oneOf([...TEACHER_EXAM_QUESTION_TYPES], "Loại câu hỏi không hợp lệ")
           .required("Loại câu hỏi là bắt buộc"),
         prompt: Yup.string()
           .trim()

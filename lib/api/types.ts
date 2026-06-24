@@ -3,7 +3,7 @@
 export interface UserProfileSchema {
   date_of_birth: string;
   age: number;
-  gender: 'male' | 'female' | 'other';
+  gender: "male" | "female" | "other";
   school_name: string | null;
   onboarding_completed_at: string;
 }
@@ -11,7 +11,7 @@ export interface UserProfileSchema {
 export interface UserSchema {
   id: number;
   role_id: number | null;
-  role_name: 'teacher' | 'student' | null;
+  role_name: "teacher" | "student" | null;
   full_name: string;
   username: string;
   email: string;
@@ -78,7 +78,7 @@ export interface GoogleCallbackResponse {
 
 export interface RoleOptionSchema {
   id: number;
-  name: 'teacher' | 'student';
+  name: "teacher" | "student";
   display_name: string;
   required_fields: string[];
 }
@@ -102,10 +102,10 @@ export interface RevokeSessionResponse {
 }
 
 export interface CompleteOnboardingRequest {
-  role: 'teacher' | 'student';
+  role: "teacher" | "student";
   full_name: string;
   date_of_birth: string;
-  gender: 'male' | 'female' | 'other';
+  gender: "male" | "female" | "other";
   school_name?: string | null;
 }
 
@@ -177,11 +177,11 @@ export interface TrackHeartbeatResponse {
 }
 
 export interface HealthResponse {
-  status: 'ok';
+  status: "ok";
 }
 
 export interface DbCheckResponse {
-  database: 'connected' | 'failed';
+  database: "connected" | "failed";
 }
 
 export interface RootResponse {
@@ -405,8 +405,7 @@ export interface TeacherSystemExamListResponse {
   items: TeacherExamSummarySchema[];
 }
 
-export interface TeacherSystemExamDetailResponse
-  extends TeacherExamSummarySchema {
+export interface TeacherSystemExamDetailResponse extends TeacherExamSummarySchema {
   questions?: TeacherExamQuestionSchema[] | null;
 }
 
@@ -428,8 +427,7 @@ export interface TeacherPrivateExamResponse {
 
 export type TeacherClassExamSchema = TeacherExamSummarySchema;
 
-export interface TeacherClassExamDetailResponse
-  extends TeacherExamSummarySchema {
+export interface TeacherClassExamDetailResponse extends TeacherExamSummarySchema {
   questions?: TeacherExamQuestionSchema[] | null;
 }
 

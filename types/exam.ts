@@ -30,6 +30,7 @@ export interface TeacherExamQuestion {
   points: number;
   options: TeacherExamOption[];
   accepted_answers: string[];
+  explanation?: string;
 }
 
 export interface TeacherExam {
