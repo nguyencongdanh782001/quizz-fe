@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { APP_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import logoImage from "../../public/image/logo.png";
 
 type LogoSize = "sm" | "md" | "lg";
 
@@ -33,7 +34,7 @@ export function Logo({ className, size = "md", showText = true }: LogoProps) {
       )}
     >
       <Image
-        src="/image/logo.png"
+        src={logoImage}
         alt={APP_NAME}
         width={width}
         height={height}
