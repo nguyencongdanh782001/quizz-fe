@@ -10,6 +10,7 @@ import { api } from "@/lib/api/endpoints/auth";
 import { APP_MESSAGES } from "@/lib/app-messages";
 import { mapUserSchemaToUser } from "@/lib/auth/user-mapper";
 import { extractUserFromProfileResponse } from "@/lib/auth/response";
+import { getApiErrorMessage } from "@/lib/api/error-message";
 
 const SESSION_COOKIE = "auth-session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
@@ -35,6 +36,7 @@ function setSessionCookie(user: User): void {
           avatar_url: user.avatar_url,
           updated_at: user.updated_at,
           email: user.email,
+          email_verified: user.email_verified,
           auth_type: user.auth_type,
         }),
       ),
@@ -134,7 +136,7 @@ export const useAuthStore = create<PersistedAuthState>()(
           return user;
         } catch (err) {
           console.error("Failed to register", err);
-          const message = APP_MESSAGES.REGISTER_FAILED;
+          const message = getApiErrorMessage(err, APP_MESSAGES.REGISTER_FAILED);
           set({ isLoading: false, fetchError: message });
           throw new Error(message);
         }

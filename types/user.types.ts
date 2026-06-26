@@ -15,6 +15,7 @@ export interface User {
   full_name: string;
   username: string;
   email: string;
+  email_verified: boolean;
   auth_type: string;
   role_name: UserRole | null;
   needs_onboarding: boolean;
