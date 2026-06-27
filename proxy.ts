@@ -5,15 +5,21 @@ import { SELECT_ROLE_PATH, isOnboardingIncomplete } from "@/lib/auth/onboarding"
 
 const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL;
 const SESSION_COOKIE = "auth-session";
+const VERIFY_EMAIL_PATH = "/verify-email";
+const REGISTER_PATH = "/register";
 
 type MirroredSessionPayload = {
   id: number;
+  email?: string;
+  email_verified?: boolean;
   role_id?: number | null;
   role_name?: "teacher" | "student" | null;
   needs_onboarding?: boolean;
 };
 
 type ProfilePayload = {
+  email?: string;
+  email_verified?: boolean;
   role_id?: number | null;
   role_name?: "teacher" | "student" | null;
   needs_onboarding?: boolean;
@@ -89,7 +95,42 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (isOnboardingIncomplete(session) && pathname !== SELECT_ROLE_PATH) {
+  if (
+    session.email_verified === false &&
+    pathname !== VERIFY_EMAIL_PATH &&
+    pathname !== REGISTER_PATH
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = VERIFY_EMAIL_PATH;
+    url.search = "";
+
+    if (session.email) {
+      url.searchParams.set("email", session.email);
+    }
+
+    url.searchParams.set("next", SELECT_ROLE_PATH);
+
+    return NextResponse.redirect(url);
+  }
+
+  if (
+    session.email_verified === true &&
+    pathname === VERIFY_EMAIL_PATH &&
+    isOnboardingIncomplete(session)
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = SELECT_ROLE_PATH;
+    url.search = "";
+
+    return NextResponse.redirect(url);
+  }
+
+  if (
+    isOnboardingIncomplete(session) &&
+    pathname !== SELECT_ROLE_PATH &&
+    pathname !== VERIFY_EMAIL_PATH &&
+    pathname !== REGISTER_PATH
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = SELECT_ROLE_PATH;
     url.search = "";

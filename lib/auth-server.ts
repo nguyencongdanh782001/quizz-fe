@@ -11,6 +11,7 @@ type MirroredSessionPayload = {
   full_name?: string;
   username?: string;
   email: string;
+  email_verified?: boolean;
   auth_type?: string;
   avatar_url?: string | null;
   updated_at?: string;
@@ -41,6 +42,7 @@ function decodeMirroredSession(value: string): User | null {
       full_name: payload.full_name ?? "",
       username: payload.username ?? "",
       email: payload.email,
+      email_verified: payload.email_verified ?? false,
       auth_type: payload.auth_type ?? "",
       avatar_url: payload.avatar_url ?? null,
       updated_at: payload.updated_at ?? "",

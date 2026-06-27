@@ -46,6 +46,19 @@ interface RegisterToastState {
   variant: RegisterToastVariant;
 }
 
+function getEmailVerificationPath(
+  email: string,
+  nextPath: string,
+) {
+  const params = new URLSearchParams({
+    email,
+    next: nextPath,
+    sent: "1",
+  });
+
+  return `/verify-email?${params.toString()}`;
+}
+
 export function RegisterForm() {
   const { register } = useAuth();
   const uploadAvatarMutation = useUpdateAvatar();
@@ -102,11 +115,22 @@ export function RegisterForm() {
           });
         }
       }
-      window.location.href = getPostAuthDestination(user);
+
+      const postAuthDestination = getPostAuthDestination(user);
+
+      window.location.href = getEmailVerificationPath(
+        user.email,
+        postAuthDestination,
+      );
     } catch (err) {
       helpers.setSubmitting(false);
       console.error("Failed to submit register form", err);
-      showToast("error", APP_MESSAGES.REGISTER_FAILED);
+      showToast(
+        "error",
+        err instanceof Error && err.message
+          ? err.message
+          : APP_MESSAGES.REGISTER_FAILED,
+      );
     }
   };
 

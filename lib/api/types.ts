@@ -62,6 +62,15 @@ export interface AuthSessionResponse {
   session: SessionSchema;
 }
 
+export interface VerifyEmailOtpRequest {
+  otp_code: string;
+}
+
+export interface EmailVerificationResponse {
+  message: string;
+  user: UserSchema;
+}
+
 // ─── Response shapes ────────────────────────────────────────────────────────
 
 export interface MeResponse {

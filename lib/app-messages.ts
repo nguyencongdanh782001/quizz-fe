@@ -54,6 +54,7 @@ export const APP_MESSAGES = {
     "Không thể cập nhật ảnh đại diện. Bạn vẫn có thể thay đổi sau trong Hồ sơ.",
   LOGIN_FAILED: "Đăng nhập thất bại",
   REGISTER_FAILED: "Đăng ký thất bại",
+  EMAIL_ALREADY_USED: "Email đã được sử dụng",
   COMPLETE_ONBOARDING_FAILED: "Không thể hoàn tất thông tin",
 
   START_EXAM_ATTEMPT_FAILED: "Không thể bắt đầu làm bài. Vui lòng thử lại.",

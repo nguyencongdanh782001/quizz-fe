@@ -14,6 +14,8 @@ import type {
   ProfileResponse,
   UpdateProfileResponse,
   UploadAvatarResponse,
+  VerifyEmailOtpRequest,
+  EmailVerificationResponse,
   MessageResponse,
   HealthResponse,
   DbCheckResponse,
@@ -52,6 +54,15 @@ export const api = {
 
     register: (data: RegisterRequest) =>
       client.post<AuthSessionResponse>("/auth/register", data),
+
+    sendEmailVerificationOtp: () =>
+      client.post<MessageResponse>("/auth/email-verification/send-otp"),
+
+    verifyEmailOtp: (data: VerifyEmailOtpRequest) =>
+      client.post<EmailVerificationResponse>(
+        "/auth/email-verification/verify-otp",
+        data,
+      ),
 
     roles: () => client.get<RoleListResponse>("/auth/roles"),
 

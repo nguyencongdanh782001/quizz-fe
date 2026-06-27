@@ -8,6 +8,7 @@ export function mapUserSchemaToUser(user: UserSchema): User {
     full_name: user.full_name,
     username: user.username,
     email: user.email,
+    email_verified: user.email_verified,
     auth_type: user.auth_type,
     role_name: user.role_name ?? null,
     needs_onboarding: user.needs_onboarding,
