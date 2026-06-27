@@ -7,7 +7,6 @@ import {
   X,
 } from "lucide-react";
 import {
-  useEffect,
   useId,
   useMemo,
   useRef,
@@ -22,10 +21,19 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
   addMonths,
-  formatDateInputLabel,
+  createLocalDate,
+  formatDateDisplay,
   getDaysInMonthGrid,
   getWeekdayLabels,
   isAfterDay,
@@ -48,10 +56,41 @@ interface DatePickerProps {
   className?: string;
   id?: string;
   maxDate?: Date;
+  defaultOpenDate?: Date;
+  yearsBack?: number;
 }
 
-function getInitialMonth(value?: string | null): Date {
-  return startOfMonth(parseDateValue(value) ?? new Date());
+const MONTH_LABELS = Array.from({ length: 12 }, (_, month) => {
+  const label = createLocalDate(2024, month, 1).toLocaleDateString("vi-VN", {
+    month: "long",
+  });
+
+  return {
+    value: month,
+    label: label.charAt(0).toUpperCase() + label.slice(1),
+  };
+});
+
+function getDefaultBirthDate(maxDate: Date): Date {
+  return createLocalDate(
+    maxDate.getFullYear() - 18,
+    maxDate.getMonth(),
+    Math.min(maxDate.getDate(), 28),
+  );
+}
+
+function clampMonthToMax(date: Date, maxDate: Date): Date {
+  const month = startOfMonth(date);
+
+  return isAfterDay(month, maxDate) ? startOfMonth(maxDate) : month;
+}
+
+function getInitialMonth(
+  value: string | null | undefined,
+  defaultOpenDate: Date,
+  maxDate: Date,
+): Date {
+  return clampMonthToMax(parseDateValue(value) ?? defaultOpenDate, maxDate);
 }
 
 export function DatePicker({
@@ -66,20 +105,36 @@ export function DatePicker({
   required = false,
   className,
   id,
-  maxDate = new Date(),
+  maxDate: maxDateProp,
+  defaultOpenDate,
+  yearsBack = 100,
 }: DatePickerProps) {
   const generatedId = useId();
   const inputId = id ?? `date-picker-${generatedId}`;
+  const messageId = `${inputId}-message`;
+  const maxDate = useMemo(() => maxDateProp ?? new Date(), [maxDateProp]);
+  const fallbackOpenDate = useMemo(
+    () => defaultOpenDate ?? getDefaultBirthDate(maxDate),
+    [defaultOpenDate, maxDate],
+  );
   const [open, setOpen] = useState(false);
   const [openMonth, setOpenMonth] = useState(() =>
-    getInitialMonth(value),
+    getInitialMonth(value, fallbackOpenDate, maxDate),
   );
   const dayButtonsRef = useRef<Map<string, HTMLButtonElement>>(new Map());
   const selectedDate = useMemo(() => parseDateValue(value), [value]);
-  const selectedLabel = formatDateInputLabel(value);
+  const selectedLabel = formatDateDisplay(value);
   const monthCells = useMemo(() => getDaysInMonthGrid(openMonth), [openMonth]);
   const weekdayLabels = useMemo(() => getWeekdayLabels(), []);
   const currentDate = useMemo(() => new Date(), []);
+  const maxYear = maxDate.getFullYear();
+  const yearSpan = Math.max(yearsBack, 100);
+  const minYear = maxYear - yearSpan;
+  const yearOptions = useMemo(
+    () =>
+      Array.from({ length: yearSpan + 1 }, (_, index) => maxYear - index),
+    [maxYear, yearSpan],
+  );
   const isMaxedOutMonth = isAfterDay(
     startOfMonth(addMonths(openMonth, 1)),
     maxDate,
@@ -101,11 +156,30 @@ export function DatePicker({
     );
   }, [maxDate, monthCells, openMonth, selectedDate]);
 
-  useEffect(() => {
-    if (open && selectedDate) {
-      setOpenMonth(startOfMonth(selectedDate));
+  function updateOpenMonth(year: number, month: number) {
+    const nextMonth = clampMonthToMax(createLocalDate(year, month, 1), maxDate);
+    setOpenMonth(nextMonth);
+  }
+
+  function handleYearChange(yearValue: string) {
+    const nextYear = Number(yearValue);
+
+    if (!Number.isFinite(nextYear) || nextYear < minYear || nextYear > maxYear) {
+      return;
     }
-  }, [open, selectedDate]);
+
+    updateOpenMonth(nextYear, openMonth.getMonth());
+  }
+
+  function handleMonthChange(monthValue: string) {
+    const nextMonth = Number(monthValue);
+
+    if (!Number.isFinite(nextMonth) || nextMonth < 0 || nextMonth > 11) {
+      return;
+    }
+
+    updateOpenMonth(openMonth.getFullYear(), nextMonth);
+  }
 
   function handleSelect(nextDate: Date) {
     if (isAfterDay(nextDate, maxDate)) {
@@ -211,6 +285,10 @@ export function DatePicker({
       <Popover
         open={open}
         onOpenChange={(nextOpen) => {
+          if (nextOpen) {
+            setOpenMonth(getInitialMonth(value, fallbackOpenDate, maxDate));
+          }
+
           setOpen(nextOpen);
           if (!nextOpen) {
             onBlur?.();
@@ -224,6 +302,8 @@ export function DatePicker({
               type="button"
               disabled={disabled}
               data-invalid={Boolean(error)}
+              aria-describedby={(error || helperText) ? messageId : undefined}
+              aria-expanded={open}
               aria-haspopup="dialog"
               className={cn(
                 "group flex h-11 w-full items-center gap-3 rounded-xl border border-outline/20 bg-surface-container-lowest px-3.5 pr-11 text-left text-sm text-on-surface shadow-[0_1px_2px_rgba(7,30,39,0.06)] outline-none transition-[border-color,box-shadow,background-color] hover:border-primary/35 hover:bg-surface focus-visible:border-primary focus-visible:bg-surface focus-visible:ring-4 focus-visible:ring-primary/12 disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:border-destructive aria-invalid:ring-4 aria-invalid:ring-destructive/15",
@@ -295,27 +375,106 @@ export function DatePicker({
             </div>
           </div>
 
-          <div className="mt-4 flex items-center justify-between rounded-2xl bg-surface-container-low px-4 py-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Tháng
-              </p>
-              <p className="mt-1 font-display text-lg font-semibold text-on-surface">
+          <div className="mt-4 rounded-2xl bg-surface-container-low p-3">
+            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_8.5rem]">
+              <div className="space-y-1.5">
+                <label
+                  htmlFor={`${inputId}-month`}
+                  className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+                >
+                  Tháng
+                </label>
+                <Select
+                  value={String(openMonth.getMonth())}
+                  onValueChange={handleMonthChange}
+                >
+                  <SelectTrigger
+                    id={`${inputId}-month`}
+                    size="sm"
+                    aria-label="Chọn tháng"
+                    className="h-10 rounded-xl font-medium"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent
+                    position="popper"
+                    align="start"
+                    className="max-h-72 min-w-[var(--radix-select-trigger-width)]"
+                  >
+                    <SelectGroup>
+                      {MONTH_LABELS.map((month) => {
+                        const isFutureMonth =
+                          openMonth.getFullYear() === maxYear &&
+                          month.value > maxDate.getMonth();
+
+                        return (
+                          <SelectItem
+                            key={month.value}
+                            value={String(month.value)}
+                            disabled={isFutureMonth}
+                          >
+                            {month.label}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label
+                  htmlFor={`${inputId}-year`}
+                  className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+                >
+                  Năm
+                </label>
+                <Select
+                  value={String(openMonth.getFullYear())}
+                  onValueChange={handleYearChange}
+                >
+                  <SelectTrigger
+                    id={`${inputId}-year`}
+                    size="sm"
+                    aria-label="Chọn năm"
+                    className="h-10 rounded-xl font-medium"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent
+                    position="popper"
+                    align="start"
+                    className="max-h-72 min-w-[var(--radix-select-trigger-width)]"
+                  >
+                    <SelectGroup>
+                      {yearOptions.map((year) => (
+                        <SelectItem key={year} value={String(year)}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <p className="min-w-0 truncate font-display text-base font-semibold text-on-surface">
                 {openMonth.toLocaleDateString("vi-VN", {
                   month: "long",
                   year: "numeric",
                 })}
               </p>
+              {selectedDate ? (
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="shrink-0 rounded-lg px-2 py-1 text-sm font-medium text-primary transition-colors hover:bg-primary/10 hover:text-primary/80 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/12"
+                >
+                  Xóa ngày
+                </button>
+              ) : null}
             </div>
-            {selectedDate ? (
-              <button
-                type="button"
-                onClick={handleClear}
-                className="text-sm font-medium text-primary transition-colors hover:text-primary/80"
-              >
-                Xóa ngày
-              </button>
-            ) : null}
           </div>
 
           <div className="mt-4 grid grid-cols-7 gap-1 text-center text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
@@ -326,7 +485,7 @@ export function DatePicker({
             ))}
           </div>
 
-          <div className="mt-2 grid grid-cols-7 gap-1">
+          <div className="mt-2 grid grid-cols-7 gap-1" aria-label="Lịch chọn ngày sinh">
             {monthCells.map((date, index) => {
               if (!date) {
                 return <div key={`empty-${index}`} className="h-10" />;
@@ -359,6 +518,7 @@ export function DatePicker({
                   disabled={isDisabled}
                   tabIndex={isTabbable ? 0 : -1}
                   aria-pressed={isSelected}
+                  aria-current={isToday ? "date" : undefined}
                   aria-label={date.toLocaleDateString("vi-VN", {
                     weekday: "long",
                     day: "numeric",
@@ -385,7 +545,10 @@ export function DatePicker({
       </Popover>
 
       {(error || helperText) ? (
-        <p className={cn("text-xs", error ? "text-destructive" : "text-muted-foreground")}>
+        <p
+          id={messageId}
+          className={cn("text-xs", error ? "text-destructive" : "text-muted-foreground")}
+        >
           {error ?? helperText}
         </p>
       ) : null}
