@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Clock, MoreVertical, Pencil } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock,
+  History,
+  MoreVertical,
+  Pencil,
+} from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -128,6 +134,15 @@ export function ExamTable({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href={`/teacher/classes/${classId}/exams/${exam.id}/results`}
+                          className="flex cursor-pointer items-center gap-2"
+                        >
+                          <History className="h-4 w-4" />
+                          Kết quả
+                        </Link>
+                      </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link
                           href={`/teacher/classes/${classId}/exams/edit?edit=${exam.id}`}
