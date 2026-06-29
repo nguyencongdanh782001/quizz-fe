@@ -16,6 +16,8 @@ import type {
   TeacherUpdateClassResponse,
   TeacherUpdateClassExamRequest,
   TeacherUpdateClassExamResponse,
+  TeacherExamAttemptResultResponse,
+  TeacherExamResultListResponse,
 } from "../types";
 
 export const api = {
@@ -78,6 +80,18 @@ export const api = {
       examDetail: (classId: string | number, examId: string | number) =>
         client.get<TeacherClassExamDetailResponse>(
           `/teacher/classes/${classId}/exams/${examId}`,
+        ),
+      examResults: (classId: string | number, examId: string | number) =>
+        client.get<TeacherExamResultListResponse>(
+          `/teacher/classes/${classId}/exams/${examId}/results`,
+        ),
+      examAttemptResult: (
+        classId: string | number,
+        examId: string | number,
+        attemptId: string | number,
+      ) =>
+        client.get<TeacherExamAttemptResultResponse>(
+          `/teacher/classes/${classId}/exams/${examId}/attempts/${attemptId}`,
         ),
       createExam: (classId: string | number, data: TeacherCreateExamRequest) =>
         client.post<TeacherCreateClassExamResponse>(

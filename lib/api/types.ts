@@ -454,6 +454,76 @@ export interface TeacherClassExamListResponse {
   items: TeacherClassExamSchema[];
 }
 
+export interface TeacherExamResultSummarySchema {
+  submitted_count: number;
+  average_score_percent: number;
+}
+
+export interface TeacherExamResultListItemSchema {
+  attempt_id: number;
+  student_id: number;
+  student_name: string;
+  student_email: string;
+  student_avatar_url: string | null;
+  score: number;
+  total_points: number;
+  score_percent: number;
+  correct_answers_count: number;
+  total_questions: number;
+  is_passed: boolean;
+  started_at: string;
+  submitted_at: string;
+}
+
+export interface TeacherExamResultListResponse {
+  summary: TeacherExamResultSummarySchema;
+  items: TeacherExamResultListItemSchema[];
+}
+
+export type TeacherExamAttemptStatus = "in_progress" | "submitted";
+
+export interface TeacherExamAttemptAnswerSchema {
+  question_id: number;
+  question_type: TeacherExamQuestionSchema["question_type"];
+  prompt: string;
+  explanation: string | null;
+  question_image_url: string | null;
+  selected_option_id: number | null;
+  selected_option_text: string | null;
+  selected_option_image_url: string | null;
+  submitted_answer_text: string | null;
+  correct_option_id: number | null;
+  correct_option_text: string | null;
+  correct_option_image_url: string | null;
+  accepted_answers: string[];
+  is_correct: boolean;
+  points_earned: number;
+  max_points: number;
+}
+
+export interface TeacherExamAttemptResultSchema {
+  attempt_id: number;
+  exam_id: number;
+  exam_title: string;
+  status: TeacherExamAttemptStatus;
+  student_id: number;
+  student_name: string;
+  student_email: string;
+  student_avatar_url: string | null;
+  score: number;
+  total_points: number;
+  score_percent: number;
+  correct_answers_count: number;
+  total_questions: number;
+  started_at: string;
+  submitted_at: string;
+  answers: TeacherExamAttemptAnswerSchema[];
+}
+
+export interface TeacherExamAttemptResultResponse {
+  result: TeacherExamAttemptResultSchema;
+}
+
 export interface TeacherCreateExamOptionRequest {
   option_key: string;
   option_text: string;

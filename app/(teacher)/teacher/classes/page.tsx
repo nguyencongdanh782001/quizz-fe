@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import type { KeyboardEvent } from "react";
 import { useEffect, useState } from "react";
 import {
   AlertCircle,
@@ -44,6 +46,7 @@ import {
 } from "./flash-toast";
 
 export default function TeacherClassesPage() {
+  const router = useRouter();
   const [classes, setClasses] = useState<ClassInfo[]>([]);
   const [isLoadingClasses, setIsLoadingClasses] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -209,6 +212,30 @@ export default function TeacherClassesPage() {
     setToast((current) => (current ? { ...current } : current));
   }
 
+  function openClassDetail(classId: string) {
+    router.push(`/teacher/classes/${classId}`);
+  }
+
+  function isInteractiveTarget(target: EventTarget | null) {
+    return target instanceof HTMLElement
+      ? Boolean(target.closest("a, button, input, textarea, select, [role='button']"))
+      : false;
+  }
+
+  function handleClassRowKeyDown(
+    event: KeyboardEvent<HTMLTableRowElement>,
+    classId: string,
+  ) {
+    if (isInteractiveTarget(event.target)) {
+      return;
+    }
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openClassDetail(classId);
+    }
+  }
+
   return (
     <ToastProvider duration={3500}>
       <div className="space-y-6">
@@ -280,9 +307,20 @@ export default function TeacherClassesPage() {
                 {classes.map((cls) => (
                   <tr
                     key={cls.id}
+                    role="link"
+                    tabIndex={0}
+                    aria-label={`Xem chi tiết lớp ${cls.name}`}
+                    onClick={(event) => {
+                      if (!isInteractiveTarget(event.target)) {
+                        openClassDetail(cls.id);
+                      }
+                    }}
+                    onKeyDown={(event) => {
+                      handleClassRowKeyDown(event, cls.id);
+                    }}
                     className={cn(
                       "border-b border-outline/10 last:border-0",
-                      "hover:bg-surface-container-low transition-colors",
+                      "group cursor-pointer hover:bg-surface-container-low transition-colors focus-visible:bg-surface-container-low focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35",
                     )}
                   >
                     <td className="px-5 py-4">
@@ -294,12 +332,9 @@ export default function TeacherClassesPage() {
                           {cls.name.charAt(0)}
                         </div>
                         <div>
-                          <Link
-                            href={`/teacher/classes/${cls.id}`}
-                            className="font-medium text-on-surface text-sm transition-colors hover:text-primary"
-                          >
+                          <span className="font-medium text-on-surface text-sm transition-colors group-hover:text-primary">
                             {cls.name}
-                          </Link>
+                          </span>
                           <p className="text-xs text-muted-foreground truncate max-w-xs">
                             {cls.description}
                           </p>
@@ -333,12 +368,13 @@ export default function TeacherClassesPage() {
                           type="button"
                           variant="ghost"
                           size="icon-xs"
-                          onClick={() =>
+                          onClick={(event) => {
+                            event.stopPropagation();
                             void copyJoinCode(
                               cls.id,
                               cls.joinCode ?? cls.inviteCode,
-                            )
-                          }
+                            );
+                          }}
                           title={
                             copiedClassId === cls.id
                               ? "Đã sao chép mã lớp"
@@ -359,7 +395,15 @@ export default function TeacherClassesPage() {
                       </div>
                     </td>
                     <td className="px-5 py-4">
-                      <div className="flex items-center gap-1">
+                      <div
+                        className="flex items-center gap-1"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                        }}
+                        onKeyDown={(event) => {
+                          event.stopPropagation();
+                        }}
+                      >
                         <EditClassroomDialog
                           classroom={cls}
                           isSubmitting={updatingClassId === cls.id}
