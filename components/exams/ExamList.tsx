@@ -12,6 +12,7 @@ import {
   LoaderCircle,
   Plus,
   RefreshCw,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -279,6 +280,18 @@ function EmptyState({
           </Button>
         ) : null}
         <Button asChild type="button" size="lg" className="h-11 rounded-2xl">
+          <Link href="/teacher/ai-exams?scope=system">
+            <Sparkles className="mr-2 size-4" />
+            Tạo đề thi AI
+          </Link>
+        </Button>
+        <Button
+          asChild
+          type="button"
+          variant="outline"
+          size="lg"
+          className="h-11 rounded-2xl"
+        >
           <Link href="/teacher/exams/create">
             <Plus className="mr-2 size-4" />
             Tạo đề thi
@@ -560,12 +573,25 @@ export function ExamList() {
               </div>
             </div>
 
-            <Button asChild size="lg" className="h-11 rounded-2xl px-5">
-              <Link href="/teacher/exams/create">
-                <Plus className="mr-2 size-4" />
-                {EXAM_FLOW_MESSAGES.titles.create}
-              </Link>
-            </Button>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end">
+              <Button asChild size="lg" className="h-11 rounded-2xl px-5">
+                <Link href="/teacher/ai-exams?scope=system">
+                  <Sparkles className="mr-2 size-4" />
+                  Tạo đề thi AI
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="h-11 rounded-2xl px-5"
+              >
+                <Link href="/teacher/exams/create">
+                  <Plus className="mr-2 size-4" />
+                  {EXAM_FLOW_MESSAGES.titles.create}
+                </Link>
+              </Button>
+            </div>
           </section>
 
           <ExamFilters
