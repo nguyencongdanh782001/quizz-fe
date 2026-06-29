@@ -157,6 +157,111 @@ export interface MessageResponse {
   message: string;
 }
 
+export type AIExamQuestionType =
+  | "multiple_choice"
+  | "true_false"
+  | "short_answer"
+  | "essay";
+
+export type AIExamDifficulty = "easy" | "medium" | "hard";
+
+export type AIExamDifficultyDistribution = Partial<
+  Record<AIExamDifficulty, number>
+>;
+
+export type AIExamQuestionTypeDistribution = Partial<
+  Record<AIExamQuestionType, number>
+>;
+
+export interface GenerateExamRequest {
+  subject: string;
+  grade: string;
+  topic: string;
+  duration_minutes: number;
+  question_count: number;
+  question_types: AIExamQuestionType[];
+  question_type_distribution: AIExamQuestionTypeDistribution;
+  difficulty_distribution: AIExamDifficultyDistribution;
+  language?: string;
+  additional_instructions?: string;
+}
+
+export interface GenerateMoreQuestionsRequest {
+  count: number;
+  question_types?: AIExamQuestionType[] | null;
+  question_type_distribution?: AIExamQuestionTypeDistribution;
+  difficulty_distribution?: AIExamDifficultyDistribution;
+  additional_instructions?: string;
+}
+
+export interface AIQuestionDraftResponse {
+  id: number;
+  question_type: AIExamQuestionType;
+  content: string;
+  options: string[];
+  correct_answer: unknown | null;
+  explanation: string;
+  difficulty: AIExamDifficulty;
+  points: number;
+  topic: string;
+  order: number;
+  is_approved: boolean;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface UpdateAIQuestionDraftRequest {
+  question_type?: AIExamQuestionType | null;
+  content?: string | null;
+  options?: string[] | null;
+  correct_answer?: unknown | null;
+  explanation?: string | null;
+  difficulty?: AIExamDifficulty | null;
+  points?: number | null;
+  topic?: string | null;
+  is_approved?: boolean | null;
+}
+
+export interface AIExamGenerationJobResponse {
+  id: number;
+  status: string;
+  subject: string;
+  grade: string;
+  topic: string;
+  duration_minutes: number;
+  question_count: number;
+  question_types: AIExamQuestionType[];
+  question_type_distribution: AIExamQuestionTypeDistribution;
+  difficulty_distribution: AIExamDifficultyDistribution;
+  language: string;
+  additional_instructions: string;
+  title?: string | null;
+  description?: string | null;
+  total_points: number;
+  provider: string;
+  model: string;
+  error_message?: string;
+  created_at?: string | null;
+  updated_at?: string | null;
+  question_drafts: AIQuestionDraftResponse[];
+}
+
+export interface SaveAIExamToQuizRequest {
+  title?: string | null;
+  description?: string | null;
+  scope?: "system" | "class";
+  classroom_id?: number | null;
+  duration_minutes?: number | null;
+  is_published?: boolean;
+  is_active?: boolean;
+}
+
+export interface SaveAIExamToQuizResponse {
+  quiz_id: number;
+  exam_id: number;
+  message: string;
+}
+
 export interface TrackPageViewRequest {
   visitor_id: string;
   session_id: string;

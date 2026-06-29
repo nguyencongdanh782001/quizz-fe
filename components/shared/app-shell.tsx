@@ -210,14 +210,9 @@ export function AppShell({ role, children }: AppShellProps) {
               role={role}
               currentPath={pathname}
               navItems={navItems}
-              userName={userName}
-              userFullName={user?.full_name}
-              userAvatarUrl={user?.avatar_url}
-              userAvatarCacheKey={user?.updated_at}
               roleTitle={roleTitle}
               roleDescription={roleDescription}
               onNavigate={() => undefined}
-              onLogout={logout}
             />
           </div>
         </aside>
@@ -402,14 +397,9 @@ export function AppShell({ role, children }: AppShellProps) {
                   role={role}
                   currentPath={pathname}
                   navItems={navItems}
-                  userName={userName}
-                  userFullName={user?.full_name}
-                  userAvatarUrl={user?.avatar_url}
-                  userAvatarCacheKey={user?.updated_at}
                   roleTitle={roleTitle}
                   roleDescription={roleDescription}
                   onNavigate={() => setMobileOpen(false)}
-                  onLogout={logout}
                   mobileCloseButton={
                     <Button
                       type="button"
@@ -436,27 +426,17 @@ function SidebarContent({
   role,
   currentPath,
   navItems,
-  userName,
-  userFullName,
-  userAvatarUrl,
-  userAvatarCacheKey,
   roleTitle,
   roleDescription,
   onNavigate,
-  onLogout,
   mobileCloseButton,
 }: {
   role: AppRole;
   currentPath: string;
   navItems: NavItem[];
-  userName: string;
-  userFullName?: string | null;
-  userAvatarUrl?: string | null;
-  userAvatarCacheKey?: string | null;
   roleTitle: string;
   roleDescription: string;
   onNavigate: () => void;
-  onLogout: () => void;
   mobileCloseButton?: React.ReactNode;
 }) {
   return (
@@ -529,35 +509,6 @@ function SidebarContent({
         })}
       </nav>
 
-      <div className="mt-4 rounded-[1.6rem] border border-white/70 bg-white/72 p-4 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.28)]">
-        <div className="flex items-center gap-3">
-          <UserAvatar
-            avatarUrl={userAvatarUrl}
-            fullName={userFullName}
-            avatarCacheKey={userAvatarCacheKey}
-            className="size-11"
-            fallbackClassName="text-sm"
-          />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-on-surface">
-              {userName}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {role === "teacher" ? "Quản lý giảng dạy" : "Hồ sơ học tập"}
-            </p>
-          </div>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="lg"
-          className="mt-4 h-11 w-full justify-start rounded-2xl"
-          onClick={onLogout}
-        >
-          <LogOut className="mr-2 h-4 w-4" />
-          Đăng xuất
-        </Button>
-      </div>
     </div>
   );
 }
