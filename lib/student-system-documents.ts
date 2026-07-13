@@ -159,8 +159,8 @@ export function resolveDocumentAssetUrl(url?: string | null): string | null {
 }
 
 function formatPublisher(item: StudentSystemDocumentSchema): string {
-  if (item.scope === "classroom" && item.classroom_name) {
-    return item.classroom_name;
+  if (item.scope === "classroom") {
+    return "Giáo viên";
   }
 
   return "Hệ thống";

@@ -10,6 +10,10 @@ import { LandingTestimonials } from "@/components/features/landing/landing-testi
 import { LandingCTA } from "@/components/features/landing/landing-cta";
 import { LandingFooter } from "@/components/features/landing/landing-footer";
 import {
+  EMAIL_VERIFICATION_REASON_HOME,
+  getVerifyEmailPath,
+} from "@/lib/auth/email-verification";
+import {
   SELECT_ROLE_PATH,
   getRoleDashboardPath,
   isOnboardingIncomplete,
@@ -19,6 +23,16 @@ export default async function LandingPage() {
   const session = await getServerSession();
 
   if (session) {
+    if (!session.email_verified) {
+      redirect(
+        getVerifyEmailPath({
+          email: session.email,
+          nextPath: "/",
+          reason: EMAIL_VERIFICATION_REASON_HOME,
+        }),
+      );
+    }
+
     if (isOnboardingIncomplete(session)) {
       redirect(SELECT_ROLE_PATH);
     }

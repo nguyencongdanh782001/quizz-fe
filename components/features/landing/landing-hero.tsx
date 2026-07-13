@@ -52,7 +52,7 @@ const classProgress = [
 
 const documentUpdates = [
   { title: 'Giải tích cơ bản', scope: 'Hệ thống' },
-  { title: 'React Hooks chuyên sâu', scope: 'Lớp học' },
+  { title: 'React Hooks chuyên sâu', scope: 'Giáo viên' },
   { title: 'Bộ đề Hóa học 11', scope: 'Hệ thống' },
 ] as const;
 

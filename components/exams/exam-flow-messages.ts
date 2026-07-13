@@ -91,7 +91,7 @@ export const EXAM_FLOW_MESSAGES = {
     active: "Đang hoạt động",
     hidden: "Tạm ẩn",
     system: "Hệ thống",
-    classroom: "Lớp học",
+    classroom: "Giáo viên",
     noClassroom: "Chưa gắn lớp học",
   },
 } as const;
@@ -104,14 +104,13 @@ export function getExamScopeLabel(scope: string | null | undefined): string {
   }
 
   if (
-    !normalizedScope ||
     normalizedScope === "classroom" ||
     normalizedScope === "class"
   ) {
     return EXAM_FLOW_MESSAGES.states.classroom;
   }
 
-  return scope?.trim() || EXAM_FLOW_MESSAGES.states.classroom;
+  return scope?.trim() || EXAM_FLOW_MESSAGES.states.system;
 }
 
 export function getExamClassroomLabel(classroomId: number | null): string {

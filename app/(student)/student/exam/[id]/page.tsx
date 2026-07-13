@@ -224,7 +224,7 @@ export default function ExamDetailPage({
             <div className="max-w-3xl">
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-primary-container px-3 py-1 text-xs font-semibold text-on-primary-container">
-                  {exam.scope === "system" ? "Đề hệ thống" : "Đề thi"}
+                  {exam.scope === "system" ? "Hệ thống" : "Giáo viên"}
                 </span>
                 {exam.classroomName && (
                   <span className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-muted-foreground">

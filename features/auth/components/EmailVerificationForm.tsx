@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ClipboardEvent, KeyboardEvent } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -18,6 +17,7 @@ import { getApiErrorMessage } from "@/lib/api/error-message";
 import { mapUserSchemaToUser } from "@/lib/auth/user-mapper";
 
 const DEFAULT_NEXT_PATH = "/select-role";
+const LOGIN_PATH = "/login";
 const OTP_LENGTH = 6;
 
 interface EmailVerificationFormProps {
@@ -178,6 +178,10 @@ export function EmailVerificationForm({
     }
   }
 
+  function handleBackToInformation() {
+    router.replace(LOGIN_PATH);
+  }
+
   return (
     <div className="space-y-4">
       <div className="space-y-1.5">
@@ -271,13 +275,14 @@ export function EmailVerificationForm({
           Xác thực OTP
         </button>
 
-        <Link
-          href="/register"
+        <button
+          type="button"
+          onClick={handleBackToInformation}
           className="flex w-full items-center justify-center gap-2 rounded-xl border border-outline-variant bg-white py-2.5 text-sm font-semibold text-on-surface transition-all duration-200 hover:bg-surface-container-low"
         >
           <ArrowLeft className="size-4" />
-          Quay lại chỉnh thông tin
-        </Link>
+          Quay lại thông tin
+        </button>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { EmailVerificationForm } from "@/features/auth/components/EmailVerificat
 type VerifyEmailSearchParams = Promise<{
   email?: string | string[];
   next?: string | string[];
+  reason?: string | string[];
   sent?: string | string[];
 }>;
 
@@ -23,6 +24,7 @@ export default async function VerifyEmailPage({
       <EmailVerificationForm
         email={getSingleValue(params.email)}
         nextPath={getSingleValue(params.next)}
+        reason={getSingleValue(params.reason)}
         sent={getSingleValue(params.sent)}
       />
     </AuthCard>

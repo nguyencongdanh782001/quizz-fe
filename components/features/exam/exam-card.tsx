@@ -12,20 +12,13 @@ const difficultyColor = {
   hard: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
-const difficultyLabel = {
-  easy: "Dễ",
-  medium: "Trung bình",
-  hard: "Khó",
-};
-
 interface ExamCardProps {
   exam: Exam;
   compact?: boolean;
 }
 
 export function ExamCard({ exam, compact = false }: ExamCardProps) {
-  const badgeLabel =
-    exam.scope === "system" ? "Hệ thống" : difficultyLabel[exam.difficulty];
+  const badgeLabel = exam.scope === "system" ? "Hệ thống" : "Giáo viên";
 
   const badgeClassName =
     exam.scope === "system"

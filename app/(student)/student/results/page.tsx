@@ -242,7 +242,7 @@ export default function HistoryPage() {
                         {result.isPassed ? "Đạt" : "Chưa đạt"}
                       </span>
                       <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                        {result.scope === "system" ? "Hệ thống" : result.scope}
+                        {result.scope === "system" ? "Hệ thống" : "Giáo viên"}
                       </span>
                       {result.classroomName && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2.5 py-1 text-xs font-medium text-on-surface-variant">

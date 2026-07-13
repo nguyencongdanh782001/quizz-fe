@@ -1,11 +1,17 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import {
+  EMAIL_VERIFICATION_REASON_HOME,
+  VERIFY_EMAIL_PATH,
+  getVerifyEmailPath,
+  normalizeAuthPath,
+  requiresVerifiedEmail,
+} from "@/lib/auth/email-verification";
 import { SELECT_ROLE_PATH, isOnboardingIncomplete } from "@/lib/auth/onboarding";
 
 const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL;
 const SESSION_COOKIE = "auth-session";
-const VERIFY_EMAIL_PATH = "/verify-email";
 const REGISTER_PATH = "/register";
 
 type MirroredSessionPayload = {
@@ -24,14 +30,6 @@ type ProfilePayload = {
   role_name?: "teacher" | "student" | null;
   needs_onboarding?: boolean;
 };
-
-function normalizePath(pathname: string): string {
-  if (pathname === "/") {
-    return pathname;
-  }
-
-  return pathname.replace(/\/+$/, "");
-}
 
 function decodeMirroredSession(value: string): MirroredSessionPayload | null {
   try {
@@ -87,7 +85,7 @@ async function getProfileSession(
 }
 
 export async function proxy(request: NextRequest) {
-  const pathname = normalizePath(request.nextUrl.pathname);
+  const pathname = normalizeAuthPath(request.nextUrl.pathname);
   const profileSession = await getProfileSession(request);
   const session = profileSession ?? getSession(request);
 
@@ -97,18 +95,16 @@ export async function proxy(request: NextRequest) {
 
   if (
     session.email_verified === false &&
-    pathname !== VERIFY_EMAIL_PATH &&
-    pathname !== REGISTER_PATH
+    requiresVerifiedEmail(pathname)
   ) {
     const url = request.nextUrl.clone();
+    const verifyPath = getVerifyEmailPath({
+      email: session.email,
+      nextPath: pathname,
+      reason: EMAIL_VERIFICATION_REASON_HOME,
+    });
     url.pathname = VERIFY_EMAIL_PATH;
-    url.search = "";
-
-    if (session.email) {
-      url.searchParams.set("email", session.email);
-    }
-
-    url.searchParams.set("next", SELECT_ROLE_PATH);
+    url.search = verifyPath.includes("?") ? verifyPath.slice(VERIFY_EMAIL_PATH.length) : "";
 
     return NextResponse.redirect(url);
   }

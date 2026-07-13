@@ -57,6 +57,9 @@ function inferGrade(classroomName: string | null): number {
 }
 
 function mapStudentSystemExam(item: StudentSystemExamSchema): Exam {
+  const scope =
+    item.scope === 'classroom' || item.scope === 'class' ? 'classroom' : 'system';
+
   return {
     id: String(item.id),
     title: item.title,
@@ -69,7 +72,7 @@ function mapStudentSystemExam(item: StudentSystemExamSchema): Exam {
     questionCount: item.question_count,
     attemptCount: 0,
     status: item.is_active ? 'published' : 'archived',
-    createdBy: 'system',
+    createdBy: scope === 'classroom' ? 'teacher' : 'system',
     createdAt: '',
     updatedAt: '',
     thumbnailUrl: item.image_url ?? undefined,
@@ -77,7 +80,7 @@ function mapStudentSystemExam(item: StudentSystemExamSchema): Exam {
     classIds: item.classroom_id ? [String(item.classroom_id)] : [],
     classroomName: item.classroom_name,
     totalPoints: item.total_points,
-    scope: item.scope,
+    scope,
     isActive: item.is_active,
   };
 }
