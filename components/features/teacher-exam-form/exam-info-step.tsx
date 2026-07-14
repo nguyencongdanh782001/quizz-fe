@@ -3,6 +3,7 @@
 import { useFormikContext } from "formik";
 import { ClipboardList } from "lucide-react";
 import { CheckboxField } from "@/components/common/form/checkbox-field";
+import { DateTimePicker } from "@/components/common/form/date-time-picker";
 import { InputField } from "@/components/common/form/input-field";
 import { TextareaField } from "@/components/common/form/textarea-field";
 import {
@@ -31,7 +32,7 @@ function getFieldError(
 }
 
 export function ExamInfoStep() {
-  const { values, errors, touched, setFieldValue, submitCount } =
+  const { values, errors, touched, setFieldValue, setFieldTouched, submitCount } =
     useFormikContext<TeacherExamFormValues>();
 
   return (
@@ -77,6 +78,15 @@ export function ExamInfoStep() {
           rows={5}
         />
 
+        <InputField
+          label={EXAM_FLOW_MESSAGES.labels.grade}
+          required
+          value={values.grade}
+          onChange={(event) => void setFieldValue("grade", event.target.value)}
+          error={getFieldError(errors.grade, touched.grade, submitCount)}
+          placeholder={EXAM_FLOW_MESSAGES.placeholders.grade}
+        />
+
         <div className="grid gap-5">
           <ImageUploadField
             id="exam-image-upload"
@@ -106,6 +116,33 @@ export function ExamInfoStep() {
               submitCount,
             )}
             placeholder="45"
+          />
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-2">
+          <DateTimePicker
+            label={EXAM_FLOW_MESSAGES.labels.startTime}
+            required
+            value={values.start_time}
+            onChange={(value) => void setFieldValue("start_time", value)}
+            onBlur={() => void setFieldTouched("start_time", true)}
+            error={getFieldError(
+              errors.start_time,
+              touched.start_time,
+              submitCount,
+            )}
+          />
+          <DateTimePicker
+            label={EXAM_FLOW_MESSAGES.labels.endTime}
+            required
+            value={values.end_time}
+            onChange={(value) => void setFieldValue("end_time", value)}
+            onBlur={() => void setFieldTouched("end_time", true)}
+            error={getFieldError(
+              errors.end_time,
+              touched.end_time,
+              submitCount,
+            )}
           />
         </div>
 

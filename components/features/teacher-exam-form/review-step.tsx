@@ -43,6 +43,26 @@ function getCorrectOptions(
   return question.options.filter((option) => option.is_correct);
 }
 
+function formatReviewDateTime(value: string): string {
+  if (!value.trim()) {
+    return "Chưa chọn";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Thời gian không hợp lệ";
+  }
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+
+  return `${day}/${month}/${year} ${hour}:${minute}`;
+}
+
 export function ReviewStep() {
   const { values } = useFormikContext<TeacherExamFormValues>();
   const totalPoints = getTotalPoints(values);
@@ -90,11 +110,10 @@ export function ReviewStep() {
 
             <div className="rounded-[26px] border border-outline/10 bg-surface p-4">
               <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                Thời lượng
+                {EXAM_FLOW_MESSAGES.labels.grade}
               </p>
-              <p className="mt-2 flex items-center gap-2 text-2xl font-semibold text-on-surface">
-                <Clock3 className="h-4 w-4 text-primary" />
-                {values.duration_minutes}
+              <p className="mt-2 text-2xl font-semibold text-on-surface">
+                {values.grade.trim() || "Chưa nhập"}
               </p>
             </div>
 
@@ -114,6 +133,34 @@ export function ReviewStep() {
                     : EXAM_FLOW_MESSAGES.states.hidden}
                 </span>
               </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-[26px] border border-outline/10 bg-surface p-4">
+              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                Thời lượng
+              </p>
+              <p className="mt-2 flex items-center gap-2 text-lg font-semibold text-on-surface">
+                <Clock3 className="h-4 w-4 text-primary" />
+                {values.duration_minutes} phút
+              </p>
+            </div>
+            <div className="rounded-[26px] border border-outline/10 bg-surface p-4">
+              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                {EXAM_FLOW_MESSAGES.labels.startTime}
+              </p>
+              <p className="mt-2 text-sm font-semibold text-on-surface">
+                {formatReviewDateTime(values.start_time)}
+              </p>
+            </div>
+            <div className="rounded-[26px] border border-outline/10 bg-surface p-4">
+              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                {EXAM_FLOW_MESSAGES.labels.endTime}
+              </p>
+              <p className="mt-2 text-sm font-semibold text-on-surface">
+                {formatReviewDateTime(values.end_time)}
+              </p>
             </div>
           </div>
 
@@ -150,6 +197,13 @@ export function ReviewStep() {
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
                   {values.description.trim() || "Đề thi chưa có mô tả."}
+                </p>
+
+                <p className="mt-5 text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                  {EXAM_FLOW_MESSAGES.labels.grade}
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
+                  {values.grade.trim() || "Chưa nhập khối lớp."}
                 </p>
               </div>
 
@@ -264,6 +318,16 @@ export function ReviewStep() {
                         label="Ảnh minh họa"
                         variant="question"
                       />
+
+                      <div className="rounded-2xl border border-outline/10 bg-surface-container-lowest px-4 py-3">
+                        <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                          {EXAM_FLOW_MESSAGES.labels.explanation}
+                        </p>
+                        <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
+                          {question.explanation.trim() ||
+                            "Câu hỏi này chưa có giải thích."}
+                        </p>
+                      </div>
 
                       {questionType === "text" ? (
                         <div className="space-y-3">

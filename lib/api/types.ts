@@ -498,6 +498,7 @@ export interface TeacherExamQuestionSchema {
   id: number;
   question_type: "single_choice" | "multiple_choice" | "text";
   prompt: string;
+  explanation: string | null;
   image_url: string | null;
   order_index: number;
   points: number;
@@ -509,11 +510,14 @@ export interface TeacherExamSummarySchema {
   id: number;
   title: string;
   description: string;
+  grade: string;
   image_url: string | null;
   scope: string;
   classroom_id: number | null;
   classroom_name: string | null;
   duration_minutes: number;
+  start_time: string;
+  end_time: string;
   total_points: number;
   question_count: number;
   attempt_count: number;
@@ -632,14 +636,15 @@ export interface TeacherExamAttemptResultResponse {
 export interface TeacherCreateExamOptionRequest {
   option_key: string;
   option_text: string;
-  image_url?: string | null;
+  image_url: string;
   is_correct: boolean;
 }
 
 export interface TeacherCreateExamQuestionRequest {
   question_type: "single_choice" | "multiple_choice" | "text";
   prompt: string;
-  image_url?: string | null;
+  explanation: string;
+  image_url: string;
   order_index: number;
   points: number;
   options: TeacherCreateExamOptionRequest[];
@@ -648,20 +653,19 @@ export interface TeacherCreateExamQuestionRequest {
 
 export interface TeacherCreateExamRequest {
   title: string;
-  description?: string | null;
-  image_url?: string | null;
+  description: string;
+  grade: string;
+  image_url: string;
   duration_minutes: number;
+  start_time: Date;
+  end_time: Date;
   is_published: boolean;
   is_active: boolean;
   questions: TeacherCreateExamQuestionRequest[];
 }
 
 export type TeacherUpdateClassExamRequest = TeacherCreateExamRequest;
-
-export interface TeacherUpdateExamRequest extends TeacherCreateExamRequest {
-  scope: string;
-  classroom_id: number | null;
-}
+export type TeacherUpdateExamRequest = TeacherCreateExamRequest;
 
 export interface TeacherCreateClassExamResponse {
   message: string;
@@ -674,6 +678,11 @@ export interface TeacherUpdateClassExamResponse {
 }
 
 export interface TeacherCreateSystemExamResponse {
+  message: string;
+  exam: TeacherSystemExamDetailResponse;
+}
+
+export interface TeacherUpdateSystemExamResponse {
   message: string;
   exam: TeacherSystemExamDetailResponse;
 }

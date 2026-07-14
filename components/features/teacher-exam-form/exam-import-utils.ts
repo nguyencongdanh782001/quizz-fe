@@ -35,6 +35,7 @@ type NormalizedSpreadsheetRow = Record<string, string>;
 
 interface ImportQuestionDraft {
   acceptedAnswers: string[];
+  explanation: string;
   options: ImportOptionDraft[];
   orderIndex: number;
   points: number;
@@ -109,6 +110,22 @@ function parseBoolean(value: string, fallback: boolean): boolean {
   return fallback;
 }
 
+function parseDateTime(value: string): string | null {
+  if (!value.trim()) {
+    return null;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  const timezoneOffsetMs = date.getTimezoneOffset() * 60_000;
+
+  return new Date(date.getTime() - timezoneOffsetMs).toISOString().slice(0, 16);
+}
+
 function splitAcceptedAnswers(value: string): string[] {
   return value
     .split(/[;|\n]+/)
@@ -151,18 +168,26 @@ function parseExamRows(
   | "classroom_id"
   | "description"
   | "duration_minutes"
+  | "end_time"
+  | "grade"
   | "image_url"
   | "is_active"
   | "is_published"
   | "scope"
+  | "start_time"
   | "title"
 > & { errors: ExamImportValidationError[] } {
   const errors: ExamImportValidationError[] = [];
   const firstRow = rows[0] ? normalizeRow(rows[0]) : null;
   const title = firstRow ? getCell(firstRow, "title") : "";
   const description = firstRow ? getCell(firstRow, "description") : "";
+  const grade = firstRow ? getCell(firstRow, "grade") : "";
   const durationValue = firstRow ? getCell(firstRow, "duration_minutes") : "";
   const durationMinutes = parsePositiveNumber(durationValue);
+  const startTime = firstRow
+    ? parseDateTime(getCell(firstRow, "start_time"))
+    : null;
+  const endTime = firstRow ? parseDateTime(getCell(firstRow, "end_time")) : null;
 
   if (!firstRow) {
     errors.push({
@@ -187,17 +212,52 @@ function parseExamRows(
     });
   }
 
+  if (!grade) {
+    errors.push({
+      sheet: "exam",
+      rowNumber: firstRow ? 2 : undefined,
+      message: "Khối lớp là bắt buộc",
+    });
+  }
+
+  if (!startTime) {
+    errors.push({
+      sheet: "exam",
+      rowNumber: firstRow ? 2 : undefined,
+      message: "start_time là bắt buộc và phải là thời gian hợp lệ",
+    });
+  }
+
+  if (!endTime) {
+    errors.push({
+      sheet: "exam",
+      rowNumber: firstRow ? 2 : undefined,
+      message: "end_time là bắt buộc và phải là thời gian hợp lệ",
+    });
+  }
+
+  if (startTime && endTime && new Date(endTime) <= new Date(startTime)) {
+    errors.push({
+      sheet: "exam",
+      rowNumber: firstRow ? 2 : undefined,
+      message: "end_time phải sau start_time",
+    });
+  }
+
   return {
     classroom_id: classroomId,
     description,
     duration_minutes: durationMinutes ?? 45,
+    end_time: endTime ?? "",
     errors,
+    grade,
     image_url: "",
     is_active: true,
     is_published: firstRow
       ? parseBoolean(getCell(firstRow, "is_published"), false)
       : false,
     scope,
+    start_time: startTime ?? "",
     title,
   };
 }
@@ -257,6 +317,7 @@ function parseQuestionRows(
     const orderIndex = Number(orderValue);
     const questionType = parseQuestionType(getCell(normalizedRow, "question_type"));
     const prompt = getCell(normalizedRow, "prompt");
+    const explanation = getCell(normalizedRow, "explanation");
     const points = parsePositiveNumber(getCell(normalizedRow, "points"));
 
     if (!Number.isInteger(orderIndex) || orderIndex <= 0) {
@@ -345,6 +406,7 @@ function parseQuestionRows(
 
     questions.push({
       acceptedAnswers,
+      explanation,
       options,
       orderIndex: safeOrderIndex,
       points: points ?? 1,
@@ -390,6 +452,7 @@ function mapQuestionDraftsToFormValues(
           order_index: questionIndex + 1,
           points: questionDraft.points,
           prompt: questionDraft.prompt,
+          explanation: questionDraft.explanation,
           question_type: questionDraft.questionType,
         };
       }),

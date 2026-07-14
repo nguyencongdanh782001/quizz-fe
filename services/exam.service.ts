@@ -4,6 +4,7 @@ import type {
   MessageResponse,
   TeacherCreateExamRequest,
   TeacherCreateSystemExamResponse,
+  TeacherUpdateSystemExamResponse,
   TeacherUpdateExamRequest,
   TeacherPublishExamResponse,
   TeacherPrivateExamResponse,
@@ -64,7 +65,7 @@ export async function getTeacherSystemExamDetail(
   examId: number | string,
 ): Promise<TeacherExam> {
   const response = await client.get<TeacherSystemExamDetailResponse>(
-    `/teacher/exams/${examId}`,
+    `/teacher/system/exams/${examId}`,
   );
 
   return mapTeacherExam(response.data);
@@ -109,7 +110,7 @@ export async function updateTeacherSystemExamPublishState(
   return APP_MESSAGES.PUBLISH_EXAM_SUCCESS;
 }
 
-export async function createTeacherSystemExam(
+export async function createSystemExam(
   data: TeacherCreateExamRequest,
 ): Promise<{ message: string; exam: TeacherExam }> {
   const response = await client.post<TeacherCreateSystemExamResponse>(
@@ -123,14 +124,21 @@ export async function createTeacherSystemExam(
   };
 }
 
-export async function updateTeacherExam(
+export const createTeacherSystemExam = createSystemExam;
+
+export async function updateSystemExam(
   examId: number | string,
   data: TeacherUpdateExamRequest,
-): Promise<string> {
-  await client.put<MessageResponse | { message?: string }>(
-    `/teacher/exams/${examId}`,
+): Promise<{ message: string; exam: TeacherExam }> {
+  const response = await client.put<TeacherUpdateSystemExamResponse>(
+    `/teacher/system/exams/${examId}`,
     data,
   );
 
-  return APP_MESSAGES.UPDATE_EXAM_SUCCESS;
+  return {
+    message: response.data.message || APP_MESSAGES.UPDATE_EXAM_SUCCESS,
+    exam: mapTeacherExam(response.data.exam),
+  };
 }
+
+export const updateTeacherExam = updateSystemExam;

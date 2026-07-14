@@ -33,7 +33,7 @@ import {
 import { useTeacherSystemExamDetail } from "@/hooks/queries/useTeacherSystemExamDetail";
 import { useUpdateTeacherExam } from "@/hooks/queries/useUpdateTeacherExam";
 import { APP_MESSAGES } from "@/lib/app-messages";
-import { createTeacherSystemExam } from "@/services/exam.service";
+import { createSystemExam } from "@/services/exam.service";
 
 type ToastVariant = "success" | "error";
 
@@ -151,7 +151,7 @@ export function TeacherSystemExamCreateScreen({
         });
       } else {
         setIsCreating(true);
-        await createTeacherSystemExam(mapTeacherExamFormToPayload(values));
+        await createSystemExam(mapTeacherExamFormToPayload(values));
       }
 
       if (redirectTimeoutRef.current !== null) {
@@ -198,7 +198,7 @@ export function TeacherSystemExamCreateScreen({
     setIsImporting(true);
 
     try {
-      await createTeacherSystemExam(mapTeacherExamFormToPayload(values));
+      await createSystemExam(mapTeacherExamFormToPayload(values));
 
       if (redirectTimeoutRef.current !== null) {
         window.clearTimeout(redirectTimeoutRef.current);

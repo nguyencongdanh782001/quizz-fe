@@ -15,6 +15,10 @@ function toStringValue(value: unknown, fallback = ""): string {
     return value;
   }
 
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
   if (typeof value === "number" || typeof value === "boolean") {
     return String(value);
   }
@@ -107,6 +111,7 @@ function mapExamQuestion(
     question_type: toQuestionType(question.question_type),
     order_index: toNumberValue(question.order_index, index + 1),
     prompt: toStringValue(question.prompt),
+    explanation: toNullableString(question.explanation),
     image_url: toNullableString(question.image_url),
     points: toNumberValue(question.points),
     options: (question.options ?? []).map(mapExamOption),
@@ -127,6 +132,7 @@ export function mapTeacherExam(exam: TeacherExamDetailPayload): TeacherExam {
     id: toNumberValue(exam.id),
     title: toStringValue(exam.title),
     description: toStringValue(exam.description),
+    grade: toStringValue(exam.grade),
     image_url: toNullableString(exam.image_url),
     scope: toNullableString(exam.scope),
     classroom_id:
@@ -135,6 +141,8 @@ export function mapTeacherExam(exam: TeacherExamDetailPayload): TeacherExam {
         : toNumberValue(exam.classroom_id),
     classroom_name: toNullableString(exam.classroom_name),
     duration_minutes: toNumberValue(exam.duration_minutes),
+    start_time: toStringValue(exam.start_time),
+    end_time: toStringValue(exam.end_time),
     total_points: toNumberValue(exam.total_points),
     question_count: toNumberValue(exam.question_count),
     attempt_count: toNumberValue(exam.attempt_count),

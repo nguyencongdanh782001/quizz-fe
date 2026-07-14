@@ -28,6 +28,7 @@ export interface TeacherExamQuestion {
   question_type: TeacherExamQuestionType;
   order_index: number;
   prompt: string;
+  explanation: string | null;
   image_url: string | null;
   points: number;
   options: TeacherExamOption[];
@@ -38,11 +39,14 @@ export interface TeacherExam {
   id: number;
   title: string;
   description: string;
+  grade: string;
   image_url: string | null;
   scope: string | null;
   classroom_id: number | null;
   classroom_name: string | null;
   duration_minutes: number;
+  start_time: string;
+  end_time: string;
   total_points: number;
   question_count: number;
   attempt_count: number;
