@@ -41,9 +41,7 @@ export function createOptionKey(index: number): string {
 }
 
 export function normalizeAcceptedAnswers(acceptedAnswers: string[]): string[] {
-  return acceptedAnswers
-    .map((answer) => answer.trim())
-    .filter(Boolean);
+  return acceptedAnswers.map((answer) => answer.trim()).filter(Boolean);
 }
 
 export function isTextQuestionType(
@@ -163,32 +161,7 @@ export function createEmptyQuestion(
   };
 }
 
-function toLocalDateTimeFormValue(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hour = String(date.getHours()).padStart(2, "0");
-  const minute = String(date.getMinutes()).padStart(2, "0");
-
-  return `${year}-${month}-${day}T${hour}:${minute}`;
-}
-
-function createDefaultExamSchedule() {
-  const startTime = new Date();
-  startTime.setSeconds(0, 0);
-
-  const endTime = new Date(startTime);
-  endTime.setHours(endTime.getHours() + 1);
-
-  return {
-    start_time: toLocalDateTimeFormValue(startTime),
-    end_time: toLocalDateTimeFormValue(endTime),
-  };
-}
-
 export function createInitialTeacherExamFormValues(): TeacherExamFormValues {
-  const defaultSchedule = createDefaultExamSchedule();
-
   return {
     title: "",
     description: "",
@@ -197,8 +170,8 @@ export function createInitialTeacherExamFormValues(): TeacherExamFormValues {
     scope: DEFAULT_TEACHER_EXAM_SCOPE,
     classroom_id: null,
     duration_minutes: 45,
-    start_time: defaultSchedule.start_time,
-    end_time: defaultSchedule.end_time,
+    start_time: "",
+    end_time: "",
     is_published: false,
     is_active: true,
     questions: [createEmptyQuestion()],
@@ -243,7 +216,9 @@ export function reindexTeacherExamQuestions(
   questions: TeacherExamQuestionFormValues[],
 ): TeacherExamQuestionFormValues[] {
   return questions.map((question, index) => {
-    const questionType = normalizeTeacherExamQuestionType(question.question_type);
+    const questionType = normalizeTeacherExamQuestionType(
+      question.question_type,
+    );
 
     return {
       ...question,
@@ -287,15 +262,19 @@ function mapQuestion(
   };
 }
 
-function buildExamPayload(values: TeacherExamFormValues): TeacherCreateExamRequest {
+function buildExamPayload(
+  values: TeacherExamFormValues,
+): TeacherCreateExamRequest {
+  const startTime = values.start_time.trim();
+  const endTime = values.end_time.trim();
   return {
     title: values.title.trim(),
     description: normalizeText(values.description),
     grade: normalizeText(values.grade),
     image_url: normalizeText(values.image_url),
     duration_minutes: values.duration_minutes,
-    start_time: toPayloadDate(values.start_time),
-    end_time: toPayloadDate(values.end_time),
+    start_time: startTime ? toPayloadDate(startTime) : undefined,
+    end_time: endTime ? toPayloadDate(endTime) : undefined,
     is_published: values.is_published,
     is_active: values.is_active,
     questions: reindexTeacherExamQuestions(values.questions).map(mapQuestion),
@@ -387,25 +366,30 @@ export const teacherExamFormSchema = Yup.object({
     .required(EXAM_FLOW_MESSAGES.validation.gradeRequired),
   scope: Yup.string().trim().required(),
   classroom_id: Yup.number().nullable(),
-  image_url: Yup.string().url("Link hình ảnh không hợp lệ").optional().nullable(),
+  image_url: Yup.string()
+    .url("Link hình ảnh không hợp lệ")
+    .optional()
+    .nullable(),
   duration_minutes: Yup.number()
     .typeError("Thời lượng phải là số")
     .moreThan(0, EXAM_FLOW_MESSAGES.validation.durationGreaterThanZero)
     .required("Thời lượng là bắt buộc"),
-  start_time: Yup.string()
-    .required(EXAM_FLOW_MESSAGES.validation.startTimeRequired)
-    .test(
-      "valid-start-time",
-      "Thời gian bắt đầu không hợp lệ",
-      (value) => Boolean(value) && !Number.isNaN(new Date(value).getTime()),
-    ),
+  start_time: Yup.string(),
+  // .required(EXAM_FLOW_MESSAGES.validation.startTimeRequired)
+  // .test(
+  //   "valid-start-time",
+  //   "Thời gian bắt đầu không hợp lệ",
+  //   (value) =>
+  //     Boolean(value) && !Number.isNaN(new Date(value || "").getTime()),
+  // ),
   end_time: Yup.string()
-    .required(EXAM_FLOW_MESSAGES.validation.endTimeRequired)
-    .test(
-      "valid-end-time",
-      "Thời gian kết thúc không hợp lệ",
-      (value) => Boolean(value) && !Number.isNaN(new Date(value).getTime()),
-    )
+    // .required(EXAM_FLOW_MESSAGES.validation.endTimeRequired)
+    // .test(
+    //   "valid-end-time",
+    //   "Thời gian kết thúc không hợp lệ",
+    //   (value) =>
+    //     Boolean(value) && !Number.isNaN(new Date(value || "").getTime()),
+    // )
     .test(
       "end-after-start",
       EXAM_FLOW_MESSAGES.validation.endTimeAfterStart,
@@ -432,10 +416,7 @@ export const teacherExamFormSchema = Yup.object({
               ? DEFAULT_TEACHER_EXAM_QUESTION_TYPE
               : value,
           )
-          .oneOf(
-            [...TEACHER_EXAM_QUESTION_TYPES],
-            "Loại câu hỏi không hợp lệ",
-          )
+          .oneOf([...TEACHER_EXAM_QUESTION_TYPES], "Loại câu hỏi không hợp lệ")
           .required("Loại câu hỏi là bắt buộc"),
         prompt: Yup.string()
           .trim()

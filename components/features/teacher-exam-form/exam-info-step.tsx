@@ -122,7 +122,6 @@ export function ExamInfoStep() {
         <div className="grid gap-5 md:grid-cols-2">
           <DateTimePicker
             label={EXAM_FLOW_MESSAGES.labels.startTime}
-            required
             value={values.start_time}
             onChange={(value) => void setFieldValue("start_time", value)}
             onBlur={() => void setFieldTouched("start_time", true)}
@@ -134,7 +133,6 @@ export function ExamInfoStep() {
           />
           <DateTimePicker
             label={EXAM_FLOW_MESSAGES.labels.endTime}
-            required
             value={values.end_time}
             onChange={(value) => void setFieldValue("end_time", value)}
             onBlur={() => void setFieldTouched("end_time", true)}

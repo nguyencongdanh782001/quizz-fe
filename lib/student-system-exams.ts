@@ -60,12 +60,20 @@ function mapStudentSystemExam(item: StudentSystemExamSchema): Exam {
   const scope =
     item.scope === 'classroom' || item.scope === 'class' ? 'classroom' : 'system';
 
+  // API now provides grade as a string; coerce to number when it parses cleanly,
+  // otherwise fall back to inferGrade from the classroom name.
+  const parsedGrade = Number(item.grade);
+  const grade =
+    Number.isFinite(parsedGrade) && parsedGrade >= 1 && parsedGrade <= 12
+      ? parsedGrade
+      : inferGrade(item.classroom_name);
+
   return {
     id: String(item.id),
     title: item.title,
     description: item.description,
     subject: item.classroom_name ?? 'Đề thi hệ thống',
-    grade: inferGrade(item.classroom_name),
+    grade,
     difficulty: inferDifficulty(item.duration_minutes, item.question_count),
     duration: item.duration_minutes,
     passingScore: 0,
@@ -75,6 +83,8 @@ function mapStudentSystemExam(item: StudentSystemExamSchema): Exam {
     createdBy: scope === 'classroom' ? 'teacher' : 'system',
     createdAt: '',
     updatedAt: '',
+    startTime: item.start_time,
+    endTime: item.end_time,
     thumbnailUrl: item.image_url ?? undefined,
     tags: item.scope ? [item.scope] : [],
     classIds: item.classroom_id ? [String(item.classroom_id)] : [],
@@ -120,14 +130,20 @@ function mapStudentExamQuestions(
 }
 
 function mapStudentExamDetailExam(item: StudentExamDetailResponse): Exam {
+  // TODO: backend dependency — `StudentExamDetailResponse` does not yet
+  // declare `start_time`/`end_time`. Once it does, drop the cast and read directly.
+  const detail = item as unknown as Partial<StudentSystemExamSchema>;
   return mapStudentSystemExam({
     id: item.id,
     title: item.title,
     description: item.description,
+    grade: '',
     scope: item.scope,
     classroom_id: item.classroom_id,
     classroom_name: item.classroom_name,
     duration_minutes: item.duration_minutes,
+    start_time: detail.start_time ?? '',
+    end_time: detail.end_time ?? '',
     total_points: item.total_points,
     question_count: item.question_count,
     is_active: item.is_active,
@@ -303,37 +319,74 @@ export function writeCachedStudentAttemptResult(
   );
 }
 
-export async function getStudentSystemExams(): Promise<Exam[]> {
-  try {
-    const response = await studentApi.student.system.exams();
-    const data = response.data;
+export interface StudentSystemExamListParams {
+  limit?: number;
+  offset?: number;
+}
 
-    return (data.items ?? [])
+export interface StudentSystemExamListResult {
+  items: Exam[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+const EMPTY_LIST_RESULT: StudentSystemExamListResult = {
+  items: [],
+  total: 0,
+  limit: 0,
+  offset: 0,
+};
+
+export async function getStudentSystemExams(
+  params: StudentSystemExamListParams = {},
+): Promise<StudentSystemExamListResult> {
+  try {
+    const response = await studentApi.student.system.exams(params);
+    const data = response.data;
+    const items = (data.items ?? [])
       .filter((item) => item.is_active)
       .map(mapStudentSystemExam);
+
+    return {
+      items,
+      total: data.total,
+      limit: data.limit,
+      offset: data.offset,
+    };
   } catch (error) {
     console.error('Failed to fetch student system exams', error);
-    return [];
+    return EMPTY_LIST_RESULT;
   }
 }
 
 export async function getStudentClassExams(
   classId: string,
-  options: StudentFetchOptions = {},
-): Promise<Exam[]> {
+  params: StudentSystemExamListParams & StudentFetchOptions = {},
+): Promise<StudentSystemExamListResult> {
+  const { throwOnError, ...pagination } = params;
   try {
-    const response = await studentApi.student.classes.exams(classId);
+    const response = await studentApi.student.classes.exams(
+      classId,
+      pagination,
+    );
     const data = response.data;
-
-    return (data.items ?? [])
+    const items = (data.items ?? [])
       .filter((item) => item.is_active)
       .map(mapStudentSystemExam);
+
+    return {
+      items,
+      total: data.total,
+      limit: data.limit,
+      offset: data.offset,
+    };
   } catch (error) {
     console.error(`Failed to fetch class exams for ${classId}`, error);
-    if (options.throwOnError) {
+    if (throwOnError) {
       throw error;
     }
-    return [];
+    return EMPTY_LIST_RESULT;
   }
 }
 

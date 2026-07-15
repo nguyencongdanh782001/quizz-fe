@@ -42,6 +42,9 @@ export interface Exam {
   createdBy: string; // teacher user id
   createdAt: string;
   updatedAt: string;
+  /** Exam availability window — when students may start the exam. */
+  startTime?: string | null;
+  endTime?: string | null;
   thumbnailUrl?: string;
   tags: string[];
   classIds: string[]; // assigned class ids

@@ -4,7 +4,10 @@ import { ExamNavigation } from "@/components/features/exam/exam-navigation";
 import { ExamTimer } from "@/components/features/exam/exam-timer";
 import { ProgressOrbs } from "@/components/features/exam/progress-orbs";
 import { QuestionCard } from "@/components/features/exam/question-card";
+import { ExamUnavailable } from "@/components/features/exam/exam-unavailable";
 import { useExamTimer } from "@/hooks/use-exam-timer";
+import { useNow } from "@/hooks/use-now";
+import { getExamAvailabilityStatus } from "@/lib/exam-availability";
 import {
   getStudentExamDetail,
   writeCachedStudentAttemptResult,
@@ -27,7 +30,7 @@ import type { Question } from "@/types/exam.types";
 import { AlertTriangle, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { use, useCallback, useEffect, useMemo, useState } from "react";
+import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 function ExamTakeContent({
   id,
@@ -334,6 +337,32 @@ function ExamTakeContent({
     }, [handleSubmit, phase]),
   );
 
+  // Watchdog: auto-submit when exam end_time passes mid-attempt.
+  // Uses a ref so re-renders don't restart the timer. Cleanup on unmount or phase change.
+  const submitTimerRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    if (phase !== "in-progress") return;
+    const endTime = exam.endTime ? new Date(exam.endTime) : null;
+    if (!endTime || Number.isNaN(endTime.getTime())) return;
+
+    const msUntilEnd = endTime.getTime() - Date.now();
+    if (msUntilEnd <= 0) {
+      void handleSubmit();
+      return;
+    }
+
+    submitTimerRef.current = setTimeout(() => {
+      void handleSubmit();
+    }, msUntilEnd);
+
+    return () => {
+      if (submitTimerRef.current) {
+        clearTimeout(submitTimerRef.current);
+        submitTimerRef.current = null;
+      }
+    };
+  }, [phase, exam.endTime, handleSubmit]);
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top bar */}
@@ -531,6 +560,11 @@ export default function ExamTakePage({
     };
   }, [id]);
 
+  const now = useNow();
+  const availability = examDetail
+    ? getExamAvailabilityStatus(examDetail.exam, now)
+    : null;
+
   if (isLoadingExam) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
@@ -557,6 +591,17 @@ export default function ExamTakePage({
           </Link>
         </div>
       </div>
+    );
+  }
+
+  if (availability && availability.isUnavailable) {
+    return (
+      <ExamUnavailable
+        examId={id}
+        status={availability.status}
+        startTime={availability.startTime}
+        endTime={availability.endTime}
+      />
     );
   }
 

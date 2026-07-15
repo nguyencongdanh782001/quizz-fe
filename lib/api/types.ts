@@ -311,11 +311,14 @@ export interface StudentSystemExamSchema {
   id: number;
   title: string;
   description: string;
+  grade: string;
   image_url?: string | null;
   scope: string;
   classroom_id: number;
   classroom_name: string | null;
   duration_minutes: number;
+  start_time: string;
+  end_time: string;
   total_points: number;
   question_count: number;
   is_active: boolean;
@@ -323,6 +326,9 @@ export interface StudentSystemExamSchema {
 
 export interface StudentSystemExamListResponse {
   items: StudentSystemExamSchema[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 export interface StudentSystemDocumentSchema {
@@ -657,8 +663,8 @@ export interface TeacherCreateExamRequest {
   grade: string;
   image_url: string;
   duration_minutes: number;
-  start_time: Date;
-  end_time: Date;
+  start_time?: Date;
+  end_time?: Date;
   is_published: boolean;
   is_active: boolean;
   questions: TeacherCreateExamQuestionRequest[];

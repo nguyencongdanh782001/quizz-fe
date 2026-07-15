@@ -4,6 +4,38 @@ const DATE_DISPLAY_FORMATTER = new Intl.DateTimeFormat("vi-VN", {
   year: "numeric",
 });
 
+const EXAM_DATETIME_FORMATTER = new Intl.DateTimeFormat("vi-VN", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+/**
+ * Parse an ISO-ish timestamp string (or null/empty) into a Date.
+ * Returns null when the input is missing/invalid — strict-mode friendly.
+ */
+export function parseExamTimestamp(value?: string | null): Date | null {
+  if (!value || typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const date = new Date(trimmed);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * Format a Date as "DD/MM/YYYY HH:mm" in the user's local timezone.
+ * Accepts a Date or an ISO string for convenience.
+ */
+export function formatExamDateTime(value?: Date | string | null): string {
+  const date =
+    value instanceof Date ? value : parseExamTimestamp(value);
+  if (!date) return "";
+  return EXAM_DATETIME_FORMATTER.format(date);
+}
+
 export function createLocalDate(
   year: number,
   month: number,

@@ -36,7 +36,7 @@ export function ExamCard({ exam, compact = false }: ExamCardProps) {
   return (
     <div
       className={cn(
-        "group overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/82",
+        "flex flex-col h-auto group overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/82",
         "shadow-[0_22px_80px_-42px_rgba(15,23,42,0.24)] backdrop-blur-xl",
         "transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_30px_90px_-40px_rgba(15,23,42,0.28)]",
       )}
@@ -52,7 +52,12 @@ export function ExamCard({ exam, compact = false }: ExamCardProps) {
         </div>
       )}
 
-      <div className={cn("p-5", compact ? "space-y-3" : "space-y-4")}>
+      <div
+        className={cn(
+          "p-5 h-full flex-1 flex flex-col",
+          compact ? "space-y-3" : "space-y-4",
+        )}
+      >
         <div className="flex items-start justify-between gap-2 mb-2">
           <span
             className={cn(
@@ -102,7 +107,7 @@ export function ExamCard({ exam, compact = false }: ExamCardProps) {
         <Link
           href={`/student/exam/${exam.id}`}
           className={cn(
-            "flex w-full items-center justify-center gap-2 rounded-xl py-3",
+            "mt-auto flex w-full items-center justify-center gap-2 rounded-xl py-3",
             "bg-linear-to-r from-primary to-tertiary text-sm font-semibold text-white",
             "shadow-[0_18px_38px_-20px_rgba(79,70,229,0.52)] transition-all duration-200",
             "hover:-translate-y-0.5 hover:shadow-[0_24px_44px_-18px_rgba(79,70,229,0.42)] active:scale-[0.99]",

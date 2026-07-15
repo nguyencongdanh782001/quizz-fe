@@ -14,11 +14,29 @@ import type {
   StudentSystemResultListResponse,
 } from "../types";
 
+interface PaginationParams {
+  limit?: number;
+  offset?: number;
+}
+
+function buildPaginationParams(
+  params?: PaginationParams,
+): Record<string, number> | undefined {
+  if (!params) return undefined;
+  const out: Record<string, number> = {};
+  if (typeof params.limit === "number") out.limit = params.limit;
+  if (typeof params.offset === "number") out.offset = params.offset;
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 export const api = {
   student: {
     system: {
-      exams: () =>
-        client.get<StudentSystemExamListResponse>("/student/system/exams"),
+      exams: (params?: PaginationParams) =>
+        client.get<StudentSystemExamListResponse>(
+          "/student/system/exams",
+          { params: buildPaginationParams(params) },
+        ),
       documents: () =>
         client.get<StudentSystemDocumentListResponse>(
           "/student/system/documents",
@@ -30,9 +48,13 @@ export const api = {
       list: () => client.get<StudentClassListResponse>("/student/classes"),
       join: (data: StudentJoinClassRequest) =>
         client.post<StudentJoinClassResponse>("/student/classes/join", data),
-      exams: (classId: string | number) =>
+      exams: (
+        classId: string | number,
+        params?: PaginationParams,
+      ) =>
         client.get<StudentSystemExamListResponse>(
           `/student/classes/${classId}/exams`,
+          { params: buildPaginationParams(params) },
         ),
       results: (classId: string | number) =>
         client.get<StudentSystemResultListResponse>(
