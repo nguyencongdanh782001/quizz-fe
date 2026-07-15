@@ -91,6 +91,7 @@ function mapStudentSystemExam(item: StudentSystemExamSchema): Exam {
     classroomName: item.classroom_name,
     totalPoints: item.total_points,
     scope,
+    source: item.source,
     isActive: item.is_active,
   };
 }
@@ -139,6 +140,7 @@ function mapStudentExamDetailExam(item: StudentExamDetailResponse): Exam {
     description: item.description,
     grade: '',
     scope: item.scope,
+    source: item.source,
     classroom_id: item.classroom_id,
     classroom_name: item.classroom_name,
     duration_minutes: item.duration_minutes,

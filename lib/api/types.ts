@@ -314,6 +314,8 @@ export interface StudentSystemExamSchema {
   grade: string;
   image_url?: string | null;
   scope: string;
+  /** Authoritative origin field. Prefer this over `scope` for UI badges. */
+  source?: "teacher" | "system";
   classroom_id: number;
   classroom_name: string | null;
   duration_minutes: number;
@@ -726,6 +728,7 @@ export interface StudentExamDetailResponse {
   title: string;
   description: string;
   scope: string;
+  source?: "teacher" | "system";
   classroom_id: number;
   classroom_name: string | null;
   duration_minutes: number;

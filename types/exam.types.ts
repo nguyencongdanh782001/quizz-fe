@@ -51,6 +51,8 @@ export interface Exam {
   classroomName?: string | null;
   totalPoints?: number | null;
   scope?: string | null;
+  /** Origin of the exam — preferred over `scope` for UI badges. */
+  source?: "teacher" | "system";
   isPublished?: boolean;
   isActive?: boolean;
 }
