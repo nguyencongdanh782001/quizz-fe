@@ -111,19 +111,16 @@ function parseBoolean(value: string, fallback: boolean): boolean {
 }
 
 function parseDateTime(value: string): string | null {
-  if (!value.trim()) {
+  const trimmed = value.trim();
+  if (!trimmed) {
     return null;
   }
 
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  const timezoneOffsetMs = date.getTimezoneOffset() * 60_000;
-
-  return new Date(date.getTime() - timezoneOffsetMs).toISOString().slice(0, 16);
+  // Treat imported timestamps as wall-clock and slice to "YYYY-MM-DDTHH:mm".
+  // Never call `new Date(...)` here — bare ISO would shift by the browser TZ,
+  // and we never add or subtract hours.
+  const match = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/.exec(trimmed);
+  return match ? match[1] : null;
 }
 
 function splitAcceptedAnswers(value: string): string[] {

@@ -665,8 +665,14 @@ export interface TeacherCreateExamRequest {
   grade: string;
   image_url: string;
   duration_minutes: number;
-  start_time?: Date;
-  end_time?: Date;
+  /**
+   * Wall-clock start time as "YYYY-MM-DDTHH:mm[:ss]" — the backend stores
+   * and returns this verbatim; we never wrap it in a `Date` (axios would
+   * re-serialize to UTC and shift by the browser's TZ offset).
+   */
+  start_time?: string;
+  /** Wall-clock end time, same format as `start_time`. */
+  end_time?: string;
   is_published: boolean;
   is_active: boolean;
   questions: TeacherCreateExamQuestionRequest[];

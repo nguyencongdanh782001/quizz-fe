@@ -1,3 +1,4 @@
+import { formatExamDateTime } from "@/lib/date";
 import type {
   TeacherExam,
   TeacherExamActiveFilter,
@@ -10,6 +11,10 @@ import {
   getExamScopeLabel as getTeacherExamScopeLabel,
   getTeacherExamQuestionTypeLabel,
 } from "./exam-flow-messages";
+
+// Re-export so existing call-sites that import `formatExamDateTime` from
+// this module keep working. The canonical implementation lives in `@/lib/date`.
+export { formatExamDateTime };
 
 export const EXAMS_PAGE_SIZE = 9;
 
@@ -49,26 +54,7 @@ export const DEFAULT_EXAM_FILTER_VALUES: TeacherExamFilterFormValues = {
   sort_order: "desc",
 };
 
-const DATE_TIME_FORMATTER = new Intl.DateTimeFormat("vi-VN", {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
-
 const NUMBER_FORMATTER = new Intl.NumberFormat("vi-VN");
-
-export function formatExamDateTime(value: string): string {
-  if (!value) {
-    return "Chưa có";
-  }
-
-  const parsed = new Date(value);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return "Chưa có";
-  }
-
-  return DATE_TIME_FORMATTER.format(parsed);
-}
 
 export function formatExamNumber(value: number): string {
   return NUMBER_FORMATTER.format(value);

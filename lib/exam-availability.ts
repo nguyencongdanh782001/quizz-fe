@@ -1,3 +1,10 @@
+// NOTE: All comparisons in this module use `Date.now()` against exam
+// boundaries parsed via `parseExamTimestamp`. Both sides follow the same
+// "treat bare ISO as wall-clock" convention, so the resulting deltas are
+// correct regardless of browser TZ. Do NOT route these parsed Dates
+// through `formatExamDateTime` for display — pass the raw strings (now
+// surfaced as `startTimeRaw`/`endTimeRaw`) so the user sees the
+// wall-clock the backend stored.
 import { parseExamTimestamp } from "./date";
 
 /**
@@ -9,11 +16,7 @@ import { parseExamTimestamp } from "./date";
  * - `unavailable`: start_time or end_time is missing/invalid. Strict mode —
  *   the API did not provide the information needed to make a decision.
  */
-export type ExamStatus =
-  | "upcoming"
-  | "available"
-  | "expired"
-  | "unavailable";
+export type ExamStatus = "upcoming" | "available" | "expired" | "unavailable";
 
 /** Minimal shape required to compute availability — matches the internal `Exam`. */
 export interface ExamTimeWindow {
@@ -25,6 +28,13 @@ export interface ExamAvailabilityInfo {
   status: ExamStatus;
   startTime: Date | null;
   endTime: Date | null;
+  /**
+   * Raw API strings, kept for wall-clock display. Pass these (not the
+   * parsed `Date`) into `formatExamDateTime` so the display matches the
+   * backend verbatim — never the runtime's local TZ.
+   */
+  startTimeRaw: string | null;
+  endTimeRaw: string | null;
   now: Date;
   /** Positive = time remaining, negative = time past. */
   remainingMs: number;
@@ -49,14 +59,28 @@ export function getExamAvailabilityStatus(
   const startTime = parseExamTimestamp(exam.startTime);
   const endTime = parseExamTimestamp(exam.endTime);
 
-  if (!startTime || !endTime) {
+  if (!startTime && !endTime) {
     return {
-      status: "unavailable",
+      status: "available",
       startTime,
       endTime,
+      startTimeRaw: exam.startTime ?? null,
+      endTimeRaw: exam.endTime ?? null,
       now,
       remainingMs: 0,
-      isUnavailable: true,
+      isUnavailable: false,
+    };
+  }
+  if (!startTime || !endTime) {
+    return {
+      status: "available",
+      startTime,
+      endTime,
+      startTimeRaw: exam.startTime ?? null,
+      endTimeRaw: exam.endTime ?? null,
+      now,
+      remainingMs: 0,
+      isUnavailable: false,
     };
   }
 
@@ -79,6 +103,8 @@ export function getExamAvailabilityStatus(
     status,
     startTime,
     endTime,
+    startTimeRaw: exam.startTime ?? null,
+    endTimeRaw: exam.endTime ?? null,
     now,
     remainingMs,
     isUnavailable: status !== "available",

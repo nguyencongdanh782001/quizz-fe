@@ -74,6 +74,8 @@ function ExamTakeContent({
     }
 
     if (state.startedAt) {
+      // Both sides use the bare-ISO = wall-clock convention, so the delta
+      // is correct under any browser TZ — never shift by 7h.
       const elapsed = (Date.now() - new Date(state.startedAt).getTime()) / 1000;
       const maxAge = (exam.duration + 5) * 60;
 
@@ -339,6 +341,9 @@ function ExamTakeContent({
 
   // Watchdog: auto-submit when exam end_time passes mid-attempt.
   // Uses a ref so re-renders don't restart the timer. Cleanup on unmount or phase change.
+  // NOTE: `exam.endTime` is a bare ISO wall-clock string; `new Date(...)` treats
+  // it as local time, so `Date.now()` and the parsed boundary use the same
+  // convention — the delta is correct regardless of browser TZ.
   const submitTimerRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
     if (phase !== "in-progress") return;
@@ -599,8 +604,8 @@ export default function ExamTakePage({
       <ExamUnavailable
         examId={id}
         status={availability.status}
-        startTime={availability.startTime}
-        endTime={availability.endTime}
+        startTime={availability.startTimeRaw}
+        endTime={availability.endTimeRaw}
       />
     );
   }

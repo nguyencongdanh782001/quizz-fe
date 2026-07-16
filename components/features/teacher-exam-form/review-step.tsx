@@ -17,6 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { formatExamDateTime } from "@/lib/date";
 import type { TeacherExamFormValues } from "./types";
 import {
   EXAM_FLOW_MESSAGES,
@@ -43,24 +44,16 @@ function getCorrectOptions(
   return question.options.filter((option) => option.is_correct);
 }
 
+/**
+ * Display the start_time/end_time field on the review step as wall-clock.
+ * Falls back to a localised placeholder when the field is empty or invalid.
+ */
 function formatReviewDateTime(value: string): string {
   if (!value.trim()) {
     return "Chưa chọn";
   }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "Thời gian không hợp lệ";
-  }
-
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-  const hour = String(date.getHours()).padStart(2, "0");
-  const minute = String(date.getMinutes()).padStart(2, "0");
-
-  return `${day}/${month}/${year} ${hour}:${minute}`;
+  const formatted = formatExamDateTime(value);
+  return formatted || "Thời gian không hợp lệ";
 }
 
 export function ReviewStep() {

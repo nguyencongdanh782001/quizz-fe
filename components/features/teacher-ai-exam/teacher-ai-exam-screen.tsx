@@ -230,19 +230,21 @@ function removeRecentAIExamDraft(jobId: number) {
   return nextDrafts;
 }
 
+/**
+ * Format a draft's `createdAt` for the AI exam recent-drafts card.
+ * Pulls wall-clock components from the API string directly — never
+ * constructs a `Date` so we never shift by browser TZ. Returns
+ * "Vừa tạo" when the string is missing or not in the expected shape.
+ */
 function formatRecentAIExamDate(value: string) {
-  const date = new Date(value);
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(value.trim());
 
-  if (Number.isNaN(date.getTime())) {
+  if (!match) {
     return "Vừa tạo";
   }
 
-  return date.toLocaleString("vi-VN", {
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "2-digit",
-  });
+  const [, , mm, dd, hh, mi] = match;
+  return `${dd}/${mm} ${hh}:${mi}`;
 }
 
 export function TeacherAIExamScreen({

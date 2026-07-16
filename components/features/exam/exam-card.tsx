@@ -199,8 +199,8 @@ export function ExamCard({ exam, compact = false }: ExamCardProps) {
 }
 
 function ScheduleBlock({ info }: { info: ExamOpenInfo }) {
-  const hasStart = info.startTime !== null;
-  const hasEnd = info.endTime !== null;
+  const hasStart = info.startTimeRaw !== null;
+  const hasEnd = info.endTimeRaw !== null;
 
   // Both missing → render "no schedule" note only.
   if (!hasStart && !hasEnd) {
@@ -225,7 +225,7 @@ function ScheduleBlock({ info }: { info: ExamOpenInfo }) {
           <CalendarDays className="w-3.5 h-3.5 shrink-0" />
           <span className="text-foreground/60">Mở:</span>
           <span className="font-medium text-on-surface">
-            {formatExamDateTime(info.startTime)}
+            {formatExamDateTime(info.startTimeRaw)}
           </span>
         </p>
       )}
@@ -234,7 +234,7 @@ function ScheduleBlock({ info }: { info: ExamOpenInfo }) {
           <Hourglass className="w-3.5 h-3.5 shrink-0" />
           <span className="text-foreground/60">Đóng:</span>
           <span className="font-medium text-on-surface">
-            {formatExamDateTime(info.endTime)}
+            {formatExamDateTime(info.endTimeRaw)}
           </span>
         </p>
       )}

@@ -9,8 +9,13 @@ import { ExamStatusBadge } from "./exam-status-badge";
 interface ExamUnavailableProps {
   examId: string;
   status: ExamStatus;
-  startTime?: Date | null;
-  endTime?: Date | null;
+  /**
+   * Raw API start-time string. Passed straight into `formatExamDateTime`
+   * so the displayed wall-clock matches what the backend stored.
+   */
+  startTime?: string | null;
+  /** Raw API end-time string, same convention as `startTime`. */
+  endTime?: string | null;
 }
 
 const REASON_MAP: Record<

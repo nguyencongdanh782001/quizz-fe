@@ -25,9 +25,9 @@ export function ExamAvailabilityCard({ exam }: ExamAvailabilityCardProps) {
     return null;
   }
 
-  const showStart = info.status === "upcoming" && info.startTime;
+  const showStart = info.status === "upcoming" && info.startTimeRaw;
   const showEnd =
-    (info.status === "available" || info.status === "expired") && info.endTime;
+    (info.status === "available" || info.status === "expired") && info.endTimeRaw;
 
   const toneClass =
     info.status === "upcoming"
@@ -65,7 +65,7 @@ export function ExamAvailabilityCard({ exam }: ExamAvailabilityCardProps) {
             Đề thi sẽ mở vào:
           </p>
           <p className="font-display text-lg font-semibold text-on-surface">
-            {formatExamDateTime(info.startTime)}
+            {formatExamDateTime(info.startTimeRaw)}
           </p>
           {info.remainingMs > 0 && (
             <p className="text-sm text-muted-foreground">
@@ -81,7 +81,7 @@ export function ExamAvailabilityCard({ exam }: ExamAvailabilityCardProps) {
             {info.status === "expired" ? "Đề thi đã đóng vào:" : "Đóng vào:"}
           </p>
           <p className="font-display text-lg font-semibold text-on-surface">
-            {formatExamDateTime(info.endTime)}
+            {formatExamDateTime(info.endTimeRaw)}
           </p>
           {info.remainingMs !== 0 && (
             <p className="text-sm text-muted-foreground">

@@ -1,3 +1,8 @@
+// NOTE: Same convention as `exam-availability.ts` — `Date.now()` is
+// compared against exam boundaries parsed with `parseExamTimestamp`.
+// Both sides use bare ISO = wall-clock, so deltas stay correct under
+// any browser TZ. Display layers must pass `startTimeRaw`/`endTimeRaw`
+// (not the parsed `Date`) into `formatExamDateTime`.
 import { parseExamTimestamp } from "./date";
 import { formatRemainingTime, type ExamTimeWindow } from "./exam-availability";
 
@@ -27,6 +32,12 @@ export interface ExamOpenInfo {
   state: ExamOpenState;
   startTime: Date | null;
   endTime: Date | null;
+  /**
+   * Raw API strings — pass these (not the parsed `Date`) into
+   * `formatExamDateTime` so the display matches the backend wall-clock.
+   */
+  startTimeRaw: string | null;
+  endTimeRaw: string | null;
   /** Signed. Positive = time until next boundary; negative = time past. */
   remainingMs: number;
   /** Pre-formatted countdown ("Còn 3 ngày 5 giờ" / "Quá hạn 2 ngày" / ""). */
@@ -63,6 +74,8 @@ export function getExamOpenState(
       state: "always-open",
       startTime: null,
       endTime: null,
+      startTimeRaw: null,
+      endTimeRaw: null,
       remainingMs: 0,
       countdownLabel: "",
       isOpenableNow: true,
@@ -78,6 +91,8 @@ export function getExamOpenState(
       state: "unavailable",
       startTime,
       endTime,
+      startTimeRaw: rawStart,
+      endTimeRaw: rawEnd,
       remainingMs: 0,
       countdownLabel: "",
       isOpenableNow: false,
@@ -94,6 +109,8 @@ export function getExamOpenState(
         state: "upcoming",
         startTime,
         endTime,
+        startTimeRaw: rawStart,
+        endTimeRaw: rawEnd,
         remainingMs: startTime!.getTime() - now.getTime(),
         countdownLabel: formatRemainingTime(
           startTime!.getTime() - now.getTime(),
@@ -109,6 +126,8 @@ export function getExamOpenState(
         state: "expired",
         startTime,
         endTime,
+        startTimeRaw: rawStart,
+        endTimeRaw: rawEnd,
         remainingMs: endTime!.getTime() - now.getTime(), // negative
         countdownLabel: formatRemainingTime(
           endTime!.getTime() - now.getTime(),
@@ -123,6 +142,8 @@ export function getExamOpenState(
       state: "open",
       startTime,
       endTime,
+      startTimeRaw: rawStart,
+      endTimeRaw: rawEnd,
       remainingMs: endTime!.getTime() - now.getTime(),
       countdownLabel: formatRemainingTime(
         endTime!.getTime() - now.getTime(),
@@ -141,6 +162,8 @@ export function getExamOpenState(
         state: "scheduled-only",
         startTime,
         endTime: null,
+        startTimeRaw: rawStart,
+        endTimeRaw: null,
         remainingMs: startTime!.getTime() - now.getTime(),
         countdownLabel: formatRemainingTime(
           startTime!.getTime() - now.getTime(),
@@ -155,6 +178,8 @@ export function getExamOpenState(
       state: "scheduled-pending",
       startTime,
       endTime: null,
+      startTimeRaw: rawStart,
+      endTimeRaw: null,
       remainingMs: 0,
       countdownLabel: "",
       isOpenableNow: true,
@@ -171,6 +196,8 @@ export function getExamOpenState(
       state: "expired",
       startTime: null,
       endTime,
+      startTimeRaw: null,
+      endTimeRaw: rawEnd,
       remainingMs: endTime!.getTime() - now.getTime(), // negative
       countdownLabel: formatRemainingTime(
         endTime!.getTime() - now.getTime(),
@@ -185,6 +212,8 @@ export function getExamOpenState(
     state: "open",
     startTime: null,
     endTime,
+    startTimeRaw: null,
+    endTimeRaw: rawEnd,
     remainingMs: endTime!.getTime() - now.getTime(),
     countdownLabel: formatRemainingTime(
       endTime!.getTime() - now.getTime(),

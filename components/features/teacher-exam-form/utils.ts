@@ -182,24 +182,20 @@ function normalizeText(value: string): string {
   return value.trim();
 }
 
-function toPayloadDate(value: string): Date {
-  return new Date(value);
-}
-
-function toDateTimeLocalValue(value: string): string {
-  if (!value.trim()) {
-    return "";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  const timezoneOffsetMs = date.getTimezoneOffset() * 60_000;
-
-  return new Date(date.getTime() - timezoneOffsetMs).toISOString().slice(0, 16);
+/**
+ * Convert an API-returned ISO timestamp (e.g. "2026-07-15T12:30:00.000Z")
+ * into the form's `YYYY-MM-DDTHH:mm` input format. Pure regex — never
+ * constructs a `Date`. The backend timestamps are treated as wall-clock;
+ * we never add or subtract hours.
+ *
+ * If the input has no `T` separator (already in form shape, or empty),
+ * it is returned unchanged.
+ */
+function formatApiIsoToInput(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(trimmed);
+  return match ? `${match[1]}T${match[2]}` : trimmed;
 }
 
 export function normalizeTeacherExamQuestionType(
@@ -265,6 +261,9 @@ function mapQuestion(
 function buildExamPayload(
   values: TeacherExamFormValues,
 ): TeacherCreateExamRequest {
+  // Pass wall-clock strings straight through. Wrapping in `Date` would
+  // cause axios to re-serialize via `.toISOString()`, shifting by browser
+  // TZ and corrupting the value the backend stores.
   const startTime = values.start_time.trim();
   const endTime = values.end_time.trim();
   return {
@@ -273,8 +272,8 @@ function buildExamPayload(
     grade: normalizeText(values.grade),
     image_url: normalizeText(values.image_url),
     duration_minutes: values.duration_minutes,
-    start_time: startTime ? toPayloadDate(startTime) : undefined,
-    end_time: endTime ? toPayloadDate(endTime) : undefined,
+    start_time: startTime || undefined,
+    end_time: endTime || undefined,
     is_published: values.is_published,
     is_active: values.is_active,
     questions: reindexTeacherExamQuestions(values.questions).map(mapQuestion),
@@ -348,8 +347,8 @@ export function mapTeacherExamDetailToFormValues(
     scope: exam.scope ?? DEFAULT_TEACHER_EXAM_SCOPE,
     classroom_id: exam.classroom_id ?? null,
     duration_minutes: exam.duration_minutes,
-    start_time: toDateTimeLocalValue(exam.start_time),
-    end_time: toDateTimeLocalValue(exam.end_time),
+    start_time: formatApiIsoToInput(exam.start_time),
+    end_time: formatApiIsoToInput(exam.end_time),
     is_published: exam.is_published,
     is_active: exam.is_active,
     questions: mappedQuestions,
