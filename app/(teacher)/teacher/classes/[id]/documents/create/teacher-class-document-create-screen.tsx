@@ -102,7 +102,8 @@ function formatFileSize(bytes: number): string {
     unitIndex += 1;
   }
 
-  const formatted = unitIndex === 0 ? String(bytes) : size.toFixed(size >= 10 ? 0 : 1);
+  const formatted =
+    unitIndex === 0 ? String(bytes) : size.toFixed(size >= 10 ? 0 : 1);
 
   return `${formatted} ${units[unitIndex]}`;
 }
@@ -170,7 +171,9 @@ function ClassroomInfoCard({
           <p className="mt-1 text-base font-semibold text-on-surface">
             {classroomName}
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">Mã lớp: {classId}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Mã lớp: {classId}
+          </p>
         </div>
       </div>
     </SurfacePanel>
@@ -459,7 +462,7 @@ function PublishSettingsCard({
         >
           <span
             className={cn(
-              "block size-6 rounded-full bg-white shadow-[0_4px_12px_-5px_rgba(7,30,39,0.7)] transition-transform",
+              "block size-5.5 rounded-full bg-white shadow-[0_4px_12px_-5px_rgba(7,30,39,0.7)] transition-transform",
               checked && "translate-x-6",
             )}
           />
@@ -519,9 +522,9 @@ export function TeacherClassDocumentCreateScreen({
   const classroomName =
     classroomQuery.data?.name?.trim() ?? `Lớp học #${classId}`;
   const classBreadcrumbHref = `/teacher/classes/${classId}`;
-  const classBreadcrumbLabel = classroomQuery.data?.name?.trim() || (
-    classroomQuery.isPending ? null : "Chi tiết lớp học"
-  );
+  const classBreadcrumbLabel =
+    classroomQuery.data?.name?.trim() ||
+    (classroomQuery.isPending ? null : "Chi tiết lớp học");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -638,13 +641,7 @@ export function TeacherClassDocumentCreateScreen({
           initialValues={initialValues}
           onSubmit={handleSubmit}
         >
-          {({
-            isSubmitting,
-            setStatus,
-            status,
-            setFieldValue,
-            values,
-          }) => {
+          {({ isSubmitting, setStatus, status, setFieldValue, values }) => {
             const formStatus = status as { submitError?: string } | undefined;
             const isFormDisabled =
               isSubmitting || createMutation.isPending || isRedirecting;

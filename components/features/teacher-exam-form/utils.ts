@@ -41,9 +41,7 @@ export function createOptionKey(index: number): string {
 }
 
 export function normalizeAcceptedAnswers(acceptedAnswers: string[]): string[] {
-  return acceptedAnswers
-    .map((answer) => answer.trim())
-    .filter(Boolean);
+  return acceptedAnswers.map((answer) => answer.trim()).filter(Boolean);
 }
 
 export function isTextQuestionType(
@@ -151,6 +149,7 @@ export function createEmptyQuestion(
     client_id: createFormId("question"),
     question_type: normalizedQuestionType,
     prompt: "",
+    explanation: "",
     image_url: "",
     order_index: orderIndex,
     points: 1,
@@ -166,19 +165,37 @@ export function createInitialTeacherExamFormValues(): TeacherExamFormValues {
   return {
     title: "",
     description: "",
+    grade: "",
     image_url: "",
     scope: DEFAULT_TEACHER_EXAM_SCOPE,
     classroom_id: null,
     duration_minutes: 45,
+    start_time: "",
+    end_time: "",
     is_published: false,
     is_active: true,
     questions: [createEmptyQuestion()],
   };
 }
 
-function normalizeOptionalText(value: string): string | null {
+function normalizeText(value: string): string {
+  return value.trim();
+}
+
+/**
+ * Convert an API-returned ISO timestamp (e.g. "2026-07-15T12:30:00.000Z")
+ * into the form's `YYYY-MM-DDTHH:mm` input format. Pure regex — never
+ * constructs a `Date`. The backend timestamps are treated as wall-clock;
+ * we never add or subtract hours.
+ *
+ * If the input has no `T` separator (already in form shape, or empty),
+ * it is returned unchanged.
+ */
+function formatApiIsoToInput(value: string): string {
   const trimmed = value.trim();
-  return trimmed ? trimmed : null;
+  if (!trimmed) return "";
+  const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(trimmed);
+  return match ? `${match[1]}T${match[2]}` : trimmed;
 }
 
 export function normalizeTeacherExamQuestionType(
@@ -195,7 +212,9 @@ export function reindexTeacherExamQuestions(
   questions: TeacherExamQuestionFormValues[],
 ): TeacherExamQuestionFormValues[] {
   return questions.map((question, index) => {
-    const questionType = normalizeTeacherExamQuestionType(question.question_type);
+    const questionType = normalizeTeacherExamQuestionType(
+      question.question_type,
+    );
 
     return {
       ...question,
@@ -223,14 +242,15 @@ function mapQuestion(
   return {
     question_type: questionType,
     prompt: question.prompt.trim(),
-    image_url: normalizeOptionalText(question.image_url),
+    explanation: normalizeText(question.explanation),
+    image_url: normalizeText(question.image_url),
     order_index: index + 1,
     points: question.points,
     options: isChoiceQuestionType(questionType)
       ? options.map((option, optionIndex) => ({
           option_key: option.option_key || createOptionKey(optionIndex),
           option_text: option.option_text.trim(),
-          image_url: normalizeOptionalText(option.image_url),
+          image_url: normalizeText(option.image_url),
           is_correct: option.is_correct,
         }))
       : [],
@@ -238,12 +258,22 @@ function mapQuestion(
   };
 }
 
-function buildExamPayload(values: TeacherExamFormValues): TeacherCreateExamRequest {
+function buildExamPayload(
+  values: TeacherExamFormValues,
+): TeacherCreateExamRequest {
+  // Pass wall-clock strings straight through. Wrapping in `Date` would
+  // cause axios to re-serialize via `.toISOString()`, shifting by browser
+  // TZ and corrupting the value the backend stores.
+  const startTime = values.start_time.trim();
+  const endTime = values.end_time.trim();
   return {
     title: values.title.trim(),
-    description: normalizeOptionalText(values.description),
-    image_url: normalizeOptionalText(values.image_url),
+    description: normalizeText(values.description),
+    grade: normalizeText(values.grade),
+    image_url: normalizeText(values.image_url),
     duration_minutes: values.duration_minutes,
+    start_time: startTime || undefined,
+    end_time: endTime || undefined,
     is_published: values.is_published,
     is_active: values.is_active,
     questions: reindexTeacherExamQuestions(values.questions).map(mapQuestion),
@@ -261,8 +291,6 @@ export function mapTeacherExamFormToUpdatePayload(
 ): TeacherUpdateExamRequest {
   return {
     ...buildExamPayload(values),
-    scope: values.scope.trim() || DEFAULT_TEACHER_EXAM_SCOPE,
-    classroom_id: values.classroom_id,
   };
 }
 
@@ -290,6 +318,7 @@ export function mapTeacherExamDetailToFormValues(
           client_id: createFormId("question"),
           question_type: questionType,
           prompt: question.prompt,
+          explanation: question.explanation ?? "",
           image_url: question.image_url ?? "",
           order_index: question.order_index || index + 1,
           points: question.points,
@@ -313,10 +342,13 @@ export function mapTeacherExamDetailToFormValues(
   return {
     title: exam.title,
     description: exam.description ?? "",
+    grade: exam.grade ?? "",
     image_url: exam.image_url ?? "",
     scope: exam.scope ?? DEFAULT_TEACHER_EXAM_SCOPE,
     classroom_id: exam.classroom_id ?? null,
     duration_minutes: exam.duration_minutes,
+    start_time: formatApiIsoToInput(exam.start_time),
+    end_time: formatApiIsoToInput(exam.end_time),
     is_published: exam.is_published,
     is_active: exam.is_active,
     questions: mappedQuestions,
@@ -328,13 +360,48 @@ export const teacherExamFormSchema = Yup.object({
     .trim()
     .required(EXAM_FLOW_MESSAGES.validation.examTitleRequired),
   description: Yup.string(),
+  grade: Yup.string()
+    .trim()
+    .required(EXAM_FLOW_MESSAGES.validation.gradeRequired),
   scope: Yup.string().trim().required(),
   classroom_id: Yup.number().nullable(),
-  image_url: Yup.string().url("Link hình ảnh không hợp lệ").optional().nullable(),
+  image_url: Yup.string()
+    .url("Link hình ảnh không hợp lệ")
+    .optional()
+    .nullable(),
   duration_minutes: Yup.number()
     .typeError("Thời lượng phải là số")
     .moreThan(0, EXAM_FLOW_MESSAGES.validation.durationGreaterThanZero)
     .required("Thời lượng là bắt buộc"),
+  start_time: Yup.string(),
+  // .required(EXAM_FLOW_MESSAGES.validation.startTimeRequired)
+  // .test(
+  //   "valid-start-time",
+  //   "Thời gian bắt đầu không hợp lệ",
+  //   (value) =>
+  //     Boolean(value) && !Number.isNaN(new Date(value || "").getTime()),
+  // ),
+  end_time: Yup.string()
+    // .required(EXAM_FLOW_MESSAGES.validation.endTimeRequired)
+    // .test(
+    //   "valid-end-time",
+    //   "Thời gian kết thúc không hợp lệ",
+    //   (value) =>
+    //     Boolean(value) && !Number.isNaN(new Date(value || "").getTime()),
+    // )
+    .test(
+      "end-after-start",
+      EXAM_FLOW_MESSAGES.validation.endTimeAfterStart,
+      function validateEndAfterStart(value) {
+        const startTime = this.parent.start_time;
+
+        if (!value || !startTime) {
+          return true;
+        }
+
+        return new Date(value).getTime() > new Date(startTime).getTime();
+      },
+    ),
   is_published: Yup.boolean().required(),
   is_active: Yup.boolean().required(),
   questions: Yup.array()
@@ -348,14 +415,12 @@ export const teacherExamFormSchema = Yup.object({
               ? DEFAULT_TEACHER_EXAM_QUESTION_TYPE
               : value,
           )
-          .oneOf(
-            [...TEACHER_EXAM_QUESTION_TYPES],
-            "Loại câu hỏi không hợp lệ",
-          )
+          .oneOf([...TEACHER_EXAM_QUESTION_TYPES], "Loại câu hỏi không hợp lệ")
           .required("Loại câu hỏi là bắt buộc"),
         prompt: Yup.string()
           .trim()
           .required(EXAM_FLOW_MESSAGES.validation.questionPromptRequired),
+        explanation: Yup.string(),
         image_url: Yup.string()
           .url("Link hình ảnh không hợp lệ")
           .optional()

@@ -22,13 +22,17 @@ export const EXAM_FLOW_MESSAGES = {
   labels: {
     title: "Tên đề thi",
     description: "Mô tả",
+    grade: "Khối lớp",
     image: "Ảnh đề thi",
     scope: "Phạm vi",
     classroom: "Lớp học",
     duration: "Thời gian làm bài",
+    startTime: "Thời gian bắt đầu",
+    endTime: "Thời gian kết thúc",
     activeStatus: "Trạng thái hoạt động",
     published: "Xuất bản",
     question: "Câu hỏi",
+    explanation: "Giải thích",
     answer: "Đáp án",
     points: "Điểm",
     questionType: "Loại câu hỏi",
@@ -42,8 +46,10 @@ export const EXAM_FLOW_MESSAGES = {
   placeholders: {
     title: "Nhập tên đề thi",
     description: "Nhập mô tả đề thi",
+    grade: "Ví dụ: Lớp 10",
     image: "Nhập đường dẫn ảnh đề thi",
     question: "Nhập nội dung câu hỏi",
+    explanation: "Nhập giải thích sau khi học sinh trả lời",
     option: "Nhập nội dung đáp án",
     acceptedAnswer: "Nhập đáp án chấp nhận",
   },
@@ -65,7 +71,11 @@ export const EXAM_FLOW_MESSAGES = {
   },
   validation: {
     examTitleRequired: "Tên đề thi là bắt buộc",
+    gradeRequired: "Khối lớp là bắt buộc",
     durationGreaterThanZero: "Thời gian làm bài phải lớn hơn 0",
+    startTimeRequired: "Thời gian bắt đầu là bắt buộc",
+    endTimeRequired: "Thời gian kết thúc là bắt buộc",
+    endTimeAfterStart: "Thời gian kết thúc phải sau thời gian bắt đầu",
     examMustHaveQuestions: "Đề thi phải có ít nhất 1 câu hỏi",
     questionPromptRequired: "Nội dung câu hỏi là bắt buộc",
     pointsGreaterThanZero: "Điểm số phải lớn hơn 0",
@@ -91,7 +101,7 @@ export const EXAM_FLOW_MESSAGES = {
     active: "Đang hoạt động",
     hidden: "Tạm ẩn",
     system: "Hệ thống",
-    classroom: "Lớp học",
+    classroom: "Giáo viên",
     noClassroom: "Chưa gắn lớp học",
   },
 } as const;
@@ -104,14 +114,13 @@ export function getExamScopeLabel(scope: string | null | undefined): string {
   }
 
   if (
-    !normalizedScope ||
     normalizedScope === "classroom" ||
     normalizedScope === "class"
   ) {
     return EXAM_FLOW_MESSAGES.states.classroom;
   }
 
-  return scope?.trim() || EXAM_FLOW_MESSAGES.states.classroom;
+  return scope?.trim() || EXAM_FLOW_MESSAGES.states.system;
 }
 
 export function getExamClassroomLabel(classroomId: number | null): string {

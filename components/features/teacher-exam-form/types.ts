@@ -26,6 +26,7 @@ export interface TeacherExamQuestionFormValues {
   client_id: string;
   question_type: TeacherExamQuestionType;
   prompt: string;
+  explanation: string;
   image_url: string;
   order_index: number;
   points: number;
@@ -36,10 +37,13 @@ export interface TeacherExamQuestionFormValues {
 export interface TeacherExamFormValues {
   title: string;
   description: string;
+  grade: string;
   image_url: string;
   scope: string;
   classroom_id: number | null;
   duration_minutes: number;
+  start_time: string;
+  end_time: string;
   is_published: boolean;
   is_active: boolean;
   questions: TeacherExamQuestionFormValues[];

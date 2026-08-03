@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BookOpen,
   Search,
@@ -9,8 +9,8 @@ import {
   Trophy,
 } from "lucide-react";
 import { ExamCard } from "@/components/features/exam/exam-card";
-import { getStudentSystemExams } from "@/lib/student-system-exams";
-import { Exam, ExamDifficulty } from "@/types/exam.types";
+import { ExamDifficulty } from "@/types/exam.types";
+import { useStudentSystemExams } from "@/hooks/queries/use-student-system-exams";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,53 +38,55 @@ const ALL_GRADES = "__all_grades__";
 const ALL_DIFFICULTIES = "__all_difficulties__";
 
 export default function ExamsPage() {
-  const [exams, setExams] = useState<Exam[]>([]);
-  const [isLoadingExams, setIsLoadingExams] = useState(true);
   const [search, setSearch] = useState("");
   const [classroom, setClassroom] = useState("");
   const [grade, setGrade] = useState<number | "">("");
   const [difficulty, setDifficulty] = useState<ExamDifficulty | "">("");
   const [showFilters, setShowFilters] = useState(false);
 
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useStudentSystemExams();
+
+  const items = data?.items ?? [];
+  const totalExams = data?.total ?? 0;
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    let isMounted = true;
+    const node = sentinelRef.current;
+    if (!node || !hasNextPage || isFetchingNextPage) return;
 
-    async function loadExams() {
-      try {
-        const items = await getStudentSystemExams();
-
-        if (!isMounted) {
-          return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          void fetchNextPage();
         }
+      },
+      { rootMargin: "200px" },
+    );
 
-        setExams(items);
-      } finally {
-        if (isMounted) {
-          setIsLoadingExams(false);
-        }
-      }
-    }
-
-    void loadExams();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const classroomOptions = Array.from(
     new Set(
-      exams
+      items
         .map((exam) => exam.classroomName?.trim())
         .filter((value): value is string => Boolean(value)),
     ),
   ).sort((a, b) => a.localeCompare(b, "vi"));
 
   const gradeOptions = Array.from(
-    new Set(exams.map((exam) => exam.grade).filter((item) => item > 0)),
+    new Set(items.map((exam) => exam.grade).filter((item) => item > 0)),
   ).sort((a, b) => a - b);
 
-  const filtered = exams.filter((exam) => {
+  const filtered = items.filter((exam) => {
     const keyword = search.trim().toLowerCase();
 
     if (
@@ -120,14 +122,14 @@ export default function ExamsPage() {
         metrics={[
           {
             label: "Tổng đề thi",
-            value: isLoadingExams ? "--" : exams.length,
+            value: isLoading ? "--" : totalExams,
             description: "Đề thi hệ thống sẵn sàng để bắt đầu ngay.",
             icon: BookOpen,
             tone: "primary",
           },
           {
             label: "Mức độ hiển thị",
-            value: isLoadingExams ? "--" : difficultyOptions.length - 1,
+            value: isLoading ? "--" : difficultyOptions.length - 1,
             description: "Các nhóm độ khó để bạn chọn nhịp ôn luyện phù hợp.",
             icon: Trophy,
             tone: "secondary",
@@ -249,7 +251,7 @@ export default function ExamsPage() {
         </SurfacePanel>
       ) : null}
 
-      {isLoadingExams ? (
+      {isLoading ? (
         <SurfacePanel className="py-12 text-center text-muted-foreground">
           <Search className="w-10 h-10 mx-auto mb-3 opacity-40" />
           <p className="font-medium">Đang tải đề thi</p>
@@ -259,12 +261,12 @@ export default function ExamsPage() {
         <AppEmptyState
           icon={BookOpen}
           title={
-            exams.length === 0
+            items.length === 0
               ? "Chưa có đề thi hệ thống nào"
               : "Không tìm thấy đề thi nào"
           }
           description={
-            exams.length === 0
+            items.length === 0
               ? "Hệ thống sẽ hiển thị đề thi mới tại đây ngay khi có dữ liệu."
               : "Thử thay đổi bộ lọc hoặc từ khóa để khám phá thêm đề thi phù hợp."
           }
@@ -272,13 +274,22 @@ export default function ExamsPage() {
       ) : (
         <>
           <p className="text-sm text-muted-foreground">
-            Hiển thị {filtered.length} trong {exams.length} đề thi
+            Hiển thị {filtered.length} trong {items.length} đề thi
+            {items.length < totalExams ? ` (tổng ${totalExams})` : ""}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {filtered.map((exam) => (
               <ExamCard key={exam.id} exam={exam} />
             ))}
           </div>
+          <div ref={sentinelRef} className="h-10" aria-hidden />
+          <p className="text-center text-sm text-muted-foreground">
+            {isFetchingNextPage
+              ? "Đang tải thêm..."
+              : !hasNextPage
+                ? `Đã hiển thị tất cả ${totalExams} đề thi.`
+                : null}
+          </p>
         </>
       )}
     </div>

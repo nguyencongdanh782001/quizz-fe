@@ -4,6 +4,68 @@ const DATE_DISPLAY_FORMATTER = new Intl.DateTimeFormat("vi-VN", {
   year: "numeric",
 });
 
+/**
+ * Format a backend-sourced timestamp string as "DD/MM/YYYY HH:mm" using
+ * **only** the characters that appear in the string. Never constructs a
+ * `Date` instance and never consults the runtime's local timezone.
+ *
+ * Accepts ISO-8601 variants:
+ *   - "2026-07-15T12:30"
+ *   - "2026-07-15T12:30:00"
+ *   - "2026-07-15T12:30:00.000Z"
+ *   - "2026-07-15T12:30:00+07:00"
+ *
+ * Returns "" for null/undefined/garbage input.
+ *
+ * This is the canonical display helper for any exam timestamp returned
+ * by the backend. Always prefer it over `new Date(...)` for display
+ * because the API may emit bare ISO strings (no `Z`/offset), which
+ * browsers interpret as local time and shift accordingly.
+ */
+export function formatWallClockDateTime(value?: string | null): string {
+  if (!value) return "";
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(value.trim());
+  if (!match) return "";
+  const [, yyyy, mm, dd, hh, mi] = match;
+  return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
+}
+
+/**
+ * Format an exam timestamp string as "DD/MM/YYYY HH:mm" using its
+ * wall-clock components. Wraps {@link formatWallClockDateTime} so that
+ * every consumer routes through the same regex. Never constructs a
+ * `Date`. See that helper for accepted input variants.
+ */
+export function formatExamDateTime(value?: string | null | undefined): string {
+  return formatWallClockDateTime(typeof value === "string" ? value : null);
+}
+
+/**
+ * ⚠️ Display-safe callers should use {@link formatExamDateTime} (regex)
+ *    instead. This helper is reserved for **logic-only** consumers (window
+ *    comparisons, remaining-time math).
+ *
+ * Parse an ISO-ish timestamp string (or null/empty) into a `Date`.
+ *
+ * The returned `Date` is **synthetic**: its epoch-ms represent the
+ * wall-clock fields of `value` interpreted as the runtime's local time.
+ * This means the returned `Date` is meaningful **only** for relative
+ * comparisons against another value parsed the same way (or against
+ * `Date.now()`), provided the server's clock matches the user's browser
+ * clock to within seconds. It is **not** meaningful for displaying a
+ * wall-clock time — that has been re-interpreted under the runtime's
+ * local TZ and will shift on non-matching browsers.
+ *
+ * Returns null when the input is missing/invalid — strict-mode friendly.
+ */
+export function parseExamTimestamp(value?: string | null): Date | null {
+  if (!value || typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const date = new Date(trimmed);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 export function createLocalDate(
   year: number,
   month: number,

@@ -1,3 +1,4 @@
+import { formatExamDateTime } from "@/lib/date";
 import type {
   TeacherExamResultItemData,
   TeacherExamResultListData,
@@ -11,7 +12,7 @@ interface ExportTeacherExamResultsInput {
   results: TeacherExamResultListData;
 }
 
-const DATE_TIME_FORMATTER = new Intl.DateTimeFormat("vi-VN", {
+const NOW_FORMATTER = new Intl.DateTimeFormat("vi-VN", {
   day: "2-digit",
   month: "2-digit",
   year: "numeric",
@@ -19,9 +20,12 @@ const DATE_TIME_FORMATTER = new Intl.DateTimeFormat("vi-VN", {
   minute: "2-digit",
 });
 
+/**
+ * Format a `submittedAt` timestamp for the CSV column.
+ * Uses the wall-clock regex from `@/lib/date` so we never shift by browser TZ.
+ */
 function formatDateTime(value: string): string {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "" : DATE_TIME_FORMATTER.format(date);
+  return formatExamDateTime(value);
 }
 
 function roundNumber(value: number, digits = 2): number {
@@ -67,7 +71,7 @@ function buildOverviewRows({
     ["Tổng lượt nộp", results.summary.submittedCount],
     ["Số học sinh đạt", passedCount],
     ["Điểm trung bình (%)", roundNumber(results.summary.averageScorePercent)],
-    ["Ngày xuất file", DATE_TIME_FORMATTER.format(new Date())],
+    ["Ngày xuất file", NOW_FORMATTER.format(new Date())],
   ];
 }
 

@@ -373,7 +373,7 @@ function MetaRow({
         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           {label}
         </p>
-        <p className="mt-1 break-words text-sm text-on-surface">{value}</p>
+        <p className="mt-1 wrap-break-word text-sm text-on-surface">{value}</p>
       </div>
     </div>
   );

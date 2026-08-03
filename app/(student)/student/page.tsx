@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import { ExamCard } from '@/components/features/exam/exam-card';
 import { ClassCard } from '@/components/features/class/class-card';
 import { getStudentClasses } from '@/lib/student-classes';
-import { getStudentSystemExams } from '@/lib/student-system-exams';
+import { useStudentSystemExamTotal } from '@/hooks/queries/use-student-system-exam-total';
+import { useStudentSystemExams } from '@/hooks/queries/use-student-system-exams';
 import type { ClassInfo } from '@/types/class.types';
-import type { Exam } from '@/types/exam.types';
 import { ArrowRight, BookOpen, GraduationCap, Sparkles, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -15,36 +15,35 @@ import { SurfacePanel } from '@/components/shared/surface-panel';
 import { AppEmptyState } from '@/components/shared/empty-state';
 
 export default function HomePage() {
-  const [featuredExams, setFeaturedExams] = useState<Exam[]>([]);
   const [recentClasses, setRecentClasses] = useState<ClassInfo[]>([]);
-  const [isLoadingExams, setIsLoadingExams] = useState(true);
   const [isLoadingClasses, setIsLoadingClasses] = useState(true);
+
+  const { data: totalExams, isLoading: isLoadingTotal } =
+    useStudentSystemExamTotal();
+  const { data: featuredExamsData, isLoading: isLoadingFeatured } =
+    useStudentSystemExams({ limit: 3 });
+  const featuredExams = featuredExamsData?.items ?? [];
 
   useEffect(() => {
     let isMounted = true;
 
-    async function loadDashboardData() {
+    async function loadClassesData() {
       try {
-        const [exams, classes] = await Promise.all([
-          getStudentSystemExams(),
-          getStudentClasses(),
-        ]);
+        const classes = await getStudentClasses();
 
         if (!isMounted) {
           return;
         }
 
-        setFeaturedExams(exams.slice(0, 3));
         setRecentClasses(classes.slice(0, 2));
       } finally {
         if (isMounted) {
-          setIsLoadingExams(false);
           setIsLoadingClasses(false);
         }
       }
     }
 
-    void loadDashboardData();
+    void loadClassesData();
 
     return () => {
       isMounted = false;
@@ -71,7 +70,7 @@ export default function HomePage() {
         metrics={[
           {
             label: 'Đề thi sẵn sàng',
-            value: isLoadingExams ? '--' : featuredExams.length,
+            value: isLoadingTotal ? '--' : totalExams ?? 0,
             description: 'Những đề thi được đề xuất cho bạn ở lần ghé thăm này.',
             icon: BookOpen,
             tone: 'primary',
@@ -85,7 +84,7 @@ export default function HomePage() {
           },
           {
             label: 'Nhịp hoàn thành',
-            value: isLoadingExams
+            value: isLoadingFeatured
               ? '--'
               : `${featuredExams.reduce((sum, exam) => sum + exam.questionCount, 0)} câu`,
             description: 'Số lượng nội dung có thể bắt đầu ngay trên hệ thống.',
@@ -110,7 +109,7 @@ export default function HomePage() {
             </Link>
           </Button>
         </div>
-        {isLoadingExams ? (
+        {isLoadingFeatured ? (
           <SurfacePanel className="text-sm text-muted-foreground">
             Đang tải đề thi hệ thống...
           </SurfacePanel>

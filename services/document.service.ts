@@ -19,6 +19,8 @@ function inferGrade(classroomName: string | null): number {
 }
 
 function mapTeacherDocument(item: TeacherDocumentSchema): Document {
+  const scope = item.scope === "classroom" ? "classroom" : "system";
+
   return {
     id: String(item.id),
     title: item.title,
@@ -27,8 +29,8 @@ function mapTeacherDocument(item: TeacherDocumentSchema): Document {
     url: "/teacher/documents",
     subject: item.classroom_name ?? "Tài liệu hệ thống",
     grade: inferGrade(item.classroom_name),
-    uploadedBy: "teacher",
-    uploadedByName: "Giáo viên",
+    uploadedBy: scope,
+    uploadedByName: scope === "classroom" ? "Giáo viên" : "Hệ thống",
     createdAt: item.created_at,
     updatedAt: item.updated_at,
     fileSize: item.file_size_bytes ?? undefined,
@@ -37,7 +39,7 @@ function mapTeacherDocument(item: TeacherDocumentSchema): Document {
       Boolean,
     ),
     content: item.content,
-    scope: item.scope === "classroom" ? "classroom" : "system",
+    scope,
     classroomId: item.classroom_id ? String(item.classroom_id) : null,
     classroomName: item.classroom_name,
     isPublished: item.is_published,

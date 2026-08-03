@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   CircleAlert,
+  Coins,
   FolderOpen,
   History,
   LoaderCircle,
@@ -34,12 +35,19 @@ import {
   ToastViewport,
 } from "@/components/ui/toast";
 import { aiExamQueryKeys } from "@/hooks/queries/ai-exam.query-keys";
+import { billingQueryKeys } from "@/hooks/queries/billing.query-keys";
 import { teacherExamQueryKeys } from "@/hooks/queries/exam.query-keys";
 import { getApiErrorMessage } from "@/lib/api/error-message";
 import type {
+  AIQCCostEstimateResponse,
   AIExamGenerationJobResponse,
   AIQuestionDraftResponse,
+  ApiError,
 } from "@/lib/api/types";
+import {
+  estimateAIQCCost,
+  getQCWallet,
+} from "@/services/billing.service";
 import {
   generateAIExam,
   generateMoreAIQuestions,
@@ -231,18 +239,82 @@ function removeRecentAIExamDraft(jobId: number) {
 }
 
 function formatRecentAIExamDate(value: string) {
-  const date = new Date(value);
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(value.trim());
 
-  if (Number.isNaN(date.getTime())) {
+  if (!match) {
     return "Vừa tạo";
   }
 
-  return date.toLocaleString("vi-VN", {
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "2-digit",
-  });
+  const [, , mm, dd, hh, mi] = match;
+  return `${dd}/${mm} ${hh}:${mi}`;
+}
+
+function createIdempotencyKey(operation: "initial" | "generate-more") {
+  return `${operation}-${crypto.randomUUID()}`;
+}
+
+function getInsufficientQCMessage(error: unknown): string | null {
+  const apiError = error as ApiError;
+  if (apiError?.status !== 402) {
+    return null;
+  }
+
+  const balance = Number(apiError.details?.balance ?? 0);
+  const missingQC = Number(apiError.details?.missing_qc ?? 0);
+  return `Số dư ${balance.toLocaleString("vi-VN")} QC, còn thiếu ${missingQC.toLocaleString("vi-VN")} QC.`;
+}
+
+function QCCostSummary({
+  estimate,
+  isLoading,
+}: {
+  estimate?: AIQCCostEstimateResponse;
+  isLoading: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-outline/15 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center gap-3">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <Coins className="size-4" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-on-surface">Chi phí tạo câu hỏi</p>
+          {isLoading ? (
+            <p className="mt-0.5 text-xs text-muted-foreground">Đang tính QuizzCoin...</p>
+          ) : estimate ? (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {estimate.free_questions > 0
+                ? `${estimate.free_questions} câu miễn phí · `
+                : ""}
+              {estimate.qc_cost.toLocaleString("vi-VN")} QC cho {estimate.requested_questions} câu
+            </p>
+          ) : (
+            <p className="mt-0.5 text-xs text-muted-foreground">Chưa có thông tin chi phí.</p>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center gap-3 sm:justify-end">
+        {estimate ? (
+          <div className="text-left sm:text-right">
+            <p className="text-xs text-muted-foreground">Số dư</p>
+            <p
+              className={`font-semibold ${
+                estimate.sufficient_balance ? "text-on-surface" : "text-red-600"
+              }`}
+            >
+              {estimate.balance.toLocaleString("vi-VN")} QC
+            </p>
+          </div>
+        ) : null}
+        <Button asChild type="button" variant="outline" size="sm">
+          <Link href="/teacher/billing" target="_blank" rel="noreferrer">
+            <Coins className="size-4" />
+            Nạp QC
+          </Link>
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 export function TeacherAIExamScreen({
@@ -276,6 +348,36 @@ export function TeacherAIExamScreen({
   const [selectedDraftId, setSelectedDraftId] = useState<number | null>(null);
   const [toast, setToast] = useState<AIExamToastState | null>(null);
   const jobId = jobSeed?.id ?? activeJobId;
+
+  const walletQuery = useQuery({
+    queryKey: billingQueryKeys.wallet(),
+    queryFn: getQCWallet,
+    refetchOnWindowFocus: true,
+  });
+
+  const initialCostQuery = useQuery({
+    queryKey: billingQueryKeys.estimate(formValues.question_count, "initial"),
+    queryFn: () =>
+      estimateAIQCCost({
+        operation: "initial",
+        question_count: formValues.question_count,
+      }),
+    enabled: jobId === null && formValues.question_count > 0,
+    refetchOnWindowFocus: true,
+    staleTime: 15_000,
+  });
+
+  const moreCostQuery = useQuery({
+    queryKey: billingQueryKeys.estimate(generateMoreCount, "generate_more"),
+    queryFn: () =>
+      estimateAIQCCost({
+        operation: "generate_more",
+        question_count: generateMoreCount,
+      }),
+    enabled: jobId !== null && generateMoreCount > 0,
+    refetchOnWindowFocus: true,
+    staleTime: 15_000,
+  });
 
   const jobQuery = useQuery({
     queryKey: jobId === null ? aiExamQueryKeys.job("missing") : aiExamQueryKeys.job(jobId),
@@ -342,6 +444,14 @@ export function TeacherAIExamScreen({
   }, [classId, job, scope]);
 
   useEffect(() => {
+    if (!job || jobBusy || !["charged", "refunded"].includes(job.qc_status)) {
+      return;
+    }
+
+    void queryClient.invalidateQueries({ queryKey: billingQueryKeys.wallet() });
+  }, [job, jobBusy, queryClient]);
+
+  useEffect(() => {
     if (!jobQuery.data || saveValuesJobId === jobQuery.data.id) {
       return;
     }
@@ -375,7 +485,13 @@ export function TeacherAIExamScreen({
   }, [selectedDraftId, sortedDrafts]);
 
   const generateMutation = useMutation({
-    mutationFn: generateAIExam,
+    mutationFn: ({
+      idempotencyKey,
+      payload,
+    }: {
+      idempotencyKey: string;
+      payload: ReturnType<typeof buildGeneratePayload>;
+    }) => generateAIExam(payload, idempotencyKey),
     onSuccess: (nextJob) => {
       setActiveJobId(nextJob.id);
       setJobSeed(nextJob);
@@ -391,13 +507,23 @@ export function TeacherAIExamScreen({
         description: "AI đang xử lý, danh sách câu hỏi sẽ tự cập nhật.",
         variant: "success",
       });
+      void queryClient.invalidateQueries({
+        queryKey: billingQueryKeys.wallet(),
+      });
     },
     onError: (error) => {
+      const insufficientMessage = getInsufficientQCMessage(error);
+      if (insufficientMessage) {
+        setFormError(insufficientMessage);
+      }
       setToast({
         open: true,
-        title: "Không thể tạo đề bằng AI",
-        description: getApiErrorMessage(error),
-        variant: "error",
+        title: insufficientMessage ? "Không đủ QuizzCoin" : "Không thể tạo đề bằng AI",
+        description: insufficientMessage ?? getApiErrorMessage(error),
+        variant: insufficientMessage ? "warning" : "error",
+      });
+      void queryClient.invalidateQueries({
+        queryKey: billingQueryKeys.wallet(),
       });
     },
   });
@@ -412,7 +538,7 @@ export function TeacherAIExamScreen({
         additional_instructions: generateMoreInstructions.trim(),
         count: generateMoreCount,
         question_types: job.question_types,
-      });
+      }, createIdempotencyKey("generate-more"));
     },
     onSuccess: (nextJob) => {
       setJobSeed(nextJob);
@@ -427,13 +553,20 @@ export function TeacherAIExamScreen({
       void queryClient.invalidateQueries({
         queryKey: aiExamQueryKeys.job(nextJob.id),
       });
+      void queryClient.invalidateQueries({
+        queryKey: billingQueryKeys.wallet(),
+      });
     },
     onError: (error) => {
+      const insufficientMessage = getInsufficientQCMessage(error);
       setToast({
         open: true,
-        title: "Không thể tạo thêm câu hỏi",
-        description: getApiErrorMessage(error),
-        variant: "error",
+        title: insufficientMessage ? "Không đủ QuizzCoin" : "Không thể tạo thêm câu hỏi",
+        description: insufficientMessage ?? getApiErrorMessage(error),
+        variant: insufficientMessage ? "warning" : "error",
+      });
+      void queryClient.invalidateQueries({
+        queryKey: billingQueryKeys.wallet(),
       });
     },
   });
@@ -545,7 +678,17 @@ export function TeacherAIExamScreen({
     }
 
     setFormError(null);
-    generateMutation.mutate(buildGeneratePayload(formValues));
+    if (initialCostQuery.data && !initialCostQuery.data.sufficient_balance) {
+      setFormError(
+        `Cần ${initialCostQuery.data.qc_cost.toLocaleString("vi-VN")} QC nhưng ví chỉ còn ${initialCostQuery.data.balance.toLocaleString("vi-VN")} QC.`,
+      );
+      return;
+    }
+
+    generateMutation.mutate({
+      idempotencyKey: createIdempotencyKey("initial"),
+      payload: buildGeneratePayload(formValues),
+    });
   }
 
   function handleDraftUpdated(draft: AIQuestionDraftResponse) {
@@ -568,7 +711,7 @@ export function TeacherAIExamScreen({
           {scope === "class" ? "Quay lại lớp học" : "Quay lại danh sách đề thi"}
         </Link>
 
-        <div className="max-w-3xl">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="font-display text-2xl font-semibold text-on-surface">
               Tạo đề thi bằng AI
@@ -578,6 +721,15 @@ export function TeacherAIExamScreen({
               trong hệ thống hiện tại.
             </p>
           </div>
+          <Link
+            href="/teacher/billing"
+            className="inline-flex w-fit items-center gap-2 rounded-md border border-outline/15 bg-white px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:border-primary/30 hover:text-primary"
+          >
+            <Coins className="size-4 text-primary" />
+            {walletQuery.isLoading
+              ? "Đang tải ví"
+              : `${(walletQuery.data?.balance ?? 0).toLocaleString("vi-VN")} QC`}
+          </Link>
         </div>
 
         <div
@@ -589,6 +741,10 @@ export function TeacherAIExamScreen({
         >
           {!job ? (
             <div className="space-y-6">
+              <QCCostSummary
+                estimate={initialCostQuery.data}
+                isLoading={initialCostQuery.isLoading}
+              />
               <AIGenerateForm
                 values={formValues}
                 onValuesChange={setFormValues}
@@ -757,6 +913,24 @@ export function TeacherAIExamScreen({
                     ) : null}
 
                     <div className="grid gap-3 rounded-xl border border-outline/10 bg-surface p-3">
+                      <div className="flex flex-col gap-2 border-b border-outline/10 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-2 text-sm text-on-surface">
+                          <Coins className="size-4 text-primary" />
+                          {moreCostQuery.isLoading
+                            ? "Đang tính chi phí tạo thêm..."
+                            : moreCostQuery.data
+                              ? `${moreCostQuery.data.free_questions} câu miễn phí · ${moreCostQuery.data.qc_cost.toLocaleString("vi-VN")} QC`
+                              : "Chưa có thông tin chi phí"}
+                        </div>
+                        <Link
+                          href="/teacher/billing"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-sm font-semibold text-primary hover:underline"
+                        >
+                          Số dư {(moreCostQuery.data?.balance ?? walletQuery.data?.balance ?? 0).toLocaleString("vi-VN")} QC
+                        </Link>
+                      </div>
                       <div className="grid gap-3 lg:grid-cols-[132px_minmax(0,1fr)_auto] lg:items-end">
                         <label className="space-y-2">
                           <span className="text-sm font-medium text-on-surface">

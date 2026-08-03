@@ -59,7 +59,7 @@ const classrooms = [
 
 const documents = [
   { title: 'Giải tích cơ bản', scope: 'Hệ thống' },
-  { title: 'Tài liệu React Hooks', scope: 'Lớp học' },
+  { title: 'Tài liệu React Hooks', scope: 'Giáo viên' },
   { title: 'Ngân hàng câu hỏi Hóa học', scope: 'Hệ thống' },
 ] as const;
 

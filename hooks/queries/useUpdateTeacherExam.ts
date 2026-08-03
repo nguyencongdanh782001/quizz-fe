@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { TeacherUpdateExamRequest } from "@/lib/api/types";
-import { updateTeacherExam } from "@/services/exam.service";
+import { updateSystemExam } from "@/services/exam.service";
 import { teacherExamQueryKeys } from "./exam.query-keys";
 
 interface UpdateTeacherExamInput {
@@ -15,7 +15,7 @@ export function useUpdateTeacherExam() {
 
   return useMutation({
     mutationFn: async ({ examId, payload }: UpdateTeacherExamInput) =>
-      updateTeacherExam(examId, payload),
+      updateSystemExam(examId, payload),
     onSuccess: async (_, { examId }) => {
       await Promise.all([
         queryClient.invalidateQueries({

@@ -19,6 +19,9 @@ import {
   StudentExamDetailData,
 } from "@/lib/student-system-exams";
 import { useBreadcrumbLabel } from "@/components/shared/breadcrumb-labels";
+import { ExamAvailabilityCard } from "@/components/features/exam/exam-availability-card";
+import { getExamAvailabilityStatus } from "@/lib/exam-availability";
+import { useNow } from "@/hooks/use-now";
 import type { Question, QuestionType } from "@/types/exam.types";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -99,6 +102,7 @@ export default function ExamDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const now = useNow();
   const [examDetail, setExamDetail] = useState<StudentExamDetailData | null>(
     null,
   );
@@ -181,6 +185,8 @@ export default function ExamDetailPage({
   }
 
   const { exam, questions, inProgressAttemptId } = examDetail;
+  const availability = getExamAvailabilityStatus(exam, now);
+  const isExamAvailableNow = availability.status === "available";
   const actionLabel = inProgressAttemptId
     ? "Tiếp tục làm bài"
     : "Bắt đầu làm bài";
@@ -218,13 +224,15 @@ export default function ExamDetailPage({
         Quay lại thư viện đề thi
       </Link>
 
+      <ExamAvailabilityCard exam={exam} />
+
       <section className="overflow-hidden rounded-3xl border border-outline/10 bg-surface-container-lowest shadow-[0_18px_44px_-32px_rgba(7,30,39,0.18)]">
         <div className="bg-linear-to-r from-primary/8 via-secondary/10 to-surface px-6 py-8 md:px-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-3xl">
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-primary-container px-3 py-1 text-xs font-semibold text-on-primary-container">
-                  {exam.scope === "system" ? "Đề hệ thống" : "Đề thi"}
+                  {exam.scope === "system" ? "Hệ thống" : "Giáo viên"}
                 </span>
                 {exam.classroomName && (
                   <span className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-muted-foreground">
@@ -247,7 +255,7 @@ export default function ExamDetailPage({
               <button
                 type="button"
                 onClick={() => void handleStartAttempt()}
-                disabled={isStartingAttempt}
+                disabled={isStartingAttempt || !isExamAvailableNow}
                 className={cn(
                   "inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold",
                   "bg-primary text-white transition-colors hover:bg-primary/90",
@@ -257,6 +265,15 @@ export default function ExamDetailPage({
                 <ActionIcon className="h-4 w-4" />
                 {isStartingAttempt ? "Đang khởi tạo..." : actionLabel}
               </button>
+              {!isExamAvailableNow && (
+                <p className="text-xs text-muted-foreground">
+                  {availability.status === "upcoming"
+                    ? "Đề thi chưa mở. Vui lòng quay lại sau."
+                    : availability.status === "expired"
+                      ? "Đề thi đã hết hạn."
+                      : "Đề thi tạm thời không khả dụng."}
+                </p>
+              )}
               <Link
                 href="/student/exams"
                 className="inline-flex items-center justify-center gap-2 rounded-2xl border border-outline/20 px-5 py-3 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low"

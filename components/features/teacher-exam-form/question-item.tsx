@@ -100,6 +100,14 @@ export function QuestionItem({
   );
   const questionError = getIn(errors, `questions.${questionIndex}.prompt`);
   const questionTouched = getIn(touched, `questions.${questionIndex}.prompt`);
+  const explanationError = getIn(
+    errors,
+    `questions.${questionIndex}.explanation`,
+  );
+  const explanationTouched = getIn(
+    touched,
+    `questions.${questionIndex}.explanation`,
+  );
   const imageError = getIn(errors, `questions.${questionIndex}.image_url`);
   const imageTouched = getIn(touched, `questions.${questionIndex}.image_url`);
   const pointsError = getIn(errors, `questions.${questionIndex}.points`);
@@ -301,6 +309,22 @@ export function QuestionItem({
           placeholder={EXAM_FLOW_MESSAGES.placeholders.question}
           rows={4}
           helperText="Viết rõ yêu cầu để học sinh có thể trả lời mà không cần đoán ý."
+        />
+
+        <TextareaField
+          id={`question-${question.client_id}-explanation`}
+          label={EXAM_FLOW_MESSAGES.labels.explanation}
+          value={question.explanation}
+          onChange={(event) =>
+            void setFieldValue(
+              `questions.${questionIndex}.explanation`,
+              event.target.value,
+            )
+          }
+          error={shouldShowError(explanationTouched, explanationError)}
+          placeholder={EXAM_FLOW_MESSAGES.placeholders.explanation}
+          rows={3}
+          helperText="Có thể để trống nếu câu hỏi không cần giải thích thêm."
         />
 
         <div className="grid gap-4 md:grid-cols-2">

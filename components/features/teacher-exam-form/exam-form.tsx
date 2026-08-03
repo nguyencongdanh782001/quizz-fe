@@ -135,6 +135,7 @@ function buildQuestionTouchedState(
   return values.questions.map((question) => ({
     question_type: true,
     prompt: true,
+    explanation: true,
     image_url: true,
     order_index: true,
     points: true,
@@ -154,8 +155,11 @@ function createTouchedStateForStep(
   return {
     title: true,
     description: true,
+    grade: true,
     image_url: true,
     duration_minutes: true,
+    start_time: true,
+    end_time: true,
     is_published: true,
     is_active: true,
     questions: stepId === "info" ? [] : buildQuestionTouchedState(values),
@@ -165,7 +169,14 @@ function createTouchedStateForStep(
 function hasInfoStepErrors(
   errors: FormikErrors<TeacherExamFormValues>,
 ): boolean {
-  return Boolean(errors.title || errors.image_url || errors.duration_minutes);
+  return Boolean(
+    errors.title ||
+      errors.grade ||
+      errors.image_url ||
+      errors.duration_minutes ||
+      errors.start_time ||
+      errors.end_time,
+  );
 }
 
 function hasBlockingErrorsForStep(
@@ -273,6 +284,15 @@ function ExamFormBody({
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+              <div className="rounded-[24px] border border-outline/10 bg-surface p-4">
+                <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                  {EXAM_FLOW_MESSAGES.labels.grade}
+                </p>
+                <p className="mt-2 text-lg font-semibold text-on-surface">
+                  {values.grade.trim() || "Chưa nhập khối lớp"}
+                </p>
+              </div>
+
               <div className="rounded-[24px] border border-outline/10 bg-surface p-4">
                 <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
                   Thời lượng
@@ -463,6 +483,7 @@ function ExamFormBody({
     textQuestionCount,
     totalPoints,
     values.duration_minutes,
+    values.grade,
     values.is_active,
     values.is_published,
     values.title,

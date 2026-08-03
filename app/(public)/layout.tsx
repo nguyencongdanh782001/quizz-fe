@@ -5,7 +5,7 @@ import { getRoleDashboardPath, isOnboardingIncomplete } from '@/lib/auth/onboard
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession();
 
-  if (session && !isOnboardingIncomplete(session)) {
+  if (session?.email_verified && !isOnboardingIncomplete(session)) {
     redirect(getRoleDashboardPath(session.role_name));
   }
 

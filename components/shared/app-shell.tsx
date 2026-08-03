@@ -17,6 +17,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   BookOpen,
   ChevronRight,
+  Coins,
   FileCheck,
   FileText,
   GraduationCap,
@@ -71,6 +72,12 @@ const teacherNav: NavItem[] = [
     label: "Bài thi",
     description: "Tạo, chỉnh sửa và xuất bản đề thi",
     icon: FileCheck,
+  },
+  {
+    href: "/teacher/billing",
+    label: "QuizzCoin",
+    description: "Nạp QC và theo dõi chi phí tạo đề AI",
+    icon: Coins,
   },
   {
     href: "/teacher/documents",
@@ -133,6 +140,7 @@ const routeLabelMap: Record<string, string> = {
   documents: "Tài liệu",
   materials: "Tài liệu",
   profile: "Hồ sơ",
+  billing: "QuizzCoin",
   create: "Tạo mới",
   edit: "Chỉnh sửa",
   results: "Kết quả",

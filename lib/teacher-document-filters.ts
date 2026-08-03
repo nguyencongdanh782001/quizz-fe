@@ -132,7 +132,17 @@ export function hasActiveTeacherDocumentFilters(
 export function getDocumentScopeLabel(
   scope: DocumentScope | string | null | undefined,
 ): string {
-  return scope === "classroom" ? "Lớp học" : "Hệ thống";
+  const normalizedScope = scope?.trim().toLowerCase();
+
+  if (normalizedScope === "system") {
+    return "Hệ thống";
+  }
+
+  if (normalizedScope === "classroom") {
+    return "Giáo viên";
+  }
+
+  return scope?.trim() || "Hệ thống";
 }
 
 export function getDocumentPublishStatusLabel(

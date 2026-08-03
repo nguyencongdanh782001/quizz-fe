@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  X,
-} from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Clock3 } from "lucide-react";
 import {
   useId,
   useMemo,
@@ -33,17 +28,14 @@ import { cn } from "@/lib/utils";
 import {
   addMonths,
   createLocalDate,
-  formatDateDisplay,
   getDaysInMonthGrid,
   getWeekdayLabels,
-  isAfterDay,
   isSameDay,
-  parseDateValue,
   startOfMonth,
   toDateValue,
 } from "@/lib/date";
 
-interface DatePickerProps {
+interface DateTimePickerProps {
   value?: string | null;
   onChange: (value: string) => void;
   onBlur?: () => void;
@@ -55,9 +47,6 @@ interface DatePickerProps {
   required?: boolean;
   className?: string;
   id?: string;
-  maxDate?: Date;
-  defaultOpenDate?: Date;
-  yearsBack?: number;
 }
 
 const MONTH_LABELS = Array.from({ length: 12 }, (_, month) => {
@@ -71,104 +60,144 @@ const MONTH_LABELS = Array.from({ length: 12 }, (_, month) => {
   };
 });
 
-function getDefaultBirthDate(maxDate: Date): Date {
-  return createLocalDate(
-    maxDate.getFullYear() - 18,
-    maxDate.getMonth(),
-    Math.min(maxDate.getDate(), 28),
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) =>
+  String(hour).padStart(2, "0"),
+);
+const MINUTE_OPTIONS = Array.from({ length: 60 }, (_, minute) =>
+  String(minute).padStart(2, "0"),
+);
+
+function toLocalDateTimeValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+
+  return `${year}-${month}-${day}T${hour}:${minute}`;
+}
+
+function parseDateTimeValue(value?: string | null): Date | null {
+  if (!value?.trim()) {
+    return null;
+  }
+
+  const date = new Date(value);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDateTimeDisplay(value?: string | null): string {
+  const date = parseDateTimeValue(value);
+
+  if (!date) {
+    return "";
+  }
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+
+  return `${day}/${month}/${year} ${hour}:${minute}`;
+}
+
+function getDateParts(value?: string | null) {
+  const date = parseDateTimeValue(value);
+
+  return {
+    date,
+    hour: date ? String(date.getHours()).padStart(2, "0") : "00",
+    minute: date ? String(date.getMinutes()).padStart(2, "0") : "00",
+  };
+}
+
+function createDateTimeFromParts(date: Date, hour: string, minute: string) {
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    Number(hour),
+    Number(minute),
+    0,
+    0,
   );
 }
 
-function clampMonthToMax(date: Date, maxDate: Date): Date {
-  const month = startOfMonth(date);
-
-  return isAfterDay(month, maxDate) ? startOfMonth(maxDate) : month;
+function getInitialOpenMonth(value?: string | null): Date {
+  return startOfMonth(parseDateTimeValue(value) ?? new Date());
 }
 
-function getInitialMonth(
-  value: string | null | undefined,
-  defaultOpenDate: Date,
-  maxDate: Date,
-): Date {
-  return clampMonthToMax(parseDateValue(value) ?? defaultOpenDate, maxDate);
-}
-
-export function DatePicker({
+export function DateTimePicker({
   value,
   onChange,
   onBlur,
   label,
   error,
   helperText,
-  placeholder = "Chọn ngày sinh",
+  placeholder = "Chọn ngày và giờ",
   disabled = false,
   required = false,
   className,
   id,
-  maxDate: maxDateProp,
-  defaultOpenDate,
-  yearsBack = 100,
-}: DatePickerProps) {
+}: DateTimePickerProps) {
   const generatedId = useId();
-  const inputId = id ?? `date-picker-${generatedId}`;
+  const inputId = id ?? `date-time-picker-${generatedId}`;
   const messageId = `${inputId}-message`;
-  const maxDate = useMemo(() => maxDateProp ?? new Date(), [maxDateProp]);
-  const fallbackOpenDate = useMemo(
-    () => defaultOpenDate ?? getDefaultBirthDate(maxDate),
-    [defaultOpenDate, maxDate],
-  );
   const [open, setOpen] = useState(false);
-  const [openMonth, setOpenMonth] = useState(() =>
-    getInitialMonth(value, fallbackOpenDate, maxDate),
-  );
+  const [openMonth, setOpenMonth] = useState(() => getInitialOpenMonth(value));
   const dayButtonsRef = useRef<Map<string, HTMLButtonElement>>(new Map());
-  const selectedDate = useMemo(() => parseDateValue(value), [value]);
-  const selectedLabel = formatDateDisplay(value);
+  const selected = useMemo(() => getDateParts(value), [value]);
+  const selectedLabel = formatDateTimeDisplay(value);
   const monthCells = useMemo(() => getDaysInMonthGrid(openMonth), [openMonth]);
   const weekdayLabels = useMemo(() => getWeekdayLabels(), []);
+  const yearOptions = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const startYear = currentYear - 5;
+
+    return Array.from({ length: 16 }, (_, index) => startYear + index);
+  }, []);
   const currentDate = useMemo(() => new Date(), []);
-  const maxYear = maxDate.getFullYear();
-  const yearSpan = Math.max(yearsBack, 100);
-  const minYear = maxYear - yearSpan;
-  const yearOptions = useMemo(
-    () =>
-      Array.from({ length: yearSpan + 1 }, (_, index) => maxYear - index),
-    [maxYear, yearSpan],
-  );
-  const isMaxedOutMonth = isAfterDay(
-    startOfMonth(addMonths(openMonth, 1)),
-    maxDate,
-  );
-  const activeTabDate = useMemo(() => {
-    if (
-      selectedDate &&
-      !isAfterDay(selectedDate, maxDate) &&
-      startOfMonth(selectedDate).getTime() === openMonth.getTime()
-    ) {
-      return selectedDate;
-    }
 
-    return (
-      monthCells.find(
-        (cell): cell is Date => cell !== null && !isAfterDay(cell, maxDate),
-      ) ?? 
-      null
-    );
-  }, [maxDate, monthCells, openMonth, selectedDate]);
+  function emitChange(
+    date: Date,
+    hour = selected.hour,
+    minute = selected.minute,
+  ) {
+    onChange(toLocalDateTimeValue(createDateTimeFromParts(date, hour, minute)));
+  }
 
-  function updateOpenMonth(year: number, month: number) {
-    const nextMonth = clampMonthToMax(createLocalDate(year, month, 1), maxDate);
-    setOpenMonth(nextMonth);
+  function handleSelectDate(nextDate: Date) {
+    emitChange(nextDate);
+    onBlur?.();
+  }
+
+  function handleHourChange(nextHour: string) {
+    emitChange(selected.date ?? new Date(), nextHour, selected.minute);
+    onBlur?.();
+  }
+
+  function handleMinuteChange(nextMinute: string) {
+    emitChange(selected.date ?? new Date(), selected.hour, nextMinute);
+    onBlur?.();
+  }
+
+  function handleClear(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    onChange("");
+    onBlur?.();
   }
 
   function handleYearChange(yearValue: string) {
     const nextYear = Number(yearValue);
 
-    if (!Number.isFinite(nextYear) || nextYear < minYear || nextYear > maxYear) {
+    if (!Number.isFinite(nextYear)) {
       return;
     }
 
-    updateOpenMonth(nextYear, openMonth.getMonth());
+    setOpenMonth(createLocalDate(nextYear, openMonth.getMonth(), 1));
   }
 
   function handleMonthChange(monthValue: string) {
@@ -178,24 +207,7 @@ export function DatePicker({
       return;
     }
 
-    updateOpenMonth(openMonth.getFullYear(), nextMonth);
-  }
-
-  function handleSelect(nextDate: Date) {
-    if (isAfterDay(nextDate, maxDate)) {
-      return;
-    }
-
-    onChange(toDateValue(nextDate));
-    onBlur?.();
-    setOpen(false);
-  }
-
-  function handleClear(event: MouseEvent<HTMLButtonElement>) {
-    event.preventDefault();
-    event.stopPropagation();
-    onChange("");
-    onBlur?.();
+    setOpenMonth(createLocalDate(openMonth.getFullYear(), nextMonth, 1));
   }
 
   function focusDay(nextDate: Date) {
@@ -208,7 +220,6 @@ export function DatePicker({
     }
 
     setOpenMonth(startOfMonth(nextDate));
-
     requestAnimationFrame(() => {
       dayButtonsRef.current.get(key)?.focus();
     });
@@ -259,14 +270,10 @@ export function DatePicker({
       case "Enter":
       case " ":
         event.preventDefault();
-        handleSelect(currentDateValue);
+        handleSelectDate(currentDateValue);
         return;
       default:
         return;
-    }
-
-    if (!nextDate || isAfterDay(nextDate, maxDate)) {
-      return;
     }
 
     event.preventDefault();
@@ -276,7 +283,10 @@ export function DatePicker({
   return (
     <div className={cn("space-y-1.5", className)}>
       {label ? (
-        <Label htmlFor={inputId} className="text-sm font-medium text-on-surface">
+        <Label
+          htmlFor={inputId}
+          className="text-sm font-medium text-on-surface"
+        >
           {label}
           {required ? <span className="ml-0.5 text-destructive">*</span> : null}
         </Label>
@@ -286,7 +296,7 @@ export function DatePicker({
         open={open}
         onOpenChange={(nextOpen) => {
           if (nextOpen) {
-            setOpenMonth(getInitialMonth(value, fallbackOpenDate, maxDate));
+            setOpenMonth(getInitialOpenMonth(value));
           }
 
           setOpen(nextOpen);
@@ -302,11 +312,12 @@ export function DatePicker({
               type="button"
               disabled={disabled}
               data-invalid={Boolean(error)}
-              aria-describedby={(error || helperText) ? messageId : undefined}
+              aria-describedby={error || helperText ? messageId : undefined}
               aria-expanded={open}
               aria-haspopup="dialog"
               className={cn(
-                "group flex h-11 w-full items-center gap-3 rounded-xl border border-outline/20 bg-surface-container-lowest px-3.5 pr-11 text-left text-sm text-on-surface shadow-[0_1px_2px_rgba(7,30,39,0.06)] outline-none transition-[border-color,box-shadow,background-color] hover:border-primary/35 hover:bg-surface focus-visible:border-primary focus-visible:bg-surface focus-visible:ring-4 focus-visible:ring-primary/12 disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:border-destructive aria-invalid:ring-4 aria-invalid:ring-destructive/15",
+                "group flex min-h-12 w-full flex-wrap items-center gap-3 rounded-xl border border-outline/20 bg-surface-container-lowest px-3.5 py-2 text-left text-sm text-on-surface shadow-[0_1px_2px_rgba(7,30,39,0.06)] outline-none transition-[border-color,box-shadow,background-color]",
+                "hover:border-primary/35 hover:bg-surface focus-visible:border-primary focus-visible:bg-surface focus-visible:ring-4 focus-visible:ring-primary/12 disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:border-destructive aria-invalid:ring-4 aria-invalid:ring-destructive/15",
                 "dark:shadow-none dark:hover:bg-surface-container-low dark:focus-visible:bg-surface-container-low dark:aria-invalid:ring-destructive/25",
                 error && "border-destructive",
               )}
@@ -314,35 +325,41 @@ export function DatePicker({
               <CalendarDays className="size-4 shrink-0 text-on-surface-variant transition-colors group-hover:text-primary" />
               <span
                 className={cn(
-                  "min-w-0 flex-1 truncate",
-                  selectedLabel ? "text-on-surface" : "text-on-surface-variant/65",
+                  "min-w-36 flex-1 truncate",
+                  selectedLabel
+                    ? "text-on-surface"
+                    : "text-on-surface-variant/65",
                 )}
               >
                 {selectedLabel || placeholder}
               </span>
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-surface-container px-2.5 py-1 text-xs font-semibold text-on-surface-variant">
+                <Clock3 className="size-3.5 text-primary" />
+                {selected.hour} : {selected.minute}
+              </span>
             </button>
           </PopoverTrigger>
 
-          {value?.trim() ? (
+          {/* {value?.trim() ? (
             <button
               type="button"
-              aria-label="Xóa ngày sinh"
+              aria-label="Xóa thời gian"
               onClick={handleClear}
-              className="absolute top-1/2 right-2 inline-flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface"
+              className="absolute top-1/2 right-2 hidden size-7 -translate-y-1/2 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface sm:inline-flex"
             >
               <X className="size-4" />
             </button>
-          ) : null}
+          ) : null} */}
         </div>
 
-        <PopoverContent className="p-4">
+        <PopoverContent className="p-4 sm:w-[min(calc(100vw-1rem),28rem)]">
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="font-display text-base font-semibold text-on-surface">
-                Chọn ngày sinh
+                {label || "Chọn ngày và giờ"}
               </p>
               <p className="text-xs text-muted-foreground">
-                Dùng phím mũi tên để di chuyển, Enter để chọn.
+                Chọn ngày, sau đó đặt giờ và phút cho lịch mở đề.
               </p>
             </div>
             <div className="flex items-center gap-1">
@@ -361,13 +378,7 @@ export function DatePicker({
                 variant="outline"
                 size="icon-sm"
                 className="rounded-full"
-                onClick={() => {
-                  const nextMonth = addMonths(openMonth, 1);
-                  if (!isAfterDay(startOfMonth(nextMonth), maxDate)) {
-                    setOpenMonth(nextMonth);
-                  }
-                }}
-                disabled={isMaxedOutMonth}
+                onClick={() => setOpenMonth(addMonths(openMonth, 1))}
                 aria-label="Tháng sau"
               >
                 <ChevronRight className="size-4" />
@@ -399,24 +410,17 @@ export function DatePicker({
                   <SelectContent
                     position="popper"
                     align="start"
-                    className="max-h-72 min-w-[var(--radix-select-trigger-width)]"
+                    className="max-h-72 min-w-(--radix-select-trigger-width)"
                   >
                     <SelectGroup>
-                      {MONTH_LABELS.map((month) => {
-                        const isFutureMonth =
-                          openMonth.getFullYear() === maxYear &&
-                          month.value > maxDate.getMonth();
-
-                        return (
-                          <SelectItem
-                            key={month.value}
-                            value={String(month.value)}
-                            disabled={isFutureMonth}
-                          >
-                            {month.label}
-                          </SelectItem>
-                        );
-                      })}
+                      {MONTH_LABELS.map((month) => (
+                        <SelectItem
+                          key={month.value}
+                          value={String(month.value)}
+                        >
+                          {month.label}
+                        </SelectItem>
+                      ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
@@ -444,7 +448,7 @@ export function DatePicker({
                   <SelectContent
                     position="popper"
                     align="start"
-                    className="max-h-72 min-w-[var(--radix-select-trigger-width)]"
+                    className="max-h-72 min-w-(--radix-select-trigger-width)"
                   >
                     <SelectGroup>
                       {yearOptions.map((year) => (
@@ -458,23 +462,12 @@ export function DatePicker({
               </div>
             </div>
 
-            <div className="mt-3 flex items-center justify-between gap-3">
-              <p className="min-w-0 truncate font-display text-base font-semibold text-on-surface">
-                {openMonth.toLocaleDateString("vi-VN", {
-                  month: "long",
-                  year: "numeric",
-                })}
-              </p>
-              {selectedDate ? (
-                <button
-                  type="button"
-                  onClick={handleClear}
-                  className="shrink-0 rounded-lg px-2 py-1 text-sm font-medium text-primary transition-colors hover:bg-primary/10 hover:text-primary/80 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/12"
-                >
-                  Xóa ngày
-                </button>
-              ) : null}
-            </div>
+            <p className="mt-3 min-w-0 truncate font-display text-base font-semibold text-on-surface">
+              {openMonth.toLocaleDateString("vi-VN", {
+                month: "long",
+                year: "numeric",
+              })}
+            </p>
           </div>
 
           <div className="mt-4 grid grid-cols-7 gap-1 text-center text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
@@ -485,19 +478,22 @@ export function DatePicker({
             ))}
           </div>
 
-          <div className="mt-2 grid grid-cols-7 gap-1" aria-label="Lịch chọn ngày sinh">
+          <div
+            className="mt-2 grid grid-cols-7 gap-1"
+            aria-label="Lịch chọn ngày giờ"
+          >
             {monthCells.map((date, index) => {
               if (!date) {
                 return <div key={`empty-${index}`} className="h-10" />;
               }
 
               const isSelected =
-                selectedDate !== null && isSameDay(date, selectedDate);
-              const isDisabled = isAfterDay(date, maxDate);
+                selected.date !== null && isSameDay(date, selected.date);
               const isToday = isSameDay(date, currentDate);
-              const isTabbable = activeTabDate
-                ? isSameDay(date, activeTabDate)
-                : index === monthCells.findIndex((cell) => cell !== null);
+              const selectedMonthKey = selected.date
+                ? toDateValue(selected.date)
+                : toDateValue(currentDate);
+              const isTabbable = toDateValue(date) === selectedMonthKey;
 
               return (
                 <button
@@ -514,8 +510,7 @@ export function DatePicker({
                   }}
                   onKeyDown={(event) => handleGridKeyDown(event, date)}
                   onFocus={() => setOpenMonth(startOfMonth(date))}
-                  onClick={() => handleSelect(date)}
-                  disabled={isDisabled}
+                  onClick={() => handleSelectDate(date)}
                   tabIndex={isTabbable ? 0 : -1}
                   aria-pressed={isSelected}
                   aria-current={isToday ? "date" : undefined}
@@ -532,8 +527,6 @@ export function DatePicker({
                       ? "bg-primary text-white shadow-[0_12px_24px_-18px_rgba(79,70,229,0.7)]"
                       : "text-on-surface hover:bg-primary/10 hover:text-primary",
                     isToday && !isSelected && "ring-1 ring-primary/20",
-                    isDisabled &&
-                      "cursor-not-allowed text-muted-foreground/50 hover:bg-transparent hover:text-muted-foreground/50",
                   )}
                 >
                   {date.getDate()}
@@ -541,13 +534,97 @@ export function DatePicker({
               );
             })}
           </div>
+
+          <div className="mt-4 grid gap-3 rounded-2xl bg-surface-container-low p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <div className="space-y-1.5">
+              <label
+                htmlFor={`${inputId}-hour`}
+                className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+              >
+                Giờ
+              </label>
+              <Select value={selected.hour} onValueChange={handleHourChange}>
+                <SelectTrigger
+                  id={`${inputId}-hour`}
+                  className="h-10 rounded-xl"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent
+                  position="popper"
+                  align="start"
+                  className="max-h-72 min-w-(--radix-select-trigger-width)"
+                >
+                  <SelectGroup>
+                    {HOUR_OPTIONS.map((hour) => (
+                      <SelectItem key={hour} value={hour}>
+                        {hour}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label
+                htmlFor={`${inputId}-minute`}
+                className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+              >
+                Phút
+              </label>
+              <Select
+                value={selected.minute}
+                onValueChange={handleMinuteChange}
+              >
+                <SelectTrigger
+                  id={`${inputId}-minute`}
+                  className="h-10 rounded-xl"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent
+                  position="popper"
+                  align="start"
+                  className="max-h-72 min-w-(--radix-select-trigger-width)"
+                >
+                  <SelectGroup>
+                    {MINUTE_OPTIONS.map((minute) => (
+                      <SelectItem key={minute} value={minute}>
+                        {minute}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <p className="text-sm font-medium text-on-surface">
+              {selectedLabel || placeholder}
+            </p>
+            {value?.trim() ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleClear}
+              >
+                Xóa
+              </Button>
+            ) : null}
+          </div>
         </PopoverContent>
       </Popover>
 
-      {(error || helperText) ? (
+      {error || helperText ? (
         <p
           id={messageId}
-          className={cn("text-xs", error ? "text-destructive" : "text-muted-foreground")}
+          className={cn(
+            "text-xs",
+            error ? "text-destructive" : "text-muted-foreground",
+          )}
         >
           {error ?? helperText}
         </p>
