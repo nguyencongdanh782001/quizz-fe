@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import type { User } from "@/types/user.types";
 import { getPostAuthDestination } from "@/lib/auth/onboarding";
+import { setLoginSuccessFlash } from "@/lib/auth/login-success-flash";
 
 function getDestination(user: Pick<User, "role_name" | "needs_onboarding" | "role_id">) {
   return getPostAuthDestination(user);
@@ -34,6 +35,7 @@ export function AuthCallbackRedirect() {
         return;
       }
 
+      setLoginSuccessFlash();
       window.location.replace(getDestination(freshUser));
     })();
 

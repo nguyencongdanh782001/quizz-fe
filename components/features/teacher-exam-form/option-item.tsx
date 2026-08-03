@@ -23,6 +23,7 @@ export function OptionItem({
   selectionMode,
   isCorrect,
   canRemove,
+  readOnly = false,
   onRemove,
   onCorrectChange,
 }: {
@@ -32,6 +33,7 @@ export function OptionItem({
   selectionMode: OptionSelectionMode;
   isCorrect: boolean;
   canRemove: boolean;
+  readOnly?: boolean;
   onRemove: () => void;
   onCorrectChange: (checked: boolean) => void;
 }) {
@@ -67,7 +69,7 @@ export function OptionItem({
   return (
     <div
       className={cn(
-        "rounded-3xl border p-4 transition-all duration-200",
+        "rounded-[8px] border p-4 transition-all duration-200",
         isCorrect
           ? "border-primary/30 bg-primary/5 shadow-[0_18px_40px_-30px_rgba(0,70,74,0.45)]"
           : "border-outline/15 bg-surface-container-lowest hover:border-primary/20 hover:bg-surface",
@@ -126,35 +128,43 @@ export function OptionItem({
             ) : null}
           </div>
 
-          <InputField
-            id={`${controlId}-text`}
-            label={EXAM_FLOW_MESSAGES.labels.answer}
-            required
-            value={option.option_text}
-            onChange={(event) =>
-              void setFieldValue(
-                `questions.${questionIndex}.options.${optionIndex}.option_text`,
-                event.target.value,
-              )
-            }
-            error={shouldShowError(optionTouched, optionError)}
-            placeholder={EXAM_FLOW_MESSAGES.placeholders.option}
-          />
+          {readOnly ? (
+            <div className="rounded-lg border border-outline/15 bg-surface px-4 py-3 text-sm font-medium text-on-surface">
+              {option.option_text}
+            </div>
+          ) : (
+            <>
+              <InputField
+                id={`${controlId}-text`}
+                label={EXAM_FLOW_MESSAGES.labels.answer}
+                required
+                value={option.option_text}
+                onChange={(event) =>
+                  void setFieldValue(
+                    `questions.${questionIndex}.options.${optionIndex}.option_text`,
+                    event.target.value,
+                  )
+                }
+                error={shouldShowError(optionTouched, optionError)}
+                placeholder={EXAM_FLOW_MESSAGES.placeholders.option}
+              />
 
-          <ImageUploadField
-            id={`${controlId}-image`}
-            label="Ảnh đáp án (tùy chọn)"
-            value={option.image_url}
-            onChange={(url) =>
-              void setFieldValue(
-                `questions.${questionIndex}.options.${optionIndex}.image_url`,
-                url,
-              )
-            }
-            error={shouldShowError(imageTouched, imageError)}
-            helperText="Chỉ dùng khi đáp án cần thêm hình ảnh minh họa."
-            size="compact"
-          />
+              <ImageUploadField
+                id={`${controlId}-image`}
+                label="Ảnh đáp án (tùy chọn)"
+                value={option.image_url}
+                onChange={(url) =>
+                  void setFieldValue(
+                    `questions.${questionIndex}.options.${optionIndex}.image_url`,
+                    url,
+                  )
+                }
+                error={shouldShowError(imageTouched, imageError)}
+                helperText="Chỉ dùng khi đáp án cần thêm hình ảnh minh họa."
+                size="compact"
+              />
+            </>
+          )}
         </div>
       </div>
     </div>

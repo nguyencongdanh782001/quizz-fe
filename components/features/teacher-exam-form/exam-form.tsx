@@ -18,6 +18,7 @@ import {
   FileCheck2,
   ListChecks,
   LoaderCircle,
+  Save,
   Sparkles,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -47,6 +48,7 @@ import { ReviewStep } from "./review-step";
 import type { TeacherExamFormValues } from "./types";
 import { UnsavedChangesGuard } from "./unsaved-changes-guard";
 import {
+  getTeacherExamTotalPoints,
   normalizeAcceptedAnswers,
   normalizeTeacherExamQuestionType,
   teacherExamFormSchema,
@@ -122,13 +124,6 @@ function getCompletedQuestionCount(values: TeacherExamFormValues): number {
   }).length;
 }
 
-function getTotalPoints(values: TeacherExamFormValues): number {
-  return values.questions.reduce(
-    (sum, question) => sum + (Number(question.points) || 0),
-    0,
-  );
-}
-
 function buildQuestionTouchedState(
   values: TeacherExamFormValues,
 ): NonNullable<FormikTouched<TeacherExamFormValues>["questions"]> {
@@ -198,7 +193,9 @@ function scrollCreateExamContentToTop() {
   const mainElement = document.querySelector("main");
 
   if (mainElement instanceof HTMLElement) {
-    mainElement.scrollTo({ top: 0, behavior: "smooth" });
+    mainElement.scrollTo({ top: 0, behavior: "instant" });
+  } else {
+    window.scrollTo({ top: 0, behavior: "instant" });
   }
 }
 
@@ -230,12 +227,12 @@ function ExamFormBody({
     validateForm,
   } = useFormikContext<TeacherExamFormValues>();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [maxVisitedStepIndex, setMaxVisitedStepIndex] = useState(0);
+  const [maxVisitedStepIndex, setMaxVisitedStepIndex] = useState(2);
   const [openCancelModal, setOpenCancelModal] = useState(false);
   const currentStep = EXAM_STEPS[currentStepIndex];
   const questionCount = values.questions.length;
   const completedQuestionCount = getCompletedQuestionCount(values);
-  const totalPoints = getTotalPoints(values);
+  const totalPoints = getTeacherExamTotalPoints(questionCount);
   const formErrorCount = countErrorMessages(errors);
   const completionPercentage =
     questionCount > 0
@@ -550,7 +547,7 @@ function ExamFormBody({
 
   return (
     <>
-      <Form className="pb-10">
+      <Form className="pb-10 space-y-4">
         <ExamStepLayout
           steps={EXAM_STEPS}
           currentStepIndex={currentStepIndex}
@@ -615,7 +612,12 @@ function ExamFormBody({
                 </Button>
 
                 {currentStep.id !== "review" && (
-                  <Button type="button" size="lg" onClick={handleNextStep}>
+                  <Button
+                    type="button"
+                    size="lg"
+                    onClick={handleNextStep}
+                    className="bg-gradient-to-r from-[#4867F8] to-[#C62CF2] text-white shadow-sm hover:opacity-95"
+                  >
                     {nextButtonLabel}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -624,10 +626,7 @@ function ExamFormBody({
             </div>
           }
         >
-          <div
-            key={currentStep.id}
-            className="animate-in fade-in-0 slide-in-from-right-2 duration-300"
-          >
+          <div className="w-full">
             {renderCurrentStep()}
           </div>
         </ExamStepLayout>

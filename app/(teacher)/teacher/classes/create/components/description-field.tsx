@@ -12,7 +12,7 @@ export function DescriptionField() {
     <TextAreaField
       label="Mô tả"
       placeholder="Mô tả ngắn gọn về lớp học..."
-      rows={5}
+      rows={3}
       error={meta.touched ? meta.error : undefined}
       {...field}
       onChange={(event) => {

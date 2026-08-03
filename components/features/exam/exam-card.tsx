@@ -4,13 +4,12 @@ import Link from "next/link";
 import {
   BookOpen,
   CalendarDays,
-  Clock,
+  Clock3,
   Hourglass,
   Infinity as InfinityIcon,
   Star,
   Timer,
 } from "lucide-react";
-import { Exam } from "@/types/exam.types";
 import { useNow } from "@/hooks/use-now";
 import { formatExamDateTime } from "@/lib/date";
 import {
@@ -19,49 +18,26 @@ import {
   type ExamOpenInfo,
 } from "@/lib/exam-open-state";
 import { cn } from "@/lib/utils";
+import type { Exam } from "@/types/exam.types";
 
 type ExamSource = "teacher" | "system";
 
 const SOURCE_BADGE: Record<ExamSource, { label: string; className: string }> = {
-  system: {
-    label: "Hệ thống",
-    className: "bg-primary-container text-on-primary-container",
-  },
-  teacher: {
-    label: "Giáo viên",
-    className: "bg-secondary-container text-on-secondary-container",
-  },
+  system: { label: "Hệ thống", className: "bg-[#EEF2FF] text-[#4F62F2]" },
+  teacher: { label: "Giáo viên", className: "bg-[#ECFDF5] text-[#059669]" },
 };
-
-/**
- * Resolve the badge source for an exam, preferring the authoritative
- * `source` field from the API. Falls back to deriving from `scope` (legacy)
- * when `source` is absent.
- */
-function resolveExamSource(exam: Exam): ExamSource {
-  if (exam.source === "teacher" || exam.source === "system") {
-    return exam.source;
-  }
-  if (exam.scope === "system") return "system";
-  if (exam.scope === "classroom" || exam.scope === "class") return "teacher";
-  return "teacher";
-}
 
 const TONE_BADGE: Record<ExamOpenInfo["tone"], string> = {
-  positive:
-    "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-  warning:
-    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
-  danger: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-  muted: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300",
+  positive: "bg-emerald-50 text-emerald-700",
+  warning: "bg-amber-50 text-amber-700",
+  danger: "bg-red-50 text-red-700",
+  muted: "bg-slate-100 text-slate-600",
 };
 
-const TONE_DOT: Record<ExamOpenInfo["tone"], string> = {
-  positive: "bg-green-500",
-  warning: "bg-yellow-500",
-  danger: "bg-red-500",
-  muted: "bg-gray-500",
-};
+function resolveExamSource(exam: Exam): ExamSource {
+  if (exam.source === "teacher" || exam.source === "system") return exam.source;
+  return exam.scope === "system" ? "system" : "teacher";
+}
 
 interface ExamCardProps {
   exam: Exam;
@@ -71,188 +47,78 @@ interface ExamCardProps {
 export function ExamCard({ exam, compact = false }: ExamCardProps) {
   const now = useNow();
   const openState = getExamOpenState(exam, now);
-
-  const source = resolveExamSource(exam);
-  const sourceBadge = SOURCE_BADGE[source];
-
-  const secondaryLabel =
-    exam.grade > 0 ? `Lớp ${exam.grade}` : exam.classroomName;
-
-  const scoreLabel =
-    exam.totalPoints && exam.totalPoints > 0
-      ? `${exam.totalPoints} điểm`
-      : `${exam.passingScore}%`;
+  const sourceBadge = SOURCE_BADGE[resolveExamSource(exam)];
+  const secondaryLabel = exam.grade > 0 ? `Lớp ${exam.grade}` : exam.classroomName;
+  const scoreLabel = exam.totalPoints && exam.totalPoints > 0
+    ? `${exam.totalPoints} điểm`
+    : `${exam.passingScore}%`;
 
   return (
-    <div
-      className={cn(
-        "flex flex-col h-auto group overflow-hidden rounded-[1.8rem] border border-white/70 bg-white/82",
-        "shadow-[0_22px_80px_-42px_rgba(15,23,42,0.24)] backdrop-blur-xl",
-        "transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_30px_90px_-40px_rgba(15,23,42,0.28)]",
-      )}
-    >
-      {exam.thumbnailUrl && (
-        <div className="relative h-36 overflow-hidden">
-          <img
-            src={exam.thumbnailUrl}
-            alt={exam.title}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-          <div className="absolute inset-0 bg-linear-to-t from-black/20 to-transparent" />
+    <article className="group flex h-full flex-col overflow-hidden rounded-[8px] border border-[#DDE2EB] bg-white transition-colors hover:border-[#BFC8D8]">
+      {exam.thumbnailUrl ? (
+        <div className="h-28 overflow-hidden border-b border-[#E9EDF3] bg-[#F7F8FB]">
+          {/* Exam thumbnails may be hosted by different document providers. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={exam.thumbnailUrl} alt={exam.title} className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]" />
         </div>
-      )}
+      ) : null}
 
-      <div
-        className={cn(
-          "p-5 h-full flex-1 flex flex-col",
-          compact ? "space-y-3" : "space-y-4",
-        )}
-      >
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <span
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium shadow-sm",
-              sourceBadge.className,
-            )}
-          >
+      <div className={cn("flex flex-1 flex-col p-4", compact ? "gap-2.5" : "gap-3")}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className={cn("rounded-[6px] px-2 py-1 text-[10px] font-semibold", sourceBadge.className)}>
             {sourceBadge.label}
           </span>
-          <span
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium shadow-sm",
-              TONE_BADGE[openState.tone],
-            )}
-            aria-label={`Trạng thái: ${openState.badgeLabel}`}
-          >
-            <span
-              aria-hidden
-              className={cn(
-                "h-2 w-2 rounded-full",
-                TONE_DOT[openState.tone],
-              )}
-            />
+          <span className={cn("rounded-[6px] px-2 py-1 text-[10px] font-semibold", TONE_BADGE[openState.tone])}>
             {openState.badgeLabel}
           </span>
         </div>
 
-        {secondaryLabel && (
-          <p className="text-xs text-muted-foreground font-medium">
-            {secondaryLabel}
-          </p>
-        )}
-
-        <h3
-          className={cn(
-            "font-display font-semibold text-on-surface leading-snug mb-2 line-clamp-2",
-            compact ? "text-sm" : "text-base",
-          )}
-        >
-          {exam.title}
-        </h3>
-
-        {!compact && exam.description && (
-          <p className="text-sm leading-7 text-muted-foreground line-clamp-2 mb-3">
-            {exam.description}
-          </p>
-        )}
-
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-low px-3 py-1.5">
-            <BookOpen className="w-3.5 h-3.5" />
-            {exam.questionCount} câu
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-low px-3 py-1.5">
-            <Clock className="w-3.5 h-3.5" />
-            {exam.duration} phút
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-low px-3 py-1.5">
-            <Star className="w-3.5 h-3.5" />
-            {scoreLabel}
-          </span>
+        <div className="min-w-0">
+          {secondaryLabel ? <p className="mb-1 text-[10.5px] font-medium text-[#7C879B]">{secondaryLabel}</p> : null}
+          <h3 className="line-clamp-2 text-sm font-bold leading-5 text-[#1E293B]">{exam.title}</h3>
+          {!compact && exam.description ? <p className="mt-1.5 line-clamp-2 text-[11px] leading-5 text-[#64748B]">{exam.description}</p> : null}
         </div>
 
-        {!compact && (
-          <ScheduleBlock info={openState} />
-        )}
+        <div className="grid grid-cols-3 gap-1.5 text-[10px] text-[#526079]">
+          <span className="inline-flex items-center justify-center gap-1 rounded-[6px] bg-[#F7F8FB] px-2 py-2"><BookOpen className="size-3.5 text-[#4F62F2]" />{exam.questionCount} câu</span>
+          <span className="inline-flex items-center justify-center gap-1 rounded-[6px] bg-[#F7F8FB] px-2 py-2"><Clock3 className="size-3.5 text-[#0EA5E9]" />{exam.duration} phút</span>
+          <span className="inline-flex items-center justify-center gap-1 rounded-[6px] bg-[#F7F8FB] px-2 py-2"><Star className="size-3.5 text-[#F59E0B]" />{scoreLabel}</span>
+        </div>
+
+        {!compact ? <ScheduleBlock info={openState} /> : null}
 
         <Link
           href={`/student/exam/${exam.id}`}
           aria-disabled={!openState.isOpenableNow}
           tabIndex={openState.isOpenableNow ? 0 : -1}
           className={cn(
-            "mt-auto flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-all duration-200",
+            "mt-auto flex h-9 items-center justify-center rounded-[6px] text-xs font-semibold transition-colors",
             openState.isOpenableNow
-              ? "bg-linear-to-r from-primary to-tertiary text-white shadow-[0_18px_38px_-20px_rgba(79,70,229,0.52)] hover:-translate-y-0.5 hover:shadow-[0_24px_44px_-18px_rgba(79,70,229,0.42)] active:scale-[0.99]"
-              : "cursor-not-allowed bg-surface-container-low text-muted-foreground",
+              ? "bg-[#4F62F2] text-white hover:bg-[#4053DD]"
+              : "cursor-not-allowed bg-[#EEF0F4] text-[#98A2B3]",
           )}
           onClick={(event) => {
-            if (!openState.isOpenableNow) {
-              event.preventDefault();
-            }
+            if (!openState.isOpenableNow) event.preventDefault();
           }}
         >
           {openState.ctaLabel}
         </Link>
       </div>
-    </div>
+    </article>
   );
 }
 
 function ScheduleBlock({ info }: { info: ExamOpenInfo }) {
   const hasStart = info.startTimeRaw !== null;
   const hasEnd = info.endTimeRaw !== null;
-
-  // Both missing → render "no schedule" note only.
   if (!hasStart && !hasEnd) {
-    return (
-      <div className="rounded-xl border border-outline/10 bg-surface-container-lowest/60 px-3 py-2.5 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5">
-          <InfinityIcon className="w-3.5 h-3.5" />
-          Không giới hạn thời gian làm bài.
-        </span>
-      </div>
-    );
+    return <p className="inline-flex items-center gap-1.5 border-t border-[#E9EDF3] pt-2.5 text-[10.5px] text-[#64748B]"><InfinityIcon className="size-3.5" />Không giới hạn thời gian làm bài.</p>;
   }
-
-  const isExpired = info.state === "expired";
-  const isUpcoming =
-    info.state === "upcoming" || info.state === "scheduled-only";
-
   return (
-    <div className="space-y-1.5 rounded-xl border border-outline/10 bg-surface-container-lowest/60 px-3 py-2.5 text-xs">
-      {hasStart && (
-        <p className="flex items-center gap-1.5 text-muted-foreground">
-          <CalendarDays className="w-3.5 h-3.5 shrink-0" />
-          <span className="text-foreground/60">Mở:</span>
-          <span className="font-medium text-on-surface">
-            {formatExamDateTime(info.startTimeRaw)}
-          </span>
-        </p>
-      )}
-      {hasEnd && (
-        <p className="flex items-center gap-1.5 text-muted-foreground">
-          <Hourglass className="w-3.5 h-3.5 shrink-0" />
-          <span className="text-foreground/60">Đóng:</span>
-          <span className="font-medium text-on-surface">
-            {formatExamDateTime(info.endTimeRaw)}
-          </span>
-        </p>
-      )}
-      {info.countdownLabel && (
-        <p
-          className={cn(
-            "flex items-center gap-1.5 font-medium",
-            isExpired
-              ? "text-red-700 dark:text-red-300"
-              : isUpcoming
-                ? "text-yellow-700 dark:text-yellow-300"
-                : "text-green-700 dark:text-green-300",
-          )}
-        >
-          <Timer className="w-3.5 h-3.5 shrink-0" />
-          {formatRemainingTimeDetailed(info.remainingMs, { compound: true })}
-        </p>
-      )}
+    <div className="space-y-1 border-t border-[#E9EDF3] pt-2.5 text-[10.5px] text-[#64748B]">
+      {hasStart ? <p className="flex items-center gap-1.5"><CalendarDays className="size-3.5" />Mở: <strong className="font-semibold text-[#334155]">{formatExamDateTime(info.startTimeRaw)}</strong></p> : null}
+      {hasEnd ? <p className="flex items-center gap-1.5"><Hourglass className="size-3.5" />Đóng: <strong className="font-semibold text-[#334155]">{formatExamDateTime(info.endTimeRaw)}</strong></p> : null}
+      {info.countdownLabel ? <p className="flex items-center gap-1.5 font-semibold text-[#4F62F2]"><Timer className="size-3.5" />{formatRemainingTimeDetailed(info.remainingMs, { compound: true })}</p> : null}
     </div>
   );
 }

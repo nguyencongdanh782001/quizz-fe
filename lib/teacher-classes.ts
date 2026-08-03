@@ -21,6 +21,11 @@ export interface UpdateTeacherClassroomResult {
   classroom: ClassInfo;
 }
 
+export interface TeacherStudentRecord extends ClassStudent {
+  classroomId: string;
+  classroomName: string;
+}
+
 const CLASS_COVER_COLORS = [
   '#4f46e5',
   '#06b6d4',
@@ -77,7 +82,7 @@ function mapTeacherClassStudent(item: TeacherClassStudentSchema): ClassStudent {
     id: String(item.id),
     name: item.full_name || item.username,
     email: item.email ?? "",
-    studentCode: item.username,
+    studentCode: item.student_code,
     avatarUrl: item.avatar_url,
     joinedAt: item.joined_at,
   };
@@ -181,6 +186,23 @@ export async function getTeacherClassStudents(
 ): Promise<ClassStudent[]> {
   const response = await teacherApi.teacher.classes.students(classId);
   return (response.data.items ?? []).map(mapTeacherClassStudent);
+}
+
+export async function getTeacherStudents(): Promise<TeacherStudentRecord[]> {
+  const classrooms = await getTeacherClasses();
+  const studentGroups = await Promise.all(
+    classrooms.map(async (classroom) => {
+      const students = await getTeacherClassStudents(classroom.id);
+
+      return students.map((student) => ({
+        ...student,
+        classroomId: classroom.id,
+        classroomName: classroom.name,
+      }));
+    }),
+  );
+
+  return studentGroups.flat();
 }
 
 export async function getTeacherClassDocuments(

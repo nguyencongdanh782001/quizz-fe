@@ -165,9 +165,9 @@ export function ExamVisibilityToggle({
           disabled={isActionDisabled}
           onClick={openConfirmDialog}
           className={cn(
-            "h-10 rounded-xl px-4 transition-all",
+            "h-10 rounded-[6px] px-4 transition-all",
             !isPublished &&
-              "bg-linear-to-r from-indigo-500 to-violet-500 text-white hover:shadow-[0_20px_40px_-24px_rgba(79,70,229,0.55)]",
+              "bg-linear-to-r from-indigo-500 to-violet-500 text-white hover:shadow-[0_1px_3px_rgba(30,41,59,0.05)]",
             className,
           )}
         >
@@ -196,7 +196,7 @@ export function ExamVisibilityToggle({
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          <div className="rounded-2xl border border-outline/10 bg-surface px-4 py-3">
+          <div className="rounded-[8px] border border-outline/10 bg-surface px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
               Đề thi
             </p>
@@ -216,7 +216,7 @@ export function ExamVisibilityToggle({
               className={cn(
                 willMakePrivate
                   ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
-                  : "bg-linear-to-r from-indigo-500 to-violet-500 text-white hover:shadow-[0_20px_40px_-24px_rgba(79,70,229,0.55)]",
+                  : "bg-linear-to-r from-indigo-500 to-violet-500 text-white hover:shadow-[0_1px_3px_rgba(30,41,59,0.05)]",
               )}
             >
               {isPending ? (

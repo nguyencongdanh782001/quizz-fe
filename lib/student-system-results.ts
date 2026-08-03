@@ -92,6 +92,11 @@ export function createEmptyStudentSystemResults(): StudentSystemResultListData {
   };
 }
 
+export async function getStudentResults(): Promise<StudentSystemResultListData> {
+  const response = await studentApi.student.results();
+  return mapStudentSystemResults(response.data);
+}
+
 export async function getStudentSystemResults(): Promise<StudentSystemResultListData> {
   const response = await studentApi.student.system.results();
   return mapStudentSystemResults(response.data);

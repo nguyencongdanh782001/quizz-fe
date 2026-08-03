@@ -540,6 +540,7 @@ export interface TeacherClassStudentSchema {
   full_name: string;
   username: string;
   email: string | null;
+  student_code: string;
   phone: string | null;
   avatar_url: string | null;
   gender: string | null;
@@ -604,7 +605,12 @@ export interface TeacherExamOptionSchema {
 
 export interface TeacherExamQuestionSchema {
   id: number;
-  question_type: "single_choice" | "multiple_choice" | "text";
+  question_type:
+    | "single_choice"
+    | "multiple_choice"
+    | "true_false"
+    | "short_answer"
+    | "text";
   prompt: string;
   explanation: string | null;
   image_url: string | null;
@@ -749,7 +755,13 @@ export interface TeacherCreateExamOptionRequest {
 }
 
 export interface TeacherCreateExamQuestionRequest {
-  question_type: "single_choice" | "multiple_choice" | "text";
+  question_type:
+    | "single_choice"
+    | "multiple_choice"
+    | "true_false"
+    | "fill_in_blank"
+    | "short_answer"
+    | "text";
   prompt: string;
   explanation: string;
   image_url: string;
@@ -759,27 +771,42 @@ export interface TeacherCreateExamQuestionRequest {
   accepted_answers: string[];
 }
 
+export type TeacherExamPointMode = "auto" | "manual";
+
 export interface TeacherCreateExamRequest {
   title: string;
   description: string;
   grade: string;
   image_url: string;
+  scope?: string;
+  classroom_id?: number | null;
   duration_minutes: number;
-  /**
-   * Wall-clock start time as "YYYY-MM-DDTHH:mm[:ss]" — the backend stores
-   * and returns this verbatim; we never wrap it in a `Date` (axios would
-   * re-serialize to UTC and shift by the browser's TZ offset).
-   */
   start_time?: string;
-  /** Wall-clock end time, same format as `start_time`. */
   end_time?: string;
   is_published: boolean;
   is_active: boolean;
+  total_points: number;
+  point_mode: TeacherExamPointMode;
   questions: TeacherCreateExamQuestionRequest[];
 }
 
-export type TeacherUpdateClassExamRequest = TeacherCreateExamRequest;
-export type TeacherUpdateExamRequest = TeacherCreateExamRequest;
+export type TeacherUpdateClassExamRequest = Partial<TeacherCreateExamRequest>;
+export interface TeacherUpdateExamRequest {
+  title?: string;
+  description?: string;
+  grade?: string;
+  image_url?: string;
+  scope?: string;
+  classroom_id?: number | null;
+  duration_minutes?: number;
+  start_time?: string;
+  end_time?: string;
+  is_published?: boolean;
+  is_active?: boolean;
+  total_points?: number;
+  point_mode?: TeacherExamPointMode;
+  questions?: TeacherCreateExamQuestionRequest[];
+}
 
 export interface TeacherCreateClassExamResponse {
   message: string;

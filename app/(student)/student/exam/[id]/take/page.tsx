@@ -388,13 +388,13 @@ function ExamTakeContent({
       {/* Main content */}
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
         {examDetail?.inProgressAttemptId && (
-          <div className="mb-6 rounded-2xl border border-outline/10 bg-surface-container-lowest px-4 py-3 text-sm text-muted-foreground">
+          <div className="mb-6 rounded-[8px] border border-outline/10 bg-surface-container-lowest px-4 py-3 text-sm text-muted-foreground">
             Bạn đang tiếp tục một lượt làm bài đang diễn ra.
           </div>
         )}
 
         {saveAnswerError && (
-          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mb-6 rounded-[8px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {saveAnswerError}
           </div>
         )}
@@ -412,7 +412,7 @@ function ExamTakeContent({
 
         {/* Question card */}
         {currentQuestion && (
-          <div className="bg-surface-container-lowest rounded-2xl p-6 mb-6 shadow-[0_4px_24px_rgba(7,30,39,0.06)]">
+          <div className="bg-surface-container-lowest rounded-[8px] p-6 mb-6 shadow-[0_1px_3px_rgba(30,41,59,0.05)]">
             <QuestionCard
               question={currentQuestion}
               index={currentIndex}
@@ -451,7 +451,7 @@ function ExamTakeContent({
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setShowSubmitConfirm(false)}
           />
-          <div className="relative bg-surface-container-lowest rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+          <div className="relative bg-surface-container-lowest rounded-[8px] p-6 max-w-sm w-full shadow-2xl">
             <button
               onClick={() => setShowSubmitConfirm(false)}
               className="cursor-pointer absolute top-4 right-4 text-muted-foreground hover:text-on-surface transition-colors"
@@ -460,7 +460,7 @@ function ExamTakeContent({
             </button>
 
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-[6px] bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5 text-yellow-600" />
               </div>
               <h2 className="font-display font-semibold text-lg text-on-surface">
@@ -486,7 +486,7 @@ function ExamTakeContent({
               <button
                 onClick={() => setShowSubmitConfirm(false)}
                 className={cn(
-                  "cursor-pointer flex-1 py-2.5 rounded-xl text-sm font-medium border",
+                  "cursor-pointer flex-1 py-2.5 rounded-[6px] text-sm font-medium border",
                   "border-outline/20 text-on-surface hover:bg-surface-container-low",
                   "transition-colors",
                 )}
@@ -497,7 +497,7 @@ function ExamTakeContent({
                 onClick={handleSubmit}
                 disabled={isSubmitting || isSavingAnswer}
                 className={cn(
-                  "cursor-pointer flex-1 py-2.5 rounded-xl text-sm font-semibold",
+                  "cursor-pointer flex-1 py-2.5 rounded-[6px] text-sm font-semibold",
                   "bg-secondary text-white hover:bg-secondary/90",
                   "transition-colors disabled:opacity-50",
                 )}
@@ -584,7 +584,7 @@ export default function ExamTakePage({
   if (!examDetail || examDetail.questions.length === 0) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="max-w-md rounded-2xl border border-outline/10 bg-surface-container-lowest p-6 text-center">
+        <div className="max-w-md rounded-[8px] border border-outline/10 bg-surface-container-lowest p-6 text-center">
           <p className="font-medium text-on-surface">
             {loadError ?? "Không tìm thấy đề thi."}
           </p>

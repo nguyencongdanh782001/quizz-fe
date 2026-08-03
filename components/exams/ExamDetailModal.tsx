@@ -50,15 +50,15 @@ interface ExamDetailModalProps {
 function ExamDetailSkeleton() {
   return (
     <div className="space-y-6">
-      <Skeleton className="h-56 w-full rounded-[28px]" />
+      <Skeleton className="h-56 w-full rounded-[10px]" />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <Skeleton key={index} className="h-24 rounded-[24px]" />
+          <Skeleton key={index} className="h-24 rounded-[10px]" />
         ))}
       </div>
       <div className="space-y-4">
         {Array.from({ length: 3 }).map((_, index) => (
-          <Skeleton key={index} className="h-44 rounded-[28px]" />
+          <Skeleton key={index} className="h-44 rounded-[10px]" />
         ))}
       </div>
     </div>
@@ -75,7 +75,7 @@ function DetailMetric({
   value: string;
 }) {
   return (
-    <div className="rounded-[24px] border border-outline/10 bg-surface p-4">
+    <div className="rounded-[10px] border border-outline/10 bg-surface p-4">
       <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
         {icon}
         {label}
@@ -139,7 +139,7 @@ export function ExamDetailModal({
             {isLoading && !resolvedExam ? <ExamDetailSkeleton /> : null}
 
             {!isLoading && error ? (
-              <div className="rounded-[28px] border border-destructive/15 bg-destructive/6 p-6">
+              <div className="rounded-[10px] border border-destructive/15 bg-destructive/6 p-6">
                 <p className="text-base font-semibold text-destructive">
                   Không thể tải dữ liệu đề thi
                 </p>
@@ -151,7 +151,7 @@ export function ExamDetailModal({
                   variant="outline"
                   size="lg"
                   onClick={() => void mutate()}
-                  className="mt-4 h-11 rounded-2xl"
+                  className="mt-4 h-11 rounded-[8px]"
                 >
                   Tải lại dữ liệu
                 </Button>
@@ -160,7 +160,7 @@ export function ExamDetailModal({
 
             {resolvedExam ? (
               <>
-                <section className="overflow-hidden rounded-[30px] border border-outline/10 bg-surface-container-lowest shadow-[0_24px_75px_-48px_rgba(7,30,39,0.28)]">
+                <section className="overflow-hidden rounded-[10px] border border-outline/10 bg-surface-container-lowest shadow-[0_1px_3px_rgba(30,41,59,0.05)]">
                   <div className="relative h-60 bg-linear-to-br from-primary/20 via-secondary/15 to-tertiary/16">
                     {resolvedExam.image_url ? (
                       <img
@@ -209,7 +209,7 @@ export function ExamDetailModal({
                             isPublished={resolvedExam.is_published}
                             onSuccess={handleToggleSuccess}
                             onError={onToggleError}
-                            className="h-9 rounded-2xl border-white/30 bg-white/92 px-4 text-slate-900 shadow-sm hover:bg-white"
+                            className="h-9 rounded-[8px] border-white/30 bg-white/92 px-4 text-slate-900 shadow-sm hover:bg-white"
                           />
                         </div>
                       </div>
@@ -248,7 +248,7 @@ export function ExamDetailModal({
                   />
                 </section>
 
-                <section className="grid gap-4 rounded-[28px] border border-outline/10 bg-surface-container-lowest p-5 lg:grid-cols-3">
+                <section className="grid gap-4 rounded-[10px] border border-outline/10 bg-surface-container-lowest p-5 lg:grid-cols-3">
                   <DetailMetric
                     icon={<GraduationCap className="size-3.5" />}
                     label="Lớp học"
@@ -268,7 +268,7 @@ export function ExamDetailModal({
 
                 <section className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="rounded-2xl bg-primary/10 p-3 text-primary">
+                    <div className="rounded-[8px] bg-primary/10 p-3 text-primary">
                       <HelpCircle className="size-5" />
                     </div>
                     <div>
@@ -290,7 +290,7 @@ export function ExamDetailModal({
                       .map((question, index) => (
                         <article
                           key={question.id}
-                          className="rounded-[28px] border border-outline/10 bg-surface-container-lowest p-5 shadow-[0_20px_55px_-42px_rgba(7,30,39,0.22)]"
+                          className="rounded-[10px] border border-outline/10 bg-surface-container-lowest p-5 shadow-[0_1px_3px_rgba(30,41,59,0.05)]"
                         >
                           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                             <div className="min-w-0">
@@ -312,7 +312,7 @@ export function ExamDetailModal({
                           </div>
 
                           {question.image_url ? (
-                            <div className="mt-5 overflow-hidden rounded-[24px] border border-outline/10 bg-surface">
+                            <div className="mt-5 overflow-hidden rounded-[10px] border border-outline/10 bg-surface">
                               <div className="flex items-center gap-2 border-b border-outline/10 px-4 py-3 text-sm font-medium text-muted-foreground">
                                 <ImageIcon className="size-4" />
                                 Hình minh họa câu hỏi
@@ -326,7 +326,7 @@ export function ExamDetailModal({
                           ) : null}
 
                           {question.question_type === "text" ? (
-                            <div className="mt-5 rounded-[24px] border border-outline/10 bg-surface p-4">
+                            <div className="mt-5 rounded-[10px] border border-outline/10 bg-surface p-4">
                               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                                 <FileText className="size-4" />
                                 Đáp án chấp nhận
@@ -354,7 +354,7 @@ export function ExamDetailModal({
                                 <div
                                   key={option.id}
                                   className={cn(
-                                    "rounded-[22px] border px-4 py-3 transition-colors",
+                                    "rounded-[10px] border px-4 py-3 transition-colors",
                                     option.is_correct
                                       ? "border-primary/20 bg-primary/6"
                                       : "border-outline/10 bg-surface",
@@ -386,7 +386,7 @@ export function ExamDetailModal({
                                         <img
                                           src={option.image_url}
                                           alt={`Hình minh họa đáp án ${option.option_key}`}
-                                          className="mt-3 max-h-48 rounded-2xl border border-outline/10 object-cover"
+                                          className="mt-3 max-h-48 rounded-[8px] border border-outline/10 object-cover"
                                         />
                                       ) : null}
                                     </div>
@@ -404,7 +404,7 @@ export function ExamDetailModal({
                       ))}
 
                     {resolvedExam.questions?.length || isLoading ? null : (
-                      <div className="rounded-[28px] border border-outline/10 bg-surface p-6 text-center">
+                      <div className="rounded-[10px] border border-outline/10 bg-surface p-6 text-center">
                         <p className="text-base font-semibold text-on-surface">
                           Chưa có câu hỏi nào
                         </p>

@@ -2,6 +2,7 @@ import Image from "next/image";
 import { APP_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import logoImage from "../../public/image/logo.png";
+import logoSmallImage from "../../public/image/logoquizzsmall.png";
 
 type LogoSize = "sm" | "md" | "lg";
 
@@ -12,19 +13,20 @@ interface LogoProps {
 }
 
 const sizeClassName: Record<LogoSize, string> = {
-  sm: "h-10 w-auto",
+  sm: "h-9 w-auto",
   md: "h-12 w-auto",
   lg: "h-16 w-auto",
 };
 
 const imageSize: Record<LogoSize, { width: number; height: number }> = {
-  sm: { width: 72, height: 40 },
+  sm: { width: 40, height: 40 },
   md: { width: 86, height: 48 },
   lg: { width: 115, height: 64 },
 };
 
 export function Logo({ className, size = "md", showText = true }: LogoProps) {
   const { width, height } = imageSize[size];
+  const imgSrc = size === "sm" ? logoSmallImage : logoImage;
 
   return (
     <span
@@ -34,7 +36,7 @@ export function Logo({ className, size = "md", showText = true }: LogoProps) {
       )}
     >
       <Image
-        src={logoImage}
+        src={imgSrc}
         alt={APP_NAME}
         width={width}
         height={height}

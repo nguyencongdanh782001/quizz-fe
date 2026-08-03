@@ -1,14 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Plus, Users } from "lucide-react";
+import { ArrowLeft, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ClassHeader } from "./components/class-header";
 import { ClassTabs } from "./components/class-tabs";
-import { DeleteClassroomDialog } from "./components/delete-classroom-dialog";
 import { DocumentsTab } from "./components/documents-tab";
 import { EmptyState } from "./components/empty-state";
-import { EditClassroomDialog } from "./components/edit-classroom-dialog";
 import { ErrorState } from "./components/error-state";
 import { ExamsTab } from "./components/exams-tab";
 import { LoadingState } from "./components/loading-state";
@@ -33,14 +31,10 @@ export function TeacherClassDetailScreen({ classId }: { classId: string }) {
     studentsError,
     examsError,
     documentsError,
-    isDeletingClassroom,
-    isUpdatingClassroom,
     removingStudentId,
     retryClassDetail,
     retryActiveTab,
-    handleDeleteClassroom,
     handleRemoveStudent,
-    handleUpdateClassroom,
   } = useClassDetail(classId);
   const classBreadcrumbHref = `/teacher/classes/${classId}`;
   const classBreadcrumbLabel = cls?.name?.trim() || (
@@ -58,13 +52,6 @@ export function TeacherClassDetailScreen({ classId }: { classId: string }) {
   if (classError) {
     return (
       <div className="space-y-4">
-        <Link
-          href="/teacher/classes"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-on-surface"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Quay lại danh sách lớp
-        </Link>
         <ErrorState
           title="Không thể tải lớp học"
           message={classError}
@@ -77,13 +64,6 @@ export function TeacherClassDetailScreen({ classId }: { classId: string }) {
   if (!cls) {
     return (
       <div className="space-y-4">
-        <Link
-          href="/teacher/classes"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-on-surface"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Quay lại danh sách lớp
-        </Link>
         <EmptyState
           icon={Users}
           title="Không tìm thấy lớp học"
@@ -105,39 +85,11 @@ export function TeacherClassDetailScreen({ classId }: { classId: string }) {
   ];
 
   return (
-    <div className="space-y-6">
-      <Link
-        href="/teacher/classes"
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-on-surface"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Quay lại danh sách lớp
-      </Link>
+    <div className="space-y-4">
+      {/* Class Header Card with Red "Trở về" button on top right */}
+      <ClassHeader cls={cls} />
 
-      <ClassHeader
-        cls={cls}
-        actions={
-          <div className="flex flex-wrap gap-3">
-            <Button asChild type="button" size="lg">
-              <Link href={`/teacher/classes/${classId}/documents/create`}>
-                <Plus className="mr-2 size-4" />
-                Thêm tài liệu
-              </Link>
-            </Button>
-            <EditClassroomDialog
-              classroom={cls}
-              isSubmitting={isUpdatingClassroom}
-              onSubmit={handleUpdateClassroom}
-            />
-            <DeleteClassroomDialog
-              classroomName={cls.name}
-              isDeleting={isDeletingClassroom}
-              onConfirm={handleDeleteClassroom}
-            />
-          </div>
-        }
-      />
-
+      {/* Main Tabs Section */}
       <section className="space-y-4">
         <ClassTabs activeTab={activeTab} tabs={tabs} onChange={setActiveTab} />
 

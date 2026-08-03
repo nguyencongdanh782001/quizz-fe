@@ -54,13 +54,25 @@ export function getTransactionLabel(type: string): string {
   return labels[type] ?? type;
 }
 
+export function getDiscountPercentByQuantity(
+  plan: BillingPlanResponse,
+  quantity: number,
+): number {
+  if (quantity >= 12) return 25;
+  if (quantity >= 6) return 15;
+  if (quantity >= 3) return 10;
+  if (plan.discount_min_quantity > 0 && quantity >= plan.discount_min_quantity) {
+    return plan.discount_percent;
+  }
+  return 0;
+}
+
 export function calculatePlanPreview(
   plan: BillingPlanResponse,
   quantity: number,
 ) {
-  const discountApplied =
-    plan.discount_min_quantity > 0 && quantity >= plan.discount_min_quantity;
-  const discountPercent = discountApplied ? plan.discount_percent : 0;
+  const discountPercent = getDiscountPercentByQuantity(plan, quantity);
+  const discountApplied = discountPercent > 0;
   const bonusPercent = discountApplied ? plan.bonus_qc_percent : 0;
   const subtotal = plan.price_vnd * quantity;
   const amount = Math.floor((subtotal * (100 - discountPercent)) / 100);

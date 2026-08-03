@@ -214,7 +214,7 @@ export default function StudentMaterialDetailPage({
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[1.1rem] bg-surface-container-lowest px-4 py-3">
+    <div className="rounded-[8px] bg-surface-container-lowest px-4 py-3">
       <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
         {label}
       </p>

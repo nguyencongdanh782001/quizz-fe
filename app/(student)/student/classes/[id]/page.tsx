@@ -308,7 +308,7 @@ export default function ClassDetailPage({
           Quay lại lớp học
         </Link>
 
-        <div className="bg-surface-container-lowest rounded-2xl overflow-hidden">
+        <div className="bg-surface-container-lowest rounded-[8px] overflow-hidden">
           <div className="h-2" style={{ backgroundColor: cls.coverColor }} />
           <div className="p-6 md:p-8">
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
@@ -364,7 +364,7 @@ export default function ClassDetailPage({
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="bg-surface-container-lowest rounded-xl p-5">
+          <div className="bg-surface-container-lowest rounded-[6px] p-5">
             <h2 className="font-display font-semibold text-lg text-on-surface mb-3">
               Thông tin lớp
             </h2>
@@ -384,7 +384,7 @@ export default function ClassDetailPage({
             </div>
           </div>
 
-          <div className="bg-surface-container-lowest rounded-xl p-5">
+          <div className="bg-surface-container-lowest rounded-[6px] p-5">
             <h2 className="font-display font-semibold text-lg text-on-surface mb-3">
               Ghi chú
             </h2>
@@ -396,16 +396,16 @@ export default function ClassDetailPage({
         </div>
 
         <section className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 rounded-2xl bg-surface-container-low p-1">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 rounded-[8px] bg-surface-container-low p-1">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "cursor-pointer rounded-xl px-4 py-3 text-sm font-medium transition-colors",
+                  "cursor-pointer rounded-[6px] px-4 py-3 text-sm font-medium transition-colors",
                   activeTab === tab.id
-                    ? "bg-surface-container-lowest text-on-surface shadow-[0_4px_18px_rgba(7,30,39,0.08)]"
+                    ? "bg-surface-container-lowest text-on-surface shadow-[0_1px_3px_rgba(30,41,59,0.05)]"
                     : "text-muted-foreground hover:bg-surface-container-lowest/70 hover:text-on-surface",
                 )}
               >
@@ -427,11 +427,11 @@ export default function ClassDetailPage({
               </div>
 
               {isLoadingExams ? (
-                <div className="rounded-xl bg-surface-container-lowest p-5 text-sm text-muted-foreground">
+                <div className="rounded-[6px] bg-surface-container-lowest p-5 text-sm text-muted-foreground">
                   Đang tải đề thi của lớp...
                 </div>
               ) : examsIsError ? (
-                <div className="rounded-xl border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
+                <div className="rounded-[6px] border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3">
                       <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -460,7 +460,7 @@ export default function ClassDetailPage({
                   </div>
                 </div>
               ) : exams.length === 0 ? (
-                <div className="rounded-xl bg-surface-container-lowest p-5 text-sm text-muted-foreground">
+                <div className="rounded-[6px] bg-surface-container-lowest p-5 text-sm text-muted-foreground">
                   Chưa có đề thi nào cho lớp này.
                 </div>
               ) : (
@@ -495,11 +495,11 @@ export default function ClassDetailPage({
               </div>
 
               {isLoadingResults ? (
-                <div className="rounded-xl bg-surface-container-lowest p-5 text-sm text-muted-foreground">
+                <div className="rounded-[6px] bg-surface-container-lowest p-5 text-sm text-muted-foreground">
                   Đang tải kết quả của lớp...
                 </div>
               ) : resultsError ? (
-                <div className="rounded-xl border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
+                <div className="rounded-[6px] border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3">
                       <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -520,13 +520,13 @@ export default function ClassDetailPage({
                   </div>
                 </div>
               ) : classResults.length === 0 ? (
-                <div className="rounded-xl bg-surface-container-lowest p-5 text-sm text-muted-foreground">
+                <div className="rounded-[6px] bg-surface-container-lowest p-5 text-sm text-muted-foreground">
                   Chưa có kết quả nào cho lớp này.
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div className="grid gap-4 sm:grid-cols-3">
-                    <div className="rounded-xl bg-surface-container-lowest p-4">
+                    <div className="rounded-[6px] bg-surface-container-lowest p-4">
                       <p className="text-xs text-muted-foreground">
                         Đã hoàn thành
                       </p>
@@ -534,13 +534,13 @@ export default function ClassDetailPage({
                         {resultSummary.totalCompletedExams}
                       </p>
                     </div>
-                    <div className="rounded-xl bg-surface-container-lowest p-4">
+                    <div className="rounded-[6px] bg-surface-container-lowest p-4">
                       <p className="text-xs text-muted-foreground">Đã đạt</p>
                       <p className="mt-1 font-display text-2xl font-bold text-on-surface">
                         {resultSummary.passedExams}
                       </p>
                     </div>
-                    <div className="rounded-xl bg-surface-container-lowest p-4">
+                    <div className="rounded-[6px] bg-surface-container-lowest p-4">
                       <p className="text-xs text-muted-foreground">
                         Điểm trung bình
                       </p>
@@ -554,7 +554,7 @@ export default function ClassDetailPage({
                     {classResults.map((result) => (
                       <div
                         key={result.attemptId}
-                        className="rounded-xl border border-outline/10 bg-surface-container-lowest p-4"
+                        className="rounded-[6px] border border-outline/10 bg-surface-container-lowest p-4"
                       >
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                           <div className="min-w-0">
@@ -579,7 +579,7 @@ export default function ClassDetailPage({
                           </div>
 
                           <div className="flex items-center gap-3 sm:shrink-0">
-                            <div className="rounded-xl bg-primary/10 px-3 py-2 text-center">
+                            <div className="rounded-[6px] bg-primary/10 px-3 py-2 text-center">
                               <p className="text-lg font-display font-bold text-primary">
                                 {formatPercent(result.scorePercent)}
                               </p>
@@ -613,7 +613,7 @@ export default function ClassDetailPage({
               </div>
 
               {documentsError ? (
-                <div className="rounded-xl border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
+                <div className="rounded-[6px] border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3">
                       <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />

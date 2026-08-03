@@ -83,64 +83,28 @@ export default function DocumentsPage() {
 
   return (
     <DocumentToastProvider>
-      <div className="space-y-6">
-        <PageHero
-          eyebrow="Thư viện tài liệu"
-          title="Kho học liệu hiện đại dành cho học sinh"
-          description="Tìm, xem trước và tải xuống tài liệu học tập trong một trải nghiệm rõ ràng, nhanh và phù hợp trên mọi thiết bị."
-          icon={Sparkles}
-          actions={
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              onClick={retryLoadDocuments}
-            >
-              <RefreshCcw className="size-4" />
-              Làm mới
-            </Button>
-          }
-          metrics={[
-            {
-              label: "Tài liệu hiện có",
-              value: isLoadingDocuments ? "--" : documents.length,
-              description: "Học liệu hệ thống và theo lớp học.",
-              icon: FileText,
-              tone: "primary",
-            },
-            {
-              label: "Lớp học có tài liệu",
-              value: isLoadingDocuments ? "--" : classroomCount || "0",
-              description: "Số lớp đang chia sẻ học liệu.",
-              icon: BookOpenText,
-              tone: "secondary",
-            },
-            {
-              label: "Xem trước hỗ trợ",
-              value: isLoadingDocuments ? "--" : previewReadyCount,
-              description: "PDF, hình ảnh và văn bản hỗ trợ xem nhanh.",
-              icon: Sparkles,
-              tone: "tertiary",
-            },
-          ]}
-        />
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-lg font-bold text-[#1E293B]">Tài liệu</h1>
+          <p className="mt-1 text-xs text-[#64748B]">
+            Khám phá và xem trước các học liệu phục vụ học tập.
+          </p>
+        </div>
 
         {loadError ? (
-          <SurfacePanel tone="muted" className="border border-red-200/70 bg-red-50/70">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="font-semibold text-red-800 dark:text-red-200">
-                  Không thể tải thư viện tài liệu
-                </p>
-                <p className="mt-2 text-sm leading-7 text-red-700/90 dark:text-red-200/90">
-                  {loadError}
-                </p>
-              </div>
-              <Button type="button" variant="outline" onClick={retryLoadDocuments}>
-                Thử lại
-              </Button>
+          <div className="flex flex-col gap-4 rounded-[10px] border border-red-200 bg-red-50/80 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-semibold text-red-800">
+                Không thể tải thư viện tài liệu
+              </p>
+              <p className="mt-1 text-xs text-red-700">
+                {loadError}
+              </p>
             </div>
-          </SurfacePanel>
+            <Button type="button" variant="outline" size="sm" onClick={retryLoadDocuments}>
+              Thử lại
+            </Button>
+          </div>
         ) : null}
 
         <DocumentList

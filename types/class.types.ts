@@ -19,6 +19,8 @@ export interface ClassInfo {
   examCount: number;
   documentCount?: number;
   createdAt: string;
+  updatedAt?: string | null;
+  imageUrl?: string | null;
   inviteCode: string;
   joinCode?: string;
   coverColor: string;

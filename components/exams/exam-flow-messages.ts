@@ -41,6 +41,9 @@ export const EXAM_FLOW_MESSAGES = {
   questionTypes: {
     single: "Một đáp án",
     multiple: "Nhiều đáp án",
+    trueFalse: "Đúng / sai",
+    fillInBlank: "Điền từ",
+    shortAnswer: "Trả lời ngắn",
     text: "Tự luận",
   },
   placeholders: {
@@ -140,6 +143,18 @@ export function getTeacherExamQuestionTypeLabel(
 
   if (questionType === "text") {
     return EXAM_FLOW_MESSAGES.questionTypes.text;
+  }
+
+  if (questionType === "true_false") {
+    return EXAM_FLOW_MESSAGES.questionTypes.trueFalse;
+  }
+
+  if (questionType === "fill_in_blank") {
+    return EXAM_FLOW_MESSAGES.questionTypes.fillInBlank;
+  }
+
+  if (questionType === "short_answer") {
+    return EXAM_FLOW_MESSAGES.questionTypes.shortAnswer;
   }
 
   return EXAM_FLOW_MESSAGES.questionTypes.single;

@@ -197,19 +197,17 @@ export function AvatarUploadField({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "group relative cursor-pointer overflow-hidden rounded-[2rem] border border-dashed bg-surface-container-lowest/80 p-4 shadow-[0_18px_46px_-34px_rgba(7,30,39,0.26)] transition-all duration-200",
-          "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/12",
-          isDragging
-            ? "border-primary/55 bg-primary/5"
-            : "border-outline/20 hover:border-primary/35 hover:bg-surface-container-lowest",
+          "group relative cursor-pointer overflow-hidden rounded-[16px] border border-dashed border-[#CBD5E1] bg-[#F8FAFC] p-4 transition-all duration-200 hover:border-[#6366F1] hover:bg-white",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6366F1]/20",
+          isDragging && "border-[#6366F1] bg-[#EEF2FF]",
           isBusy && "cursor-not-allowed opacity-80",
-          fieldError && "border-destructive/35 bg-destructive/5",
+          fieldError && "border-destructive/40 bg-destructive/5",
         )}
       >
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:gap-5">
           <div
             className={cn(
-              "relative flex size-28 shrink-0 items-center justify-center rounded-full border border-white/70 bg-linear-to-br from-primary/10 via-white to-secondary/10 p-1 shadow-[0_20px_44px_-30px_rgba(7,30,39,0.48)] ring-1 ring-white/60 transition-transform duration-200 group-hover:scale-[1.01]",
+              "relative flex size-20 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#6366F1_0%,#A855F7_100%)] p-0.5 shadow-md transition-transform duration-200 group-hover:scale-[1.02]",
               previewClassName,
             )}
           >
@@ -217,8 +215,8 @@ export function AvatarUploadField({
               avatarUrl={previewUrl}
               fullName={fullName}
               avatarCacheKey={currentAvatarCacheKey}
-              className="size-full border border-white/50 bg-white"
-              fallbackClassName="text-xl"
+              className="size-full border-2 border-white bg-transparent"
+              fallbackClassName="text-lg font-bold text-white"
             />
 
             {!isBusy ? (

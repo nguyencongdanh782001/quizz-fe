@@ -96,10 +96,10 @@ function DeleteConfirmDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
-      <AlertDialogContent className="rounded-xl">
+      <AlertDialogContent className="rounded-[6px]">
         <AlertDialogHeader>
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+            <div className="mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-[6px] bg-destructive/10 text-destructive">
               <Trash className="size-5" />
             </div>
             <div className="min-w-0">
@@ -110,7 +110,7 @@ function DeleteConfirmDialog({
                 <br />
                 Hành động này không thể hoàn tác.
               </AlertDialogDescription>
-              <p className="mt-3 truncate rounded-xl border border-outline/10 bg-surface-container-low px-3 py-2 text-sm font-medium text-on-surface">
+              <p className="mt-3 truncate rounded-[6px] border border-outline/10 bg-surface-container-low px-3 py-2 text-sm font-medium text-on-surface">
                 {documentTitle}
               </p>
             </div>

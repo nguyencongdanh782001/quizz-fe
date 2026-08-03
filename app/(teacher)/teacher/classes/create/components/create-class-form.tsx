@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AlertCircle } from "lucide-react";
 import { createTeacherClass } from "@/lib/teacher-classes";
 import { APP_MESSAGES } from "@/lib/app-messages";
+import type { ClassInfo } from "@/types/class.types";
 import { ClassNameField } from "./class-name-field";
 import { DescriptionField } from "./description-field";
 import { JoinCodeField } from "./join-code-field";
@@ -37,7 +38,15 @@ const createClassSchema = Yup.object({
     .required("Mã vào lớp không được để trống"),
 });
 
-export function CreateClassForm() {
+interface CreateClassFormProps {
+  onCancel?: () => void;
+  onSuccess?: (classroom: ClassInfo) => void;
+}
+
+export function CreateClassForm({
+  onCancel,
+  onSuccess,
+}: CreateClassFormProps = {}) {
   const router = useRouter();
 
   async function handleSubmit(
@@ -47,7 +56,14 @@ export function CreateClassForm() {
     helpers.setStatus(undefined);
 
     try {
-      await createTeacherClass(values);
+      const classroom = await createTeacherClass(values);
+      helpers.resetForm();
+
+      if (onSuccess) {
+        onSuccess(classroom);
+        return;
+      }
+
       router.push("/teacher/classes");
     } catch (error) {
       console.error("Failed to create class", error);
@@ -68,13 +84,13 @@ export function CreateClassForm() {
         const formStatus = status as CreateClassFormStatus | undefined;
 
         return (
-          <Form className="space-y-5 pt-6">
+          <Form className="max-w-xl space-y-4 pt-4">
             <ClassNameField />
             <DescriptionField />
             <JoinCodeField />
 
             {formStatus?.submitError && (
-              <div className="rounded-2xl border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
+              <div className="rounded-[8px] border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   <div>
@@ -87,7 +103,7 @@ export function CreateClassForm() {
               </div>
             )}
 
-            <FormActions isSubmitting={isSubmitting} />
+            <FormActions isSubmitting={isSubmitting} onCancel={onCancel} />
           </Form>
         );
       }}

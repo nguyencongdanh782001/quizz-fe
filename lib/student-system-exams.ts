@@ -104,6 +104,7 @@ function mapStudentQuestionType(questionType: string): QuestionType {
       return 'multiple';
     case 'true_false':
       return 'true_false';
+    case 'short_answer':
     case 'text':
       return 'text';
     default:

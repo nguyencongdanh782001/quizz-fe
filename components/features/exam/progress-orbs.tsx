@@ -110,15 +110,15 @@ const QuestionItem = memo(function QuestionItem({
           whileHover={shouldReduceMotion ? undefined : { y: -2, scale: 1.045 }}
           whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
           className={cn(
-            "group relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border text-[0.78rem] font-semibold tabular-nums tracking-normal outline-none transition-colors duration-200 sm:h-12 sm:w-12 sm:text-sm",
+            "group relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[8px] border text-[0.78rem] font-semibold tabular-nums tracking-normal outline-none transition-colors duration-200 sm:h-12 sm:w-12 sm:text-sm",
             "focus-visible:ring-3 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             isCurrent
-              ? "border-transparent bg-linear-to-br from-primary via-indigo-500 to-tertiary text-white shadow-[0_18px_34px_-16px_rgba(79,70,229,0.72)]"
+              ? "border-transparent bg-linear-to-br from-primary via-indigo-500 to-tertiary text-white shadow-[0_1px_3px_rgba(30,41,59,0.05)]"
               : isAnswered
-                ? "border-emerald-200/80 bg-emerald-50 text-emerald-700 shadow-[0_14px_28px_-24px_rgba(16,185,129,0.65)] hover:border-emerald-300 hover:bg-emerald-100 dark:border-emerald-400/20 dark:bg-emerald-400/12 dark:text-emerald-300"
+                ? "border-emerald-200/80 bg-emerald-50 text-emerald-700 shadow-[0_1px_3px_rgba(30,41,59,0.05)] hover:border-emerald-300 hover:bg-emerald-100 dark:border-emerald-400/20 dark:bg-emerald-400/12 dark:text-emerald-300"
                 : isFlagged
-                  ? "border-amber-200/90 bg-amber-50 text-amber-700 shadow-[0_14px_28px_-24px_rgba(245,158,11,0.6)] hover:border-amber-300 hover:bg-amber-100 dark:border-amber-400/20 dark:bg-amber-400/12 dark:text-amber-300"
-                  : "border-border/60 bg-white/72 text-on-surface-variant shadow-[0_12px_24px_-22px_rgba(15,23,42,0.38)] hover:border-primary/25 hover:bg-white hover:text-on-surface dark:bg-surface-container/70 dark:hover:bg-surface-container-high",
+                  ? "border-amber-200/90 bg-amber-50 text-amber-700 shadow-[0_1px_3px_rgba(30,41,59,0.05)] hover:border-amber-300 hover:bg-amber-100 dark:border-amber-400/20 dark:bg-amber-400/12 dark:text-amber-300"
+                  : "border-border/60 bg-white/72 text-on-surface-variant shadow-[0_1px_3px_rgba(30,41,59,0.05)] hover:border-primary/25 hover:bg-white hover:text-on-surface dark:bg-surface-container/70 dark:hover:bg-surface-container-high",
           )}
         >
           <span
@@ -246,7 +246,7 @@ export function ProgressOrbs({
     <TooltipProvider>
       <section
         aria-labelledby="exam-progress-title"
-        className="relative overflow-hidden rounded-[1.75rem] border border-white/70 bg-white/78 p-4 shadow-[0_24px_70px_-34px_rgba(15,23,42,0.34)] backdrop-blur-2xl dark:border-outline/25 dark:bg-surface-container-lowest/82 sm:p-5"
+        className="relative overflow-hidden rounded-[8px] border border-white/70 bg-white/78 p-4 shadow-[0_1px_3px_rgba(30,41,59,0.05)] backdrop-blur-2xl dark:border-outline/25 dark:bg-surface-container-lowest/82 sm:p-5"
       >
         <div
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_0%,rgba(79,70,229,0.16),transparent_34%),radial-gradient(circle_at_88%_0%,rgba(8,145,178,0.14),transparent_32%)]"
@@ -256,7 +256,7 @@ export function ProgressOrbs({
         <div className="relative space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-[0_16px_32px_-24px_rgba(79,70,229,0.55)]">
+              <div className="flex h-11 w-11 items-center justify-center rounded-[8px] bg-primary/10 text-primary shadow-[0_1px_3px_rgba(30,41,59,0.05)]">
                 <ListChecks className="h-5 w-5" aria-hidden="true" />
               </div>
               <div>

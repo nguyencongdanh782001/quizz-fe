@@ -92,7 +92,7 @@ function ExamMetaItem({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl border border-outline/10 bg-surface px-3 py-2.5">
+    <div className="rounded-[8px] border border-outline/10 bg-surface px-3 py-2.5">
       <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
         {icon}
         <span>{label}</span>
@@ -116,7 +116,7 @@ export function ExamCard({
   return (
     <article
       className={cn(
-        "group overflow-hidden rounded-[28px] border border-outline/10 bg-surface-container-lowest shadow-[0_20px_65px_-40px_rgba(7,30,39,0.26)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_26px_75px_-38px_rgba(7,30,39,0.34)]",
+        "group overflow-hidden rounded-[10px] border border-outline/10 bg-surface-container-lowest shadow-[0_1px_3px_rgba(30,41,59,0.05)] transition-all duration-300 hover:shadow-[0_1px_3px_rgba(30,41,59,0.05)]",
         isDeleting && "opacity-70",
       )}
     >
@@ -168,7 +168,7 @@ export function ExamCard({
             />
           </div>
 
-          <div className="rounded-2xl border border-outline/10 bg-surface px-4 py-3">
+          <div className="rounded-[8px] border border-outline/10 bg-surface px-4 py-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
               Lớp học
             </p>
@@ -202,7 +202,7 @@ export function ExamCard({
           />
         </div>
 
-        <div className="grid gap-3 rounded-[24px] border border-outline/10 bg-surface p-4 sm:grid-cols-2">
+        <div className="grid gap-3 rounded-[10px] border border-outline/10 bg-surface p-4 sm:grid-cols-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
               <CalendarClock className="size-3.5" />

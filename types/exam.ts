@@ -1,6 +1,9 @@
 export type TeacherExamQuestionType =
   | "single_choice"
   | "multiple_choice"
+  | "true_false"
+  | "fill_in_blank"
+  | "short_answer"
   | "text";
 
 export type TeacherExamSortKey =

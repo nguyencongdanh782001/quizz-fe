@@ -26,7 +26,7 @@ export function AnswerOption({
       type="button"
       onClick={() => onSelect(option.id)}
       className={cn(
-        "cursor-pointer flex items-start gap-3 w-full p-4 rounded-xl text-left",
+        "cursor-pointer flex items-start gap-3 w-full p-4 rounded-[6px] text-left",
         "border transition-all duration-150",
         "focus:outline-none focus:ring-2 focus:ring-primary/40",
         isSelected

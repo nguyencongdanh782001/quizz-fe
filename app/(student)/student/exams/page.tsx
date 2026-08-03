@@ -1,15 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  BookOpen,
-  Search,
-  SlidersHorizontal,
-  Sparkles,
-  Trophy,
-} from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronLeft, Filter, Search, X } from "lucide-react";
 import { ExamCard } from "@/components/features/exam/exam-card";
-import { ExamDifficulty } from "@/types/exam.types";
+import type { ExamDifficulty } from "@/types/exam.types";
 import { useStudentSystemExams } from "@/hooks/queries/use-student-system-exams";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,13 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PageHero } from "@/components/shared/page-hero";
-import { SurfacePanel } from "@/components/shared/surface-panel";
-import { AppEmptyState } from "@/components/shared/empty-state";
 import { cn } from "@/lib/utils";
 
 const difficultyOptions: { value: ExamDifficulty | ""; label: string }[] = [
-  { value: "", label: "Tất cả mức" },
+  { value: "", label: "Tất cả mức độ" },
   { value: "easy", label: "Dễ" },
   { value: "medium", label: "Trung bình" },
   { value: "hard", label: "Khó" },
@@ -42,7 +34,7 @@ export default function ExamsPage() {
   const [classroom, setClassroom] = useState("");
   const [grade, setGrade] = useState<number | "">("");
   const [difficulty, setDifficulty] = useState<ExamDifficulty | "">("");
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilterDrawer, setShowFilterDrawer] = useState(false);
 
   const {
     data,
@@ -107,191 +99,250 @@ export default function ExamsPage() {
     Boolean,
   ).length;
 
+  function resetFilters() {
+    setSearch("");
+    setClassroom("");
+    setGrade("");
+    setDifficulty("");
+  }
+
   return (
-    <div className="space-y-6">
-      <PageHero
-        eyebrow="Thư viện đề thi"
-        title="Khám phá đề thi phù hợp với nhịp học của bạn"
-        description="Tìm kiếm nhanh theo lớp, mức độ và chủ đề để bước vào bài thi phù hợp ngay mà không cần rời khỏi luồng học tập."
-        icon={Sparkles}
-        actions={
-          <Button asChild variant="outline" size="lg">
-            <a href="#bo-loc-de-thi">Đi đến bộ lọc</a>
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-lg font-bold text-[#1E293B]">Đề thi</h1>
+        <p className="mt-1 text-xs text-[#64748B]">
+          Các đề thi gần nhất được xác định từ hệ thống học tập của bạn.
+        </p>
+      </div>
+
+      {/* Main Container Card matching Truy cập gần đây (Image 3) */}
+      <section className="overflow-hidden rounded-[10px] border border-[#DDE2EB] bg-white shadow-[0_1px_3px_rgba(30,41,59,0.04)]">
+        {/* Header row inside card: Count + Search + Filter Funnel Icon grouped on the left */}
+        <div className="flex flex-wrap items-center gap-3.5 border-b border-[#E3E7EE] p-3.5">
+          <span className="shrink-0 text-xs font-bold text-[#3F63F3]">
+            {filtered.length} Đề thi
+          </span>
+
+          <div className="relative w-56 sm:w-72">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#94A3B8]" />
+            <input
+              type="text"
+              placeholder="Nhập từ khóa tìm kiếm..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className="h-9 w-full rounded-[6px] border border-[#ECECEC] bg-white pl-9 pr-3 text-xs text-[#1E293B] outline-none transition-colors focus:border-[#3F63F3]"
+            />
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => setShowFilterDrawer(true)}
+            className={cn(
+              "relative size-9 shrink-0 rounded-[6px] border border-[#ECECEC] text-[#3F63F3] hover:bg-[#EEF2FF]",
+              activeFilterCount > 0 && "border-[#3F63F3] bg-[#EEF2FF]",
+            )}
+            aria-label="Mở bộ lọc"
+          >
+            <Filter className="size-4" />
+            {activeFilterCount > 0 ? (
+              <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-[#E11D48] text-[10px] font-bold text-white shadow-sm">
+                {activeFilterCount}
+              </span>
+            ) : null}
           </Button>
-        }
-        metrics={[
-          {
-            label: "Tổng đề thi",
-            value: isLoading ? "--" : totalExams,
-            description: "Đề thi hệ thống sẵn sàng để bắt đầu ngay.",
-            icon: BookOpen,
-            tone: "primary",
-          },
-          {
-            label: "Mức độ hiển thị",
-            value: isLoading ? "--" : difficultyOptions.length - 1,
-            description: "Các nhóm độ khó để bạn chọn nhịp ôn luyện phù hợp.",
-            icon: Trophy,
-            tone: "secondary",
-          },
-        ]}
-      />
-
-      <SurfacePanel tone="muted" className="flex flex-col gap-3 lg:flex-row">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Tìm kiếm đề thi..."
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            className="h-12 rounded-2xl border-outline/15 bg-surface-container-lowest pl-10 pr-4 shadow-none"
-          />
         </div>
-        <button
-          onClick={() => setShowFilters((value) => !value)}
-          className={cn(
-            "cursor-pointer flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium",
-            "border transition-colors shrink-0",
-            showFilters || activeFilterCount > 0
-              ? "bg-primary text-white border-primary"
-              : "bg-surface-container-lowest text-on-surface border-outline/20 hover:bg-surface-container-low",
+
+        {/* Card Body */}
+        <div className="p-5">
+          {isLoading ? (
+            <div className="py-12 text-center text-xs text-[#94A3B8]">
+              Đang tải danh sách đề thi...
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="py-16 text-center text-xs text-[#94A3B8]">
+              Không tìm thấy đề thi nào.
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {filtered.map((exam) => (
+                  <ExamCard key={exam.id} exam={exam} />
+                ))}
+              </div>
+              <div ref={sentinelRef} className="h-10" aria-hidden />
+              <p className="pt-2 text-center text-xs text-[#94A3B8]">
+                {isFetchingNextPage
+                  ? "Đang tải thêm..."
+                  : !hasNextPage
+                    ? `Đã hiển thị tất cả ${totalExams} đề thi.`
+                    : null}
+              </p>
+            </>
           )}
-        >
-          <SlidersHorizontal className="w-4 h-4" />
-          Bộ lọc
-          {activeFilterCount > 0 ? (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-xs">
-              {activeFilterCount}
-            </span>
-          ) : null}
-        </button>
-      </SurfacePanel>
+        </div>
+      </section>
 
-      {showFilters ? (
-        <SurfacePanel
-          tone="muted"
-          className="grid grid-cols-1 gap-4 sm:grid-cols-3"
-        >
-          <div>
-            <Label className="mb-2 block text-xs font-medium text-on-surface-variant">
-              Lớp học
-            </Label>
-            <Select
-              value={classroom || ALL_SUBJECTS}
-              onValueChange={(value) =>
-                setClassroom(value === ALL_SUBJECTS ? "" : value)
-              }
+      {/* Slide-over Filter Drawer from Right Side (Matching Reference Image 2) */}
+      <AnimatePresence>
+        {showFilterDrawer ? (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowFilterDrawer(false)}
+              className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 320, damping: 32 }}
+              className="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col border-l border-[#DDE2EB] bg-white shadow-2xl"
             >
-              <SelectTrigger className="h-12 rounded-2xl border-outline/15 bg-surface shadow-none">
-                <SelectValue placeholder="Tất cả lớp học" />
-              </SelectTrigger>
-              <SelectContent position="popper">
-                <SelectItem value={ALL_SUBJECTS}>Tất cả lớp học</SelectItem>
-                {classroomOptions.map((item) => (
-                  <SelectItem key={item} value={item}>
-                    {item}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="mb-2 block text-xs font-medium text-on-surface-variant">
-              Khối lớp
-            </Label>
-            <Select
-              value={grade === "" ? ALL_GRADES : String(grade)}
-              onValueChange={(value) =>
-                setGrade(value === ALL_GRADES ? "" : Number(value))
-              }
-            >
-              <SelectTrigger className="h-12 rounded-2xl border-outline/15 bg-surface shadow-none">
-                <SelectValue placeholder="Tất cả khối" />
-              </SelectTrigger>
-              <SelectContent position="popper">
-                <SelectItem value={ALL_GRADES}>Tất cả khối</SelectItem>
-                {gradeOptions.map((gradeOption) => (
-                  <SelectItem key={gradeOption} value={String(gradeOption)}>
-                    Lớp {gradeOption}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="mb-2 block text-xs font-medium text-on-surface-variant">
-              Mức độ
-            </Label>
-            <Select
-              value={difficulty || ALL_DIFFICULTIES}
-              onValueChange={(value) =>
-                setDifficulty(
-                  value === ALL_DIFFICULTIES ? "" : (value as ExamDifficulty),
-                )
-              }
-            >
-              <SelectTrigger className="h-12 rounded-2xl border-outline/15 bg-surface shadow-none">
-                <SelectValue placeholder="Tất cả mức" />
-              </SelectTrigger>
-              <SelectContent position="popper">
-                {difficultyOptions.map((option) => (
-                  <SelectItem
-                    key={option.value || ALL_DIFFICULTIES}
-                    value={option.value || ALL_DIFFICULTIES}
+              <div className="flex items-center justify-between border-b border-[#E3E7EE] px-5 py-4">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowFilterDrawer(false)}
+                    className="rounded-[6px] p-1 text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#1E293B]"
+                    aria-label="Đóng bộ lọc"
                   >
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </SurfacePanel>
-      ) : null}
+                    <ChevronLeft className="size-5" />
+                  </button>
+                  <h2 className="text-base font-bold text-[#1E293B]">
+                    Lọc kết quả
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowFilterDrawer(false)}
+                  className="rounded-[6px] p-1 text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#1E293B]"
+                  aria-label="Đóng bộ lọc"
+                >
+                  <X className="size-5" />
+                </button>
+              </div>
 
-      {isLoading ? (
-        <SurfacePanel className="py-12 text-center text-muted-foreground">
-          <Search className="w-10 h-10 mx-auto mb-3 opacity-40" />
-          <p className="font-medium">Đang tải đề thi</p>
-          <p className="text-sm mt-1">Vui lòng chờ trong giây lát</p>
-        </SurfacePanel>
-      ) : filtered.length === 0 ? (
-        <AppEmptyState
-          icon={BookOpen}
-          title={
-            items.length === 0
-              ? "Chưa có đề thi hệ thống nào"
-              : "Không tìm thấy đề thi nào"
-          }
-          description={
-            items.length === 0
-              ? "Hệ thống sẽ hiển thị đề thi mới tại đây ngay khi có dữ liệu."
-              : "Thử thay đổi bộ lọc hoặc từ khóa để khám phá thêm đề thi phù hợp."
-          }
-        />
-      ) : (
-        <>
-          <p className="text-sm text-muted-foreground">
-            Hiển thị {filtered.length} trong {items.length} đề thi
-            {items.length < totalExams ? ` (tổng ${totalExams})` : ""}
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filtered.map((exam) => (
-              <ExamCard key={exam.id} exam={exam} />
-            ))}
-          </div>
-          <div ref={sentinelRef} className="h-10" aria-hidden />
-          <p className="text-center text-sm text-muted-foreground">
-            {isFetchingNextPage
-              ? "Đang tải thêm..."
-              : !hasNextPage
-                ? `Đã hiển thị tất cả ${totalExams} đề thi.`
-                : null}
-          </p>
-        </>
-      )}
+              <div className="flex-1 space-y-4 overflow-y-auto p-5">
+                <div>
+                  <Label className="mb-1.5 block text-xs font-semibold text-[#1E293B]">
+                    Từ khóa tìm kiếm
+                  </Label>
+                  <Input
+                    type="text"
+                    placeholder="Nhập tên đề thi, mô tả..."
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    className="h-10 rounded-[8px] border-[#E3E7EE] text-xs outline-none focus:border-[#3F63F3]"
+                  />
+                </div>
+
+                <div>
+                  <Label className="mb-1.5 block text-xs font-semibold text-[#1E293B]">
+                    Lớp học
+                  </Label>
+                  <Select
+                    value={classroom || ALL_SUBJECTS}
+                    onValueChange={(value) =>
+                      setClassroom(value === ALL_SUBJECTS ? "" : value)
+                    }
+                  >
+                    <SelectTrigger className="h-10 rounded-[8px] border-[#E3E7EE] bg-white text-xs shadow-none">
+                      <SelectValue placeholder="Chọn Lớp học" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      <SelectItem value={ALL_SUBJECTS}>Tất cả lớp học</SelectItem>
+                      {classroomOptions.map((item) => (
+                        <SelectItem key={item} value={item}>
+                          {item}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="mb-1.5 block text-xs font-semibold text-[#1E293B]">
+                    Khối lớp
+                  </Label>
+                  <Select
+                    value={grade === "" ? ALL_GRADES : String(grade)}
+                    onValueChange={(value) =>
+                      setGrade(value === ALL_GRADES ? "" : Number(value))
+                    }
+                  >
+                    <SelectTrigger className="h-10 rounded-[8px] border-[#E3E7EE] bg-white text-xs shadow-none">
+                      <SelectValue placeholder="Chọn Khối lớp" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      <SelectItem value={ALL_GRADES}>Tất cả khối</SelectItem>
+                      {gradeOptions.map((gradeOption) => (
+                        <SelectItem
+                          key={gradeOption}
+                          value={String(gradeOption)}
+                        >
+                          Khối {gradeOption}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="mb-1.5 block text-xs font-semibold text-[#1E293B]">
+                    Mức độ / Độ khó
+                  </Label>
+                  <Select
+                    value={difficulty || ALL_DIFFICULTIES}
+                    onValueChange={(value) =>
+                      setDifficulty(
+                        value === ALL_DIFFICULTIES
+                          ? ""
+                          : (value as ExamDifficulty),
+                      )
+                    }
+                  >
+                    <SelectTrigger className="h-10 rounded-[8px] border-[#E3E7EE] bg-white text-xs shadow-none">
+                      <SelectValue placeholder="Chọn Mức độ" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {difficultyOptions.map((option) => (
+                        <SelectItem
+                          key={option.value || ALL_DIFFICULTIES}
+                          value={option.value || ALL_DIFFICULTIES}
+                        >
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 border-t border-[#E3E7EE] bg-white p-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 flex-1 rounded-[8px] border-0 bg-[#F1F5F9] text-xs font-bold text-[#475569] hover:bg-[#E2E8F0]"
+                  onClick={resetFilters}
+                >
+                  Xoá bộ lọc
+                </Button>
+                <Button
+                  type="button"
+                  className="h-10 flex-1 rounded-[8px] bg-[#3F63F3] text-xs font-bold text-white hover:bg-[#3151D8]"
+                  onClick={() => setShowFilterDrawer(false)}
+                >
+                  Áp dụng
+                </Button>
+              </div>
+            </motion.div>
+          </>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

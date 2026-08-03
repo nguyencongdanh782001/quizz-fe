@@ -53,7 +53,7 @@ function AlertDialogContent({
       <AlertDialogPrimitive.Content
         data-slot="alert-dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-[min(100%-1.5rem,34rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-[28px] border border-outline/10 bg-surface-container-lowest p-6 shadow-[0_30px_100px_-45px_rgba(7,30,39,0.55)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:p-7",
+          "fixed top-1/2 left-1/2 z-50 grid w-[min(100%-1.5rem,34rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-[10px] border border-outline/10 bg-surface-container-lowest p-6 shadow-[0_24px_72px_-38px_rgba(7,30,39,0.5)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:p-7",
           className,
         )}
         {...props}
@@ -120,7 +120,7 @@ function AlertDialogAction({
     <AlertDialogPrimitive.Action
       className={cn(
         buttonVariants({ variant: "destructive", size: "lg" }),
-        "h-11 rounded-2xl px-5",
+        "h-11 rounded-[6px] px-5",
         className,
       )}
       {...props}
@@ -136,7 +136,7 @@ function AlertDialogCancel({
     <AlertDialogPrimitive.Cancel
       className={cn(
         buttonVariants({ variant: "outline", size: "lg" }),
-        "h-11 rounded-2xl px-5",
+        "h-11 rounded-[6px] px-5",
         className,
       )}
       {...props}

@@ -71,9 +71,9 @@ function StatCard({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl bg-surface-container-lowest p-5 shadow-[0_16px_45px_-36px_rgba(7,30,39,0.28)]">
+    <div className="rounded-[8px] bg-surface-container-lowest p-5 shadow-[0_1px_3px_rgba(30,41,59,0.05)]">
       <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+        <div className="flex h-11 w-11 items-center justify-center rounded-[8px] bg-primary/10 text-primary">
           <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0">
@@ -113,11 +113,11 @@ function ResultsTable({
   items: TeacherExamResultItemData[];
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl bg-surface-container-lowest shadow-[0_8px_24px_rgba(7,30,39,0.05)]">
+    <div className="overflow-hidden rounded-[10px] border border-[#DDE2EB] bg-white shadow-[0_1px_3px_rgba(30,41,59,0.08)]">
       <div className="overflow-x-auto">
-        <table className="min-w-full">
-          <thead>
-            <tr className="border-b border-outline/10">
+        <table className="min-w-full text-left">
+          <thead className="bg-[#F3F4F6] text-xs font-semibold text-[#111827]">
+            <tr className="border-b border-[#DDE2EB]">
               {[
                 "Học sinh",
                 "Điểm",
@@ -128,20 +128,20 @@ function ResultsTable({
               ].map((heading) => (
                 <th
                   key={heading}
-                  className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                  className="px-3.5 py-3.5 text-left"
                 >
                   {heading}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-[#DDE2EB] text-xs text-[#111827]">
             {items.map((result) => (
               <tr
                 key={result.attemptId}
-                className="border-b border-outline/10 last:border-0 hover:bg-surface-container-low"
+                className="transition-colors hover:bg-[#F8FAFC]"
               >
-                <td className="min-w-72 px-5 py-4">
+                <td className="min-w-72 px-3.5 py-2.5">
                   <div className="flex items-center gap-3">
                     <UserAvatar
                       avatarUrl={result.studentAvatarUrl}
@@ -158,7 +158,7 @@ function ResultsTable({
                     </div>
                   </div>
                 </td>
-                <td className="px-5 py-4">
+                <td className="px-3.5 py-2.5">
                   <div className="min-w-28">
                     <p className="font-display text-xl font-bold text-on-surface">
                       {formatPercent(result.scorePercent)}
@@ -168,19 +168,19 @@ function ResultsTable({
                     </p>
                   </div>
                 </td>
-                <td className="px-5 py-4 text-sm text-muted-foreground">
+                <td className="px-3.5 py-2.5 text-[#526079]">
                   {result.correctAnswersCount}/{result.totalQuestions} câu
                 </td>
-                <td className="min-w-44 px-5 py-4 text-sm text-muted-foreground">
+                <td className="min-w-44 px-3.5 py-2.5 text-[#526079]">
                   <span className="inline-flex items-center gap-1.5">
                     <Clock className="h-3.5 w-3.5" />
                     {formatDate(result.submittedAt)}
                   </span>
                 </td>
-                <td className="px-5 py-4">
+                <td className="px-3.5 py-2.5">
                   <ResultStatusBadge isPassed={result.isPassed} />
                 </td>
-                <td className="px-5 py-4">
+                <td className="px-3.5 py-2.5">
                   <Button asChild variant="outline" size="sm">
                     <Link
                       href={`/teacher/classes/${classId}/exams/${examId}/results/${result.attemptId}`}
@@ -284,10 +284,10 @@ export function TeacherClassExamResultsScreen({
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             {className}
           </p>
-          <h1 className="mt-2 font-display text-3xl font-bold text-on-surface">
+          <h1 className="mt-1 text-lg font-bold text-[#1E293B]">
             {examTitle}
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-1 text-xs text-[#64748B]">
             Theo dõi kết quả nộp bài của học sinh trong bài thi này.
           </p>
         </div>
@@ -303,7 +303,7 @@ export function TeacherClassExamResultsScreen({
               resultsData.items.length === 0 ||
               isExportingExcel
             }
-            className="h-11 rounded-2xl"
+            className="h-11 rounded-[8px]"
           >
             <FileSpreadsheet
               className={cn(
@@ -319,7 +319,7 @@ export function TeacherClassExamResultsScreen({
             size="lg"
             onClick={() => void handleRetry()}
             disabled={resultsQuery.isFetching || examQuery.isFetching}
-            className="h-11 rounded-2xl"
+            className="h-11 rounded-[8px]"
           >
             <RefreshCw
               className={cn(

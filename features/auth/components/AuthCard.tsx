@@ -1,6 +1,7 @@
-import { SurfaceCard } from '@/components/common/SurfaceCard';
-import { Logo } from '@/components/common/Logo';
-import { cn } from '@/lib/utils';
+"use client";
+
+import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 interface AuthCardProps {
   children: React.ReactNode;
@@ -8,26 +9,29 @@ interface AuthCardProps {
   cardClassName?: string;
 }
 
-export function AuthCard({ children, className, cardClassName }: AuthCardProps) {
+export function AuthCard({ children, className }: AuthCardProps) {
   return (
-    <div className="min-h-screen bg-surface flex items-center justify-center p-4">
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-secondary/5 blur-3xl" />
-      </div>
+    <main className="relative min-h-screen w-full bg-white font-sans text-on-surface lg:grid lg:grid-cols-[minmax(0,1.65fr)_minmax(520px,1fr)]">
+      {/* Left Column - Fixed Height Sticky Section */}
+      <section
+        className="sticky top-0 hidden h-screen w-full overflow-hidden bg-[#edf4ff] lg:block"
+        aria-hidden="true"
+      >
+        <Image
+          src="/image/logo-01.png"
+          alt="QuizzVN Auth Illustration"
+          fill
+          className="object-cover object-center"
+          priority
+        />
+      </section>
 
-      <div className={cn("relative w-full max-w-md", className)}>
-        <div className="text-center mb-8">
-          <Logo size="lg" className="justify-center mb-4" />
-          <p className="mt-2 text-on-surface-variant text-sm">
-            Cổng Giải Đề Trực Tuyến
-          </p>
-        </div>
-
-        <SurfaceCard className={cn("p-8", cardClassName)}>
+      {/* Right Column - Dynamic Height Scrollable Section */}
+      <section className="flex min-h-screen items-center justify-center px-6 py-12 sm:px-10 lg:px-16">
+        <div className={cn("w-full max-w-[440px]", className)}>
           {children}
-        </SurfaceCard>
-      </div>
-    </div>
+        </div>
+      </section>
+    </main>
   );
 }

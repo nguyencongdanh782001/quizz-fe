@@ -17,14 +17,14 @@ export function ClassTabs({
   onChange: (tab: TeacherClassTab) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-2 rounded-2xl bg-surface-container-lowest p-2 shadow-[0_8px_24px_rgba(7,30,39,0.05)]">
+    <div className="flex flex-wrap gap-2 rounded-[8px] bg-surface-container-lowest p-2 shadow-[0_1px_3px_rgba(30,41,59,0.05)]">
       {tabs.map((tab) => (
         <button
           key={tab.id}
           type="button"
           onClick={() => onChange(tab.id)}
           className={cn(
-            "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all",
+            "inline-flex items-center gap-2 rounded-[6px] px-4 py-2.5 text-sm font-medium transition-all",
             activeTab === tab.id
               ? "bg-primary text-white shadow-sm"
               : "text-muted-foreground hover:bg-surface-container hover:text-on-surface",

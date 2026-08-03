@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardContent,
@@ -41,6 +42,8 @@ import { getApiErrorMessage } from "@/lib/api/error-message";
 import type {
   AIQCCostEstimateResponse,
   AIExamGenerationJobResponse,
+  AIExamQuestionType,
+  AIExamQuestionTypeDistribution,
   AIQuestionDraftResponse,
   ApiError,
 } from "@/lib/api/types";
@@ -65,10 +68,13 @@ import type {
   SaveAIExamFormState,
 } from "./types";
 import {
+  AI_QUESTION_TYPE_OPTIONS,
   DEFAULT_GENERATE_FORM,
   DEFAULT_SAVE_FORM,
+  buildEvenQuestionTypeDistribution,
   buildGeneratePayload,
   getGenerationValidationMessage,
+  getQuestionTypeDistributionTotal,
   getStatusLabel,
   isJobFailed,
   isJobRunning,
@@ -343,6 +349,16 @@ export function TeacherAIExamScreen({
     useState<SaveAIExamFormState>(DEFAULT_SAVE_FORM);
   const [generateMoreCount, setGenerateMoreCount] = useState(5);
   const [generateMoreInstructions, setGenerateMoreInstructions] = useState("");
+  const [generateMoreQuestionTypes, setGenerateMoreQuestionTypes] = useState<
+    AIExamQuestionType[]
+  >([]);
+  const [
+    generateMoreQuestionTypeDistribution,
+    setGenerateMoreQuestionTypeDistribution,
+  ] = useState<AIExamQuestionTypeDistribution>({});
+  const [generateMoreValuesJobId, setGenerateMoreValuesJobId] = useState<
+    number | null
+  >(null);
   const [recentDrafts, setRecentDrafts] = useState<RecentAIExamDraft[]>([]);
   const [saveValuesJobId, setSaveValuesJobId] = useState<number | null>(null);
   const [selectedDraftId, setSelectedDraftId] = useState<number | null>(null);
@@ -414,6 +430,17 @@ export function TeacherAIExamScreen({
     sortedDrafts[0] ??
     null;
   const approvedCount = drafts.filter((draft) => draft.is_approved).length;
+  const generateMoreTypeTotal = getQuestionTypeDistributionTotal(
+    generateMoreQuestionTypeDistribution,
+    generateMoreQuestionTypes,
+  );
+  const hasValidGenerateMoreDistribution =
+    generateMoreQuestionTypes.length > 0 &&
+    generateMoreTypeTotal === generateMoreCount &&
+    generateMoreQuestionTypes.every(
+      (questionType) =>
+        (generateMoreQuestionTypeDistribution[questionType] ?? 0) > 0,
+    );
   const jobBusy = Boolean(job && isJobRunning(job.status));
   const jobFailed = Boolean(job && isJobFailed(job.status));
   const canSave =
@@ -442,6 +469,25 @@ export function TeacherAIExamScreen({
 
     setRecentDrafts(getScopedRecentAIExamDrafts(nextDrafts, scope, classId));
   }, [classId, job, scope]);
+
+  useEffect(() => {
+    if (!job || generateMoreValuesJobId === job.id) {
+      return;
+    }
+
+    const defaultQuestionType =
+      job.question_types[0] ?? AI_QUESTION_TYPE_OPTIONS[0].value;
+    const nextQuestionTypes = [defaultQuestionType];
+
+    setGenerateMoreQuestionTypes(nextQuestionTypes);
+    setGenerateMoreQuestionTypeDistribution(
+      buildEvenQuestionTypeDistribution(
+        generateMoreCount,
+        nextQuestionTypes,
+      ),
+    );
+    setGenerateMoreValuesJobId(job.id);
+  }, [generateMoreCount, generateMoreValuesJobId, job]);
 
   useEffect(() => {
     if (!job || jobBusy || !["charged", "refunded"].includes(job.qc_status)) {
@@ -534,10 +580,17 @@ export function TeacherAIExamScreen({
         throw new Error("Chưa có đề AI để tạo thêm câu hỏi.");
       }
 
+      if (!hasValidGenerateMoreDistribution) {
+        throw new Error(
+          "Vui lòng chọn loại câu hỏi và phân bổ đủ số câu cần tạo thêm.",
+        );
+      }
+
       return generateMoreAIQuestions(job.id, {
         additional_instructions: generateMoreInstructions.trim(),
         count: generateMoreCount,
-        question_types: job.question_types,
+        question_type_distribution: generateMoreQuestionTypeDistribution,
+        question_types: generateMoreQuestionTypes,
       }, createIdempotencyKey("generate-more"));
     },
     onSuccess: (nextJob) => {
@@ -691,6 +744,43 @@ export function TeacherAIExamScreen({
     });
   }
 
+  function updateGenerateMoreCount(nextValue: number) {
+    const nextCount = Math.min(50, Math.max(1, nextValue || 1));
+
+    setGenerateMoreCount(nextCount);
+    setGenerateMoreQuestionTypeDistribution(
+      buildEvenQuestionTypeDistribution(
+        nextCount,
+        generateMoreQuestionTypes,
+      ),
+    );
+  }
+
+  function toggleGenerateMoreQuestionType(questionType: AIExamQuestionType) {
+    const selected = generateMoreQuestionTypes.includes(questionType);
+    const nextQuestionTypes = selected
+      ? generateMoreQuestionTypes.filter((item) => item !== questionType)
+      : [...generateMoreQuestionTypes, questionType];
+
+    setGenerateMoreQuestionTypes(nextQuestionTypes);
+    setGenerateMoreQuestionTypeDistribution(
+      buildEvenQuestionTypeDistribution(
+        generateMoreCount,
+        nextQuestionTypes,
+      ),
+    );
+  }
+
+  function updateGenerateMoreQuestionTypeCount(
+    questionType: AIExamQuestionType,
+    nextValue: number,
+  ) {
+    setGenerateMoreQuestionTypeDistribution((current) => ({
+      ...current,
+      [questionType]: Math.min(50, Math.max(1, nextValue || 1)),
+    }));
+  }
+
   function handleDraftUpdated(draft: AIQuestionDraftResponse) {
     setDraftOverrides((current) => mergeUpdatedDraft(current, draft));
     setToast({
@@ -713,10 +803,10 @@ export function TeacherAIExamScreen({
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="font-display text-2xl font-semibold text-on-surface">
+            <h1 className="text-lg font-bold text-[#1E293B]">
               Tạo đề thi bằng AI
             </h1>
-            <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-1 text-xs leading-5 text-[#64748B]">
               Sinh câu hỏi nháp bằng AI, rà soát từng câu rồi lưu thành đề thi
               trong hệ thống hiện tại.
             </p>
@@ -764,7 +854,7 @@ export function TeacherAIExamScreen({
           >
             <Card
               size="sm"
-              className="min-h-[410px] rounded-2xl border border-outline/10 bg-surface-container-lowest shadow-[0_14px_34px_-30px_rgba(7,30,39,0.24)]"
+              className="min-h-[410px] rounded-[10px] border border-[#DDE2EB] bg-surface-container-lowest shadow-[0_1px_3px_rgba(30,41,59,0.08)]"
             >
               <CardHeader>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -942,8 +1032,8 @@ export function TeacherAIExamScreen({
                             max={50}
                             value={generateMoreCount}
                             onChange={(event) =>
-                              setGenerateMoreCount(
-                                Math.max(1, Number(event.target.value) || 1),
+                              updateGenerateMoreCount(
+                                Number(event.target.value),
                               )
                             }
                           />
@@ -965,12 +1055,93 @@ export function TeacherAIExamScreen({
                           type="button"
                           variant="outline"
                           className="h-10 px-4"
-                          disabled={jobBusy || generateMoreMutation.isPending}
+                          disabled={
+                            jobBusy ||
+                            generateMoreMutation.isPending ||
+                            !hasValidGenerateMoreDistribution
+                          }
                           onClick={() => generateMoreMutation.mutate()}
                         >
                           <Plus className="size-4" />
                           Tạo thêm
                         </Button>
+                      </div>
+
+                      <div className="space-y-3 border-t border-outline/10 pt-3">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <p className="text-sm font-medium text-on-surface">
+                            Loại câu tạo thêm
+                          </p>
+                          <span
+                            className={
+                              hasValidGenerateMoreDistribution
+                                ? "text-xs font-medium text-muted-foreground"
+                                : "text-xs font-medium text-amber-700"
+                            }
+                          >
+                            {generateMoreTypeTotal}/{generateMoreCount} câu
+                          </span>
+                        </div>
+
+                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                          {AI_QUESTION_TYPE_OPTIONS.map((option) => (
+                            <label
+                              key={option.value}
+                              className="flex items-center gap-2 rounded-md border border-outline/10 bg-surface-container-lowest px-3 py-2 text-sm font-medium text-on-surface"
+                            >
+                              <Checkbox
+                                checked={generateMoreQuestionTypes.includes(
+                                  option.value,
+                                )}
+                                onCheckedChange={() =>
+                                  toggleGenerateMoreQuestionType(option.value)
+                                }
+                              />
+                              {option.label}
+                            </label>
+                          ))}
+                        </div>
+
+                        {generateMoreQuestionTypes.length > 1 ? (
+                          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                            {generateMoreQuestionTypes.map((questionType) => {
+                              const option = AI_QUESTION_TYPE_OPTIONS.find(
+                                (item) => item.value === questionType,
+                              );
+
+                              return (
+                                <label key={questionType} className="space-y-1.5">
+                                  <span className="text-xs font-medium text-muted-foreground">
+                                    {option?.label ?? questionType}
+                                  </span>
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    max={50}
+                                    value={
+                                      generateMoreQuestionTypeDistribution[
+                                        questionType
+                                      ] ?? 0
+                                    }
+                                    onChange={(event) =>
+                                      updateGenerateMoreQuestionTypeCount(
+                                        questionType,
+                                        Number(event.target.value),
+                                      )
+                                    }
+                                  />
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+
+                        {!hasValidGenerateMoreDistribution ? (
+                          <p className="text-xs font-medium text-amber-700">
+                            Chọn loại câu hỏi và phân bổ đủ {generateMoreCount} câu
+                            trước khi tạo thêm.
+                          </p>
+                        ) : null}
                       </div>
 
                       <div className="flex flex-col gap-2 border-t border-outline/10 pt-3 sm:flex-row sm:items-center sm:justify-between">
@@ -1013,7 +1184,7 @@ export function TeacherAIExamScreen({
             <div className="grid max-w-7xl gap-5 xl:grid-cols-[minmax(0,760px)_minmax(280px,360px)] xl:items-start xl:justify-start">
               {selectedDraft ? (
                 <AIQuestionDraftCard
-                  key={selectedDraft.id}
+                  key={`${selectedDraft.id}-${selectedDraft.updated_at ?? "initial"}`}
                   draft={selectedDraft}
                   disabled={jobBusy}
                   onUpdated={handleDraftUpdated}
@@ -1022,7 +1193,7 @@ export function TeacherAIExamScreen({
 
               <Card
                 size="sm"
-                className="rounded-2xl border border-outline/10 bg-surface-container-lowest shadow-[0_14px_34px_-30px_rgba(7,30,39,0.24)] xl:sticky xl:top-4"
+                className="rounded-[10px] border border-[#DDE2EB] bg-surface-container-lowest shadow-[0_1px_3px_rgba(30,41,59,0.08)] xl:sticky xl:top-4"
               >
                 <CardHeader>
                   <div className="flex items-start justify-between gap-3">

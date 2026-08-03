@@ -285,10 +285,10 @@ export function DateTimePicker({
       {label ? (
         <Label
           htmlFor={inputId}
-          className="text-sm font-medium text-on-surface"
+          className="text-xs font-bold text-[#1E293B]"
         >
           {label}
-          {required ? <span className="ml-0.5 text-destructive">*</span> : null}
+          {required ? <span className="ml-0.5 text-rose-500">*</span> : null}
         </Label>
       ) : null}
 
@@ -316,26 +316,27 @@ export function DateTimePicker({
               aria-expanded={open}
               aria-haspopup="dialog"
               className={cn(
-                "group flex min-h-12 w-full flex-wrap items-center gap-3 rounded-xl border border-outline/20 bg-surface-container-lowest px-3.5 py-2 text-left text-sm text-on-surface shadow-[0_1px_2px_rgba(7,30,39,0.06)] outline-none transition-[border-color,box-shadow,background-color]",
-                "hover:border-primary/35 hover:bg-surface focus-visible:border-primary focus-visible:bg-surface focus-visible:ring-4 focus-visible:ring-primary/12 disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:border-destructive aria-invalid:ring-4 aria-invalid:ring-destructive/15",
-                "dark:shadow-none dark:hover:bg-surface-container-low dark:focus-visible:bg-surface-container-low dark:aria-invalid:ring-destructive/25",
-                error && "border-destructive",
+                "group flex h-9 min-h-9 w-full items-center justify-between gap-2 rounded-[6px] border border-[#CBD5E1] bg-white px-2.5 text-left text-xs text-[#1E293B] outline-none transition-colors",
+                "hover:border-[#8B5CF6] focus-visible:border-[#8B5CF6] disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:border-rose-500",
+                error && "border-rose-500",
               )}
             >
-              <CalendarDays className="size-4 shrink-0 text-on-surface-variant transition-colors group-hover:text-primary" />
-              <span
-                className={cn(
-                  "min-w-36 flex-1 truncate",
-                  selectedLabel
-                    ? "text-on-surface"
-                    : "text-on-surface-variant/65",
-                )}
-              >
-                {selectedLabel || placeholder}
-              </span>
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-surface-container px-2.5 py-1 text-xs font-semibold text-on-surface-variant">
-                <Clock3 className="size-3.5 text-primary" />
-                {selected.hour} : {selected.minute}
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <CalendarDays className="size-3.5 shrink-0 text-[#64748B] transition-colors group-hover:text-[#8B5CF6]" />
+                <span
+                  className={cn(
+                    "truncate text-xs",
+                    selectedLabel
+                      ? "text-[#1E293B] font-medium"
+                      : "text-[#94A3B8]",
+                  )}
+                >
+                  {selectedLabel || placeholder}
+                </span>
+              </div>
+              <span className="inline-flex shrink-0 items-center gap-1 rounded bg-[#F1F5F9] px-2 py-0.5 text-[11px] font-semibold text-[#475569]">
+                <Clock3 className="size-3 text-[#8B5CF6]" />
+                {selected.hour}:{selected.minute}
               </span>
             </button>
           </PopoverTrigger>

@@ -18,7 +18,7 @@ export function ExamTimer({ timeLeft, total, compact = false }: ExamTimerProps) 
   return (
     <div
       className={cn(
-        'glass rounded-xl flex items-center gap-2 px-4 py-2.5 border border-outline/15',
+        'glass rounded-[6px] flex items-center gap-2 px-4 py-2.5 border border-outline/15',
         'font-display font-semibold tabular-nums',
         compact ? 'text-sm' : 'text-base',
         isCritical && 'animate-pulse-ring ring-2 ring-red-400/50',

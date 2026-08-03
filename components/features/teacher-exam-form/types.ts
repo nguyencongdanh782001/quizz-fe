@@ -1,6 +1,9 @@
 export const TEACHER_EXAM_QUESTION_TYPES = [
   "single_choice",
   "multiple_choice",
+  "true_false",
+  "fill_in_blank",
+  "short_answer",
   "text",
 ] as const;
 
@@ -11,6 +14,10 @@ export const DEFAULT_TEACHER_EXAM_QUESTION_TYPE: TeacherExamQuestionType =
   "single_choice";
 
 export const DEFAULT_TEACHER_EXAM_SCOPE = "system";
+
+export const DEFAULT_TEACHER_EXAM_TOTAL_POINTS = 10;
+
+export const DEFAULT_TEACHER_EXAM_POINT_MODE = "auto" as const;
 
 export interface TeacherExamOptionFormValues {
   id?: number;

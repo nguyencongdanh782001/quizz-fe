@@ -30,6 +30,7 @@ import {
   AI_EXAM_CONTEXT_TEMPLATES,
   AI_QUESTION_TYPE_OPTIONS,
   buildBalancedDifficultyDistribution,
+  buildEvenQuestionTypeDistribution,
   clampNumber,
   getDifficultyTotal,
   getQuestionTypeDistributionTotal,
@@ -70,6 +71,7 @@ export function AIGenerateForm({
   );
   const hasBalancedQuestionTypes =
     questionTypeTotal === values.question_count;
+  const missingQuestionTypeCount = values.question_count - questionTypeTotal;
 
   function updateValues(patch: Partial<GenerateAIExamFormState>) {
     onValuesChange({
@@ -83,15 +85,12 @@ export function AIGenerateForm({
     const nextTypes = selected
       ? values.question_types.filter((item) => item !== questionType)
       : [...values.question_types, questionType];
-    const nextDistribution = {
-      ...values.question_type_distribution,
-      [questionType]: selected
-        ? 0
-        : values.question_type_distribution[questionType] || 1,
-    };
 
     updateValues({
-      question_type_distribution: nextDistribution,
+      question_type_distribution: buildEvenQuestionTypeDistribution(
+        values.question_count,
+        nextTypes,
+      ),
       question_types: nextTypes,
     });
   }
@@ -117,6 +116,10 @@ export function AIGenerateForm({
       difficulty_distribution:
         buildBalancedDifficultyDistribution(questionCount),
       question_count: questionCount,
+      question_type_distribution: buildEvenQuestionTypeDistribution(
+        questionCount,
+        values.question_types,
+      ),
     });
   }
 
@@ -135,7 +138,7 @@ export function AIGenerateForm({
   return (
     <Card
       size="sm"
-      className="rounded-2xl border border-outline/10 bg-surface-container-lowest shadow-[0_14px_34px_-30px_rgba(7,30,39,0.24)]"
+      className="rounded-[10px] border border-[#DDE2EB] bg-surface-container-lowest shadow-[0_1px_3px_rgba(30,41,59,0.08)]"
     >
       <CardHeader>
         <div className="flex items-start gap-3">
@@ -360,7 +363,9 @@ export function AIGenerateForm({
                 </div>
                 {!hasBalancedQuestionTypes ? (
                   <p className="text-xs font-medium text-amber-700">
-                    Tổng số câu theo loại phải bằng Tổng số câu.
+                    {missingQuestionTypeCount > 0
+                      ? `Đã chia đều ${questionTypeTotal}/${values.question_count} câu. Còn thiếu ${missingQuestionTypeCount} câu, hãy cộng vào một loại phù hợp.`
+                      : `Đang phân bổ ${questionTypeTotal}/${values.question_count} câu. Hãy giảm ${Math.abs(missingQuestionTypeCount)} câu ở một loại.`}
                   </p>
                 ) : null}
               </div>
@@ -403,7 +408,7 @@ export function AIGenerateForm({
           </div>
 
           {error ? (
-            <div className="rounded-2xl border border-destructive/20 bg-destructive/6 px-4 py-3 text-sm text-destructive">
+            <div className="rounded-[8px] border border-destructive/20 bg-destructive/6 px-4 py-3 text-sm text-destructive">
               {error}
             </div>
           ) : null}
@@ -412,7 +417,7 @@ export function AIGenerateForm({
             <Button
               type="submit"
               disabled={isGenerating}
-              className="h-10 rounded-xl px-5"
+              className="h-10 rounded-xl bg-gradient-to-r from-[#4867F8] to-[#C62CF2] px-5 text-sm font-semibold text-white shadow-sm hover:opacity-95"
             >
               {isGenerating ? "Đang tạo đề..." : "Tạo đề bằng AI"}
             </Button>

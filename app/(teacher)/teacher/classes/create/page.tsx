@@ -15,12 +15,12 @@ export default function CreateClassPage() {
         Quay lại danh sách lớp
       </Link>
 
-      <div className="rounded-3xl border border-outline/10 bg-surface-container-lowest p-6 shadow-[0_18px_44px_-32px_rgba(7,30,39,0.18)] sm:p-7">
+      <div className="rounded-[10px] border border-outline/10 bg-surface-container-lowest p-6 shadow-[0_1px_3px_rgba(30,41,59,0.05)] sm:p-7">
         <div className="border-b border-outline/10 pb-5">
-          <h1 className="font-display text-2xl font-bold text-on-surface">
+          <h1 className="text-lg font-bold text-[#1E293B]">
             Tạo lớp học mới
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-xs text-[#64748B]">
             Điền các thông tin cơ bản để tạo lớp học cho học sinh tham gia.
           </p>
         </div>

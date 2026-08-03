@@ -43,7 +43,7 @@ export function AISavePanel({
   return (
     <Card
       size="sm"
-      className="min-h-[410px] rounded-2xl border border-outline/10 bg-surface-container-lowest shadow-[0_14px_34px_-30px_rgba(7,30,39,0.24)]"
+      className="min-h-[410px] rounded-[10px] border border-[#DDE2EB] bg-surface-container-lowest shadow-[0_1px_3px_rgba(30,41,59,0.08)]"
     >
       <CardHeader>
         <CardTitle className="font-display text-xl text-on-surface">
@@ -129,7 +129,7 @@ export function AISavePanel({
             type="button"
             disabled={!canSave || isSaving}
             onClick={onSave}
-            className="h-10 min-w-36 rounded-2xl px-4 sm:min-w-40"
+            className="h-10 min-w-36 rounded-[6px] bg-gradient-to-r from-[#4867F8] to-[#C62CF2] px-4 text-xs font-semibold text-white shadow-sm hover:opacity-95 sm:min-w-40"
           >
             <Save className="size-4" />
             {isSaving ? "Đang lưu..." : "Lưu đề thi"}

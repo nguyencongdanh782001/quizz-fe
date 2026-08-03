@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { KeyboardEvent } from "react";
 import { useEffect, useState } from "react";
@@ -8,10 +7,18 @@ import {
   AlertCircle,
   BookMarked,
   Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Copy,
   FileCheck,
+  LoaderCircle,
   Pencil,
   Plus,
+  RefreshCw,
+  Search,
   Trash2,
   Users,
 } from "lucide-react";
@@ -33,6 +40,34 @@ import {
 import type { ClassInfo } from "@/types/class.types";
 import { cn } from "@/lib/utils";
 import {
+  CreateClassroomDialog,
+} from "./components/create-classroom-dialog";
+
+function formatDateTime(value?: string | null) {
+  if (!value) return "Chưa cập nhật";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Chưa cập nhật";
+
+  const timeStr = new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+
+  const dateStr = new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+
+  return (
+    <div className="text-xs text-[#111827] leading-snug">
+      <div>{timeStr}</div>
+      <div>{dateStr}</div>
+    </div>
+  );
+}
+import {
   DeleteClassroomDialog,
   type DeleteClassroomDialogSubmitResult,
 } from "./components/delete-classroom-dialog";
@@ -45,6 +80,8 @@ import {
   type TeacherClassesFlashToast,
 } from "./flash-toast";
 
+const PAGE_SIZE_OPTIONS = [10, 20, 50];
+
 export default function TeacherClassesPage() {
   const router = useRouter();
   const [classes, setClasses] = useState<ClassInfo[]>([]);
@@ -54,6 +91,9 @@ export default function TeacherClassesPage() {
   const [toast, setToast] = useState<TeacherClassesFlashToast | null>(null);
   const [deletingClassId, setDeletingClassId] = useState<string | null>(null);
   const [updatingClassId, setUpdatingClassId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     let isMounted = true;
@@ -212,6 +252,28 @@ export default function TeacherClassesPage() {
     setToast((current) => (current ? { ...current } : current));
   }
 
+  function handleCreateClassroom(classroom: ClassInfo) {
+    setClasses((current) => [classroom, ...current]);
+    setToast({
+      message: APP_MESSAGES.CREATE_CLASS_SUCCESS,
+      variant: "success",
+    });
+  }
+
+  async function refreshClasses() {
+    setIsLoadingClasses(true);
+    try {
+      const items = await getTeacherClasses();
+      setClasses(items);
+      setLoadError(null);
+    } catch (error) {
+      console.error("Failed to refresh teacher classes", error);
+      setLoadError(APP_MESSAGES.LOAD_CLASSES_FAILED);
+    } finally {
+      setIsLoadingClasses(false);
+    }
+  }
+
   function openClassDetail(classId: string) {
     router.push(`/teacher/classes/${classId}`);
   }
@@ -236,75 +298,126 @@ export default function TeacherClassesPage() {
     }
   }
 
+  const normalizedSearch = search.trim().toLocaleLowerCase("vi");
+  const filteredClasses = classes.filter((classroom) =>
+    [
+      classroom.name,
+      classroom.description,
+      classroom.joinCode,
+      classroom.inviteCode,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLocaleLowerCase("vi")
+      .includes(normalizedSearch),
+  );
+  const totalPages = Math.max(1, Math.ceil(filteredClasses.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const visibleClasses = filteredClasses.slice(
+    (safePage - 1) * pageSize,
+    safePage * pageSize,
+  );
+  const canGoBack = safePage > 1;
+  const canGoForward = safePage < totalPages;
+
   return (
     <ToastProvider duration={3500}>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="font-display font-bold text-2xl text-on-surface mb-1">
+            <h1 className="text-lg font-bold text-[#1E293B]">
               Quản lý lớp học
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="mt-0.5 text-xs text-[#64748B]">
               {isLoadingClasses
                 ? "Đang tải danh sách lớp..."
                 : `${classes.length} lớp đang quản lý`}
             </p>
           </div>
-          <Link
-            href="/teacher/classes/create"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Tạo lớp mới
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <CreateClassroomDialog
+              onCreated={handleCreateClassroom}
+              trigger={
+                <Button type="button" className="h-9 rounded-[4px] bg-gradient-to-r from-[#4867F8] to-[#C62CF2] px-3.5 text-xs font-semibold text-white shadow-sm hover:opacity-95">
+                  <Plus className="size-4" />
+                  Tạo lớp mới
+                </Button>
+              }
+            />
+            <Button
+              type="button"
+              className="h-9 rounded-[4px] bg-[#3F63F3] px-3.5 text-xs font-semibold text-white hover:bg-[#3554D8]"
+              onClick={() => void refreshClasses()}
+              disabled={isLoadingClasses}
+            >
+              <RefreshCw className={`size-4 ${isLoadingClasses ? "animate-spin" : ""}`} />
+              Làm mới
+            </Button>
+          </div>
         </div>
 
-        {isLoadingClasses ? (
-          <div className="rounded-xl bg-surface-container-lowest p-6 text-sm text-muted-foreground">
-            Đang tải lớp học...
+        <div className="overflow-hidden rounded-[10px] border border-[#DDE2EB] bg-white shadow-[0_1px_3px_rgba(30,41,59,0.08)]">
+          <div className="border-b border-[#E3E7EE] p-3">
+            <label className="relative block w-full sm:w-80">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#94A3B8]" />
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                }}
+                placeholder="Nhập từ khóa tìm kiếm..."
+                className="h-10 w-full rounded-[7px] border border-[#DDE2EB] bg-white pl-10 pr-3 text-xs text-[#1E293B] outline-none transition-colors placeholder:text-[#94A3B8] focus:border-[#4F62F2]"
+              />
+            </label>
           </div>
-        ) : loadError ? (
-          <div className="rounded-xl border border-red-200/60 bg-red-50/80 p-5 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-              <div>
-                <p className="font-medium">Không thể tải lớp học</p>
-                <p className="mt-1">{loadError}</p>
-              </div>
-            </div>
-          </div>
-        ) : classes.length === 0 ? (
-          <div className="rounded-xl bg-surface-container-lowest p-8 text-center text-muted-foreground">
-            <Users className="mx-auto mb-3 h-10 w-10 opacity-40" />
-            <p className="font-medium">Chưa có lớp học nào</p>
-            <p className="mt-1 text-sm">
-              Tạo lớp đầu tiên để bắt đầu quản lý học sinh.
-            </p>
-          </div>
-        ) : (
-          <div className="bg-surface-container-lowest rounded-xl overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-outline/10">
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-[#F3F4F6] text-xs font-semibold text-[#111827]">
+                <tr className="border-b border-[#DDE2EB]">
                   {[
+                    "Mã lớp",
                     "Lớp học",
                     "Học sinh",
                     "Bài thi",
                     "Tài liệu",
-                    "Mã lớp",
+                    "Ngày tạo",
+                    "Ngày cập nhật",
                     "Hành động",
                   ].map((heading) => (
                     <th
                       key={heading}
-                      className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                      className="px-3.5 py-3.5 text-left"
                     >
                       {heading}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody>
-                {classes.map((cls) => (
+              <tbody className="divide-y divide-[#DDE2EB] text-xs text-[#111827]">
+                {isLoadingClasses ? (
+                  <tr>
+                    <td colSpan={8} className="h-28 text-center text-[#64748B]">
+                      <LoaderCircle className="mr-2 inline size-4 animate-spin" />
+                      Đang tải danh sách lớp học...
+                    </td>
+                  </tr>
+                ) : loadError ? (
+                  <tr>
+                    <td colSpan={8} className="h-28 text-center text-red-600">
+                      <AlertCircle className="mr-2 inline size-4" />
+                      {loadError}
+                    </td>
+                  </tr>
+                ) : visibleClasses.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="h-28 text-center text-[#64748B]">
+                      Không tìm thấy dữ liệu nào!
+                    </td>
+                  </tr>
+                ) : visibleClasses.map((cls) => (
                   <tr
                     key={cls.id}
                     role="link"
@@ -319,82 +432,51 @@ export default function TeacherClassesPage() {
                       handleClassRowKeyDown(event, cls.id);
                     }}
                     className={cn(
-                      "border-b border-outline/10 last:border-0",
-                      "group cursor-pointer hover:bg-surface-container-low transition-colors focus-visible:bg-surface-container-low focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35",
+                      "group cursor-pointer transition-colors hover:bg-[#F8FAFC] focus-visible:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35",
                     )}
                   >
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
-                          style={{ backgroundColor: cls.coverColor }}
-                        >
-                          {cls.name.charAt(0)}
-                        </div>
-                        <div>
-                          <span className="font-medium text-on-surface text-sm transition-colors group-hover:text-primary">
-                            {cls.name}
-                          </span>
+                    <td className="px-3.5 py-2.5">
+                      <span className="font-mono text-xs font-semibold text-[#111827]">
+                        {cls.joinCode ?? cls.inviteCode}
+                      </span>
+                    </td>
+                    <td className="px-3.5 py-2.5">
+                      <div>
+                        <span className="font-medium text-[#111827] transition-colors group-hover:text-primary">
+                          {cls.name}
+                        </span>
+                        {cls.description ? (
                           <p className="text-xs text-muted-foreground truncate max-w-xs">
                             {cls.description}
                           </p>
-                        </div>
+                        ) : null}
                       </div>
                     </td>
-                    <td className="px-5 py-4">
-                      <span className="flex items-center gap-1.5 text-sm text-on-surface">
+                    <td className="px-3.5 py-2.5">
+                      <span className="flex items-center gap-1.5">
                         <Users className="w-3.5 h-3.5 text-muted-foreground" />
                         {cls.studentCount ?? 0}
                       </span>
                     </td>
-                    <td className="px-5 py-4">
-                      <span className="flex items-center gap-1.5 text-sm text-on-surface">
+                    <td className="px-3.5 py-2.5">
+                      <span className="flex items-center gap-1.5">
                         <FileCheck className="w-3.5 h-3.5 text-muted-foreground" />
                         {cls.examCount}
                       </span>
                     </td>
-                    <td className="px-5 py-4">
-                      <span className="flex items-center gap-1.5 text-sm text-on-surface">
+                    <td className="px-3.5 py-2.5">
+                      <span className="flex items-center gap-1.5">
                         <BookMarked className="w-3.5 h-3.5 text-muted-foreground" />
                         {cls.documentCount}
                       </span>
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
-                        <code className="text-xs bg-surface-container px-2 py-1 rounded font-mono text-muted-foreground">
-                          {cls.joinCode ?? cls.inviteCode}
-                        </code>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-xs"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            void copyJoinCode(
-                              cls.id,
-                              cls.joinCode ?? cls.inviteCode,
-                            );
-                          }}
-                          title={
-                            copiedClassId === cls.id
-                              ? "Đã sao chép mã lớp"
-                              : "Sao chép mã lớp"
-                          }
-                          aria-label="Sao chép mã lớp"
-                          className={cn(
-                            "text-muted-foreground hover:text-on-surface",
-                            copiedClassId === cls.id && "text-primary",
-                          )}
-                        >
-                          {copiedClassId === cls.id ? (
-                            <Check className="h-3.5 w-3.5" />
-                          ) : (
-                            <Copy className="h-3.5 w-3.5" />
-                          )}
-                        </Button>
-                      </div>
+                    <td className="px-3.5 py-2.5">
+                      {formatDateTime(cls.createdAt)}
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-3.5 py-2.5">
+                      {formatDateTime(cls.updatedAt || cls.createdAt)}
+                    </td>
+                    <td className="px-3.5 py-2.5">
                       <div
                         className="flex items-center gap-1"
                         onClick={(event) => {
@@ -447,7 +529,65 @@ export default function TeacherClassesPage() {
               </tbody>
             </table>
           </div>
-        )}
+
+          <div className="grid items-center gap-3 border-t border-[#E3E7EE] px-4 py-3.5 text-xs text-[#1E293B] lg:grid-cols-[1fr_auto_1fr]">
+            <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-start">
+              <span>Số hàng hiển thị trên trang:</span>
+              <label className="relative">
+                <select
+                  value={pageSize}
+                  onChange={(event) => {
+                    setPageSize(Number(event.target.value));
+                    setPage(1);
+                  }}
+                  className="h-9 appearance-none border-0 bg-transparent py-0 pl-2 pr-7 font-semibold text-[#3F63F3] outline-none"
+                  aria-label="Số hàng hiển thị trên trang"
+                >
+                  {PAGE_SIZE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-1 top-1/2 size-4 -translate-y-1/2 text-[#3F63F3]" />
+              </label>
+              <span>của tổng số {filteredClasses.length}</span>
+            </div>
+
+            <div className="flex items-center justify-center gap-1.5">
+              <Button type="button" variant="ghost" size="icon" className="size-8" disabled={!canGoBack} onClick={() => setPage(1)} aria-label="Trang đầu">
+                <ChevronsLeft className="size-4" />
+              </Button>
+              <Button type="button" variant="ghost" size="icon" className="size-8" disabled={!canGoBack} onClick={() => setPage(safePage - 1)} aria-label="Trang trước">
+                <ChevronLeft className="size-4" />
+              </Button>
+              <span className="flex size-9 items-center justify-center rounded-full bg-[#3F63F3] font-bold text-white">{safePage}</span>
+              <Button type="button" variant="ghost" size="icon" className="size-8" disabled={!canGoForward} onClick={() => setPage(safePage + 1)} aria-label="Trang sau">
+                <ChevronRight className="size-4" />
+              </Button>
+              <Button type="button" variant="ghost" size="icon" className="size-8" disabled={!canGoForward} onClick={() => setPage(totalPages)} aria-label="Trang cuối">
+                <ChevronsRight className="size-4" />
+              </Button>
+            </div>
+
+            <label className="flex items-center justify-center gap-3 lg:justify-end">
+              <span>Chuyển đến trang:</span>
+              <input
+                key={safePage}
+                type="number"
+                min={1}
+                max={totalPages}
+                defaultValue={safePage}
+                onBlur={(event) => {
+                  const nextPage = Number(event.currentTarget.value);
+                  if (Number.isFinite(nextPage)) {
+                    setPage(Math.min(Math.max(nextPage, 1), totalPages));
+                  }
+                }}
+                className="h-10 w-24 rounded-[7px] border border-[#DDE2EB] px-3 outline-none focus:border-[#4F62F2]"
+                aria-label="Chuyển đến trang"
+              />
+            </label>
+          </div>
+        </div>
       </div>
 
       {toast ? (

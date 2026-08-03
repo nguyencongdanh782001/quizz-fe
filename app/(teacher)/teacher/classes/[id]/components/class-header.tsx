@@ -1,93 +1,85 @@
-import type { ReactNode } from "react";
-import { BookOpen, CalendarDays, FileText, Hash, Users } from "lucide-react";
+"use client";
+
+import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { ClassInfo } from "@/types/class.types";
-import { formatDate } from "../utils";
 
 export function ClassHeader({
   cls,
   actions,
 }: {
   cls: ClassInfo;
-  actions?: ReactNode;
+  actions?: React.ReactNode;
 }) {
-  return (
-    <section className="overflow-hidden rounded-3xl bg-surface-container-lowest shadow-[0_18px_60px_rgba(7,30,39,0.08)]">
-      <div className="bg-linear-to-r from-primary/10 via-surface-container-lowest to-secondary/10 p-6 sm:p-8">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <div className="flex items-start gap-4">
-              <div
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-lg font-bold text-white shadow-lg"
-                style={{ backgroundColor: cls.coverColor }}
-              >
-                {cls.name.charAt(0)}
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Quản lý lớp học
-                </p>
-                <h1 className="mt-1 font-display text-2xl font-bold text-on-surface sm:text-3xl">
-                  {cls.name}
-                </h1>
-                {cls.description ? (
-                  <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground sm:text-base">
-                    {cls.description}
-                  </p>
-                ) : null}
-                {actions ? <div className="mt-4">{actions}</div> : null}
-              </div>
-            </div>
-          </div>
+  const router = useRouter();
+  const code = cls.joinCode || cls.inviteCode || "--";
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl bg-surface-container p-4">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Users className="h-4 w-4" />
-                <span className="text-xs font-medium uppercase tracking-wide">
-                  Học sinh
-                </span>
-              </div>
-              <p className="mt-3 text-2xl font-semibold text-on-surface">
-                {cls.studentCount ?? 0}
-              </p>
-            </div>
-            <div className="rounded-2xl bg-surface-container p-4">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <BookOpen className="h-4 w-4" />
-                <span className="text-xs font-medium uppercase tracking-wide">
-                  Bài thi
-                </span>
-              </div>
-              <p className="mt-3 text-2xl font-semibold text-on-surface">
-                {cls.examCount}
-              </p>
-            </div>
-            <div className="rounded-2xl bg-surface-container p-4">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <FileText className="h-4 w-4" />
-                <span className="text-xs font-medium uppercase tracking-wide">
-                  Tài liệu
-                </span>
-              </div>
-              <p className="mt-3 text-2xl font-semibold text-on-surface">
-                {cls.documentCount ?? 0}
-              </p>
-            </div>
+  return (
+    <section className="rounded-[10px] border border-[#DDE2EB] bg-white p-5 shadow-[0_1px_3px_rgba(30,41,59,0.04)] sm:p-6">
+      {/* Top Row: Class Title + Red "Trở về" Button */}
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-xl font-bold text-[#1E293B]">{cls.name}</h1>
+        <div className="flex items-center gap-2">
+          {actions}
+          <Button
+            type="button"
+            onClick={() => router.back()}
+            className="h-9 gap-1.5 rounded-[6px] bg-[#DC2626] px-3.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-[#B91C1C]"
+          >
+            <ArrowLeft className="size-3.5" />
+            Trở về
+          </Button>
+        </div>
+      </div>
+
+      {/* Middle Row: Classroom Image + Info aligned to top-right of image */}
+      <div className="mt-2.5 flex flex-col gap-4 sm:flex-row sm:items-start">
+        <div className="relative h-28 w-48 shrink-0 overflow-hidden rounded-[8px] border border-[#ECECEC] bg-[#F8FAFC]">
+          <img
+            src={cls.imageUrl || "/image/class-01.png"}
+            alt={cls.name}
+            className="h-full w-full object-cover"
+          />
+        </div>
+
+        <div className="space-y-2 pt-0.5">
+          <span className="inline-block rounded-[4px] bg-[#15803D] px-2.5 py-0.5 text-xs font-semibold text-white">
+            Hoạt động
+          </span>
+          <p className="text-sm font-medium text-[#1E293B]">
+            Mã lớp học: <span className="font-mono font-bold text-[#1E293B]">{code}</span>
+          </p>
+        </div>
+      </div>
+
+      {/* Bottom Row: 3 Metric Cards */}
+      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-[8px] bg-[#E0F2FE] p-4 text-center">
+          <div className="text-2xl font-bold text-[#0284C7]">
+            {cls.studentCount ?? 0}
+          </div>
+          <div className="mt-1 text-xs font-medium text-[#64748B]">
+            Tổng học viên
           </div>
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-          <span className="inline-flex items-center gap-2 rounded-full bg-surface-container px-3 py-1.5">
-            <Hash className="h-4 w-4" />
-            Mã lớp:{" "}
-            <code className="font-mono text-xs text-on-surface">
-              {cls.joinCode ?? cls.inviteCode}
-            </code>
-          </span>
-          <span className="inline-flex items-center gap-2 rounded-full bg-surface-container px-3 py-1.5">
-            <CalendarDays className="h-4 w-4" />
-            Tạo ngày {formatDate(cls.createdAt)}
-          </span>
+        <div className="rounded-[8px] bg-[#DCFCE7] p-4 text-center">
+          <div className="text-2xl font-bold text-[#16A34A]">
+            {cls.examCount ?? 0}
+          </div>
+          <div className="mt-1 text-xs font-medium text-[#64748B]">
+            Bài kiểm tra
+          </div>
+        </div>
+
+        <div className="rounded-[8px] bg-[#F3E8FF] p-4 text-center">
+          <div className="text-2xl font-bold text-[#9333EA]">
+            {cls.documentCount ?? 0}
+          </div>
+          <div className="mt-1 text-xs font-medium text-[#64748B]">
+            Đề thi ôn tập
+          </div>
         </div>
       </div>
     </section>

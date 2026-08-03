@@ -79,6 +79,26 @@ export function buildBalancedDifficultyDistribution(
   };
 }
 
+export function buildEvenQuestionTypeDistribution(
+  questionCount: number,
+  questionTypes: AIExamQuestionType[],
+): AIExamQuestionTypeDistribution {
+  if (questionTypes.length === 0) {
+    return {};
+  }
+
+  const safeQuestionCount = clampNumber(Math.round(questionCount), 0, 50);
+  const countPerType = Math.floor(safeQuestionCount / questionTypes.length);
+
+  return questionTypes.reduce<AIExamQuestionTypeDistribution>(
+    (distribution, questionType) => {
+      distribution[questionType] = countPerType;
+      return distribution;
+    },
+    {},
+  );
+}
+
 export function getQuestionTypeDistributionTotal(
   distribution: AIExamQuestionTypeDistribution,
   questionTypes?: AIExamQuestionType[],
@@ -232,7 +252,13 @@ export function getStatusLabel(status: string): string {
   }
 
   if (
-    ["processing", "running", "in_progress", "generating"].includes(normalized)
+    [
+      "processing",
+      "running",
+      "in_progress",
+      "generating",
+      "generating_more",
+    ].includes(normalized)
   ) {
     return "Đang tạo";
   }
@@ -248,6 +274,7 @@ export function isJobRunning(status: string): boolean {
     "running",
     "in_progress",
     "generating",
+    "generating_more",
   ].includes(status.toLowerCase());
 }
 

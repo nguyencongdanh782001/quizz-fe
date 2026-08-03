@@ -1,17 +1,8 @@
 "use client";
 
 import type { ComponentType } from "react";
-import {
-  BookOpenText,
-  CalendarDays,
-  FileText,
-  LibraryBig,
-  MessageSquareText,
-  Eye,
-} from "lucide-react";
+import { CalendarDays, Eye, FileText, HardDrive, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { SurfacePanel } from "@/components/shared/surface-panel";
 import { cn } from "@/lib/utils";
 import type { Document } from "@/types/document.types";
 import {
@@ -27,101 +18,42 @@ interface DocumentCardProps {
   className?: string;
 }
 
-export function DocumentCard({
-  document,
-  onView,
-  className,
-}: DocumentCardProps) {
+export function DocumentCard({ document, onView, className }: DocumentCardProps) {
   return (
-    <SurfacePanel
-      as="article"
-      className={cn(
-        "group flex h-full flex-col gap-4 p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_90px_-40px_rgba(15,23,42,0.28)]",
-        className,
-      )}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="info" className="rounded-full px-3 py-1">
-              {formatDocumentTypeLabel(document)}
-            </Badge>
-            {document.classroomName ? (
-              <Badge variant="outline" className="rounded-full px-3 py-1">
-                {document.classroomName}
-              </Badge>
-            ) : null}
-          </div>
-
-          <h3 className="line-clamp-2 font-display text-xl font-semibold leading-tight text-on-surface">
-            {document.title}
-          </h3>
-        </div>
-
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+    <article className={cn("flex h-full flex-col rounded-[8px] border border-[#DDE2EB] bg-white p-4 transition-colors hover:border-[#BFC8D8]", className)}>
+      <div className="flex items-start gap-3">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-[8px] bg-[#EEF2FF] text-[#4F62F2]">
           <FileText className="size-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="rounded-[6px] bg-[#EEF2FF] px-2 py-1 text-[10px] font-semibold text-[#4F62F2]">{formatDocumentTypeLabel(document)}</span>
+            {document.classroomName ? <span className="rounded-[6px] bg-[#F1F5F9] px-2 py-1 text-[10px] font-semibold text-[#526079]">{document.classroomName}</span> : null}
+          </div>
+          <h3 className="mt-2 line-clamp-2 text-sm font-bold leading-5 text-[#1E293B]">{document.title}</h3>
         </div>
       </div>
 
-      <p className="line-clamp-3 text-sm leading-7 text-muted-foreground">
+      <p className="mt-3 line-clamp-2 text-[11px] leading-5 text-[#64748B]">
         {document.description || "Tài liệu này chưa có phần mô tả."}
       </p>
 
-      <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-        <MetaPill icon={MessageSquareText} label="Tên file" value={document.fileName || "Chưa có"} />
-        <MetaPill icon={LibraryBig} label="Loại file" value={formatDocumentTypeLabel(document)} />
-        <MetaPill icon={CalendarDays} label="Ngày đăng" value={formatDocumentDateTime(document.createdAt)} />
-        <MetaPill icon={BookOpenText} label="Dung lượng" value={formatFileSize(document.fileSize)} />
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <Meta icon={CalendarDays} value={formatDocumentDateTime(document.createdAt)} />
+        <Meta icon={HardDrive} value={formatFileSize(document.fileSize)} />
+        {document.uploadedByName ? <Meta icon={UserRound} value={document.uploadedByName} className="col-span-2" /> : null}
       </div>
 
-      {document.uploadedByName ? (
-        <div className="rounded-[1.1rem] bg-white/72 px-4 py-3 text-sm text-muted-foreground">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Được đăng bởi
-          </p>
-          <p className="mt-1 font-medium text-on-surface">{document.uploadedByName}</p>
-        </div>
-      ) : null}
-
-      <div className="mt-auto grid gap-3 pt-1 sm:grid-cols-2">
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11 rounded-xl"
-          onClick={() => onView(document)}
-        >
-          <Eye className="size-4" />
-          Xem tài liệu
+      <div className="mt-auto grid grid-cols-2 gap-2 border-t border-[#E9EDF3] pt-3">
+        <Button type="button" variant="outline" className="h-9 rounded-[6px] text-xs" onClick={() => onView(document)}>
+          <Eye className="size-4" />Xem
         </Button>
-        <DocumentDownloadButton
-          document={document}
-          variant="default"
-          label="Tải xuống"
-          className="h-11 rounded-xl"
-        />
+        <DocumentDownloadButton document={document} variant="default" label="Tải xuống" className="h-9 rounded-[6px] text-xs" />
       </div>
-    </SurfacePanel>
+    </article>
   );
 }
 
-function MetaPill({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-start gap-2 rounded-[1rem] bg-surface-container-lowest px-3 py-2.5">
-      <Icon className="mt-0.5 size-4 shrink-0 text-primary" />
-      <div className="min-w-0">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-          {label}
-        </p>
-        <p className="mt-1 line-clamp-1 text-sm text-on-surface">{value}</p>
-      </div>
-    </div>
-  );
+function Meta({ icon: Icon, value, className }: { icon: ComponentType<{ className?: string }>; value: string; className?: string }) {
+  return <div className={cn("flex min-w-0 items-center gap-1.5 rounded-[6px] bg-[#F7F8FB] px-2.5 py-2 text-[10.5px] text-[#526079]", className)}><Icon className="size-3.5 shrink-0 text-[#7C879B]" /><span className="truncate">{value}</span></div>;
 }

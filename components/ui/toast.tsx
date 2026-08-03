@@ -2,23 +2,25 @@
 
 import * as React from "react";
 import { Toast as ToastPrimitive } from "radix-ui";
-import { X } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  X,
+  XCircle,
+} from "lucide-react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const toastVariants = cva(
-  "group pointer-events-auto relative flex w-full items-start gap-3 overflow-hidden rounded-2xl border p-4 shadow-[0_20px_40px_-24px_rgba(7,30,39,0.35)] backdrop-blur-md transition-all data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-right-full data-[state=open]:animate-in data-[state=open]:slide-in-from-right-full",
+  "group pointer-events-auto relative flex min-h-[64px] w-full items-center gap-3.5 overflow-hidden rounded-[8px] border border-[#E5E7EB] bg-white px-4.5 py-4 pr-10 shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-all data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-right-full data-[state=open]:animate-in data-[state=open]:slide-in-from-right-full dark:bg-[#1E293B] dark:border-slate-700",
   {
     variants: {
       variant: {
-        default:
-          "border-outline/10 bg-surface-container-lowest/95 text-on-surface",
-        success:
-          "border-emerald-200/80 bg-emerald-50/95 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/25 dark:text-emerald-200",
-        warning:
-          "border-amber-200/80 bg-amber-50/95 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200",
-        error:
-          "border-destructive/20 bg-destructive/10 text-destructive dark:border-destructive/30 dark:bg-destructive/15",
+        default: "",
+        success: "",
+        warning: "",
+        error: "",
       },
     },
     defaultVariants: {
@@ -26,6 +28,29 @@ const toastVariants = cva(
     },
   },
 );
+
+const variantConfig = {
+  default: {
+    icon: Info,
+    iconColor: "text-white fill-[#3498db]",
+    barColor: "bg-[#3498db]",
+  },
+  success: {
+    icon: CheckCircle2,
+    iconColor: "text-white fill-[#07bc0c]",
+    barColor: "bg-[#07bc0c]",
+  },
+  warning: {
+    icon: AlertTriangle,
+    iconColor: "text-white fill-[#f1c40f]",
+    barColor: "bg-[#f1c40f]",
+  },
+  error: {
+    icon: XCircle,
+    iconColor: "text-white fill-[#e74c3c]",
+    barColor: "bg-[#e74c3c]",
+  },
+};
 
 function ToastProvider({
   ...props
@@ -40,7 +65,7 @@ function ToastViewport({
   return (
     <ToastPrimitive.Viewport
       className={cn(
-        "fixed top-4 right-4 z-60 flex w-[min(100vw-1rem,24rem)] max-w-full flex-col gap-3 outline-none",
+        "fixed top-4 right-4 z-60 flex w-[min(100vw-1rem,22.5rem)] max-w-full flex-col gap-3 outline-none",
         className,
       )}
       {...props}
@@ -48,17 +73,50 @@ function ToastViewport({
   );
 }
 
+export interface ToastProps
+  extends React.ComponentPropsWithoutRef<typeof ToastPrimitive.Root>,
+    VariantProps<typeof toastVariants> {
+  duration?: number;
+  showIcon?: boolean;
+  showProgressBar?: boolean;
+}
+
 function Toast({
   className,
-  variant,
+  variant = "default",
+  duration = 4000,
+  showIcon = true,
+  showProgressBar = true,
+  children,
   ...props
-}: React.ComponentProps<typeof ToastPrimitive.Root> &
-  VariantProps<typeof toastVariants>) {
+}: ToastProps) {
+  const currentVariant = variant ?? "default";
+  const config = variantConfig[currentVariant] ?? variantConfig.default;
+  const IconComponent = config.icon;
+
   return (
     <ToastPrimitive.Root
-      className={cn(toastVariants({ variant }), className)}
+      duration={duration}
+      className={cn(toastVariants({ variant: currentVariant }), className)}
       {...props}
-    />
+    >
+      {showIcon ? (
+        <IconComponent className={cn("size-[22px] shrink-0", config.iconColor)} />
+      ) : null}
+      <div className="flex-1 min-w-0">{children}</div>
+      {showProgressBar ? (
+        <span
+          aria-hidden="true"
+          className={cn(
+            "absolute inset-x-0 bottom-0 h-[3px] origin-left",
+            config.barColor,
+          )}
+          style={{
+            animation: `toastProgress ${duration}ms linear forwards`,
+          }}
+        />
+      ) : null}
+    </ToastPrimitive.Root>
   );
 }
 
@@ -68,7 +126,10 @@ function ToastTitle({
 }: React.ComponentProps<typeof ToastPrimitive.Title>) {
   return (
     <ToastPrimitive.Title
-      className={cn("text-sm font-semibold", className)}
+      className={cn(
+        "text-sm font-medium text-[#2c3e50] dark:text-slate-100 leading-snug",
+        className,
+      )}
       {...props}
     />
   );
@@ -80,7 +141,10 @@ function ToastDescription({
 }: React.ComponentProps<typeof ToastPrimitive.Description>) {
   return (
     <ToastPrimitive.Description
-      className={cn("text-sm leading-relaxed opacity-90", className)}
+      className={cn(
+        "text-xs text-[#7f8c8d] dark:text-slate-400 mt-0.5 leading-relaxed",
+        className,
+      )}
       {...props}
     />
   );
@@ -93,12 +157,12 @@ function ToastClose({
   return (
     <ToastPrimitive.Close
       className={cn(
-        "absolute top-3 right-3 inline-flex size-7 items-center justify-center rounded-full opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/12",
+        "absolute top-3.5 right-3 inline-flex size-5 items-center justify-center rounded text-[#95a5a6] hover:text-[#2c3e50] dark:text-slate-400 dark:hover:text-slate-200 transition-colors focus-visible:outline-none",
         className,
       )}
       {...props}
     >
-      <X className="size-4" />
+      <X className="size-3.5 stroke-[2.5]" />
     </ToastPrimitive.Close>
   );
 }
@@ -111,3 +175,4 @@ export {
   ToastTitle,
   ToastViewport,
 };
+

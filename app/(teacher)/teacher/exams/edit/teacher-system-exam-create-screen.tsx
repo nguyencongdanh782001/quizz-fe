@@ -230,42 +230,7 @@ export function TeacherSystemExamCreateScreen({
 
   return (
     <ToastProvider>
-      <div className="mx-auto w-full max-w-7xl space-y-8">
-        <Link
-          href="/teacher/exams"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-on-surface"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Quay lại danh sách đề thi
-        </Link>
-
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <h1 className="font-display text-3xl font-bold text-on-surface">
-              {isEditMode
-                ? EXAM_FLOW_MESSAGES.titles.edit
-                : EXAM_FLOW_MESSAGES.titles.create}
-            </h1>
-            <p className="mt-2 max-w-4xl text-sm leading-relaxed text-muted-foreground">
-              {isEditMode
-                ? "Cập nhật đề thi theo từng bước rõ ràng: rà soát thông tin chung, chỉnh sửa câu hỏi và lưu lại phiên bản mới."
-                : "Hoàn thiện đề thi theo từng bước rõ ràng: nhập thông tin chung, xây dựng câu hỏi, sau đó xem lại toàn bộ nội dung trước khi lưu."}
-            </p>
-          </div>
-
-          {!isEditMode ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              onClick={() => setIsImportDialogOpen(true)}
-              className="w-full sm:w-auto"
-            >
-              <FileSpreadsheet className="size-4" />
-              Tạo đề thi từ Excel
-            </Button>
-          ) : null}
-        </div>
+      <div className="mx-auto w-full max-w-full space-y-4 px-1 sm:px-2">
 
         {isEditMode && detailQuery.isLoading ? (
           <ExamEditorLoadingState />
