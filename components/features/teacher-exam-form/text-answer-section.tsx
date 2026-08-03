@@ -83,7 +83,7 @@ export function TextAnswerSection({
 
       {typeof answersError === "string" &&
       (submitCount > 0 || Boolean(answersTouched)) ? (
-        <p className="mb-3 rounded-2xl border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+        <p className="mb-3 rounded-[8px] border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
           {answersError}
         </p>
       ) : null}
@@ -104,7 +104,7 @@ export function TextAnswerSection({
           return (
             <div
               key={`${question.client_id}-answer-${answerIndex}`}
-              className="rounded-3xl border border-outline/12 bg-surface-container-lowest p-4"
+              className="rounded-[8px] border border-outline/12 bg-surface-container-lowest p-4"
             >
               <div className="flex items-start gap-3">
                 <div className="min-w-0 flex-1">
@@ -148,7 +148,7 @@ export function TextAnswerSection({
           size="sm"
           onClick={handleAddAnswer}
           className={cn(
-            " flex w-full items-center justify-center gap-2 rounded-[28px] border border-dashed border-outline/30 bg-surface px-4 py-5 text-sm font-medium text-on-surface transition-all",
+            " flex w-full items-center justify-center gap-2 rounded-[6px] border border-dashed border-outline/30 bg-surface px-4 py-5 text-sm font-medium text-on-surface transition-all",
             "hover:border-primary/35 hover:bg-primary/5 hover:text-primary",
           )}
         >

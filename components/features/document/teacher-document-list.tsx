@@ -39,7 +39,7 @@ export function TeacherDocumentList({
       {documents.map((document) => (
         <article
           key={document.id}
-          className="rounded-[1.6rem] border border-white/70 bg-white/82 p-5 shadow-[0_22px_70px_-42px_rgba(15,23,42,0.22)] backdrop-blur-xl transition-transform hover:-translate-y-0.5"
+          className="rounded-[8px] border border-white/70 bg-white/82 p-5 shadow-[0_1px_3px_rgba(30,41,59,0.05)] backdrop-blur-xl transition-transform hover:-translate-y-0.5"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -68,7 +68,7 @@ export function TeacherDocumentList({
           </p>
 
           <div className="mt-5 grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
-            <div className="flex items-center gap-2 rounded-xl bg-surface-container-low px-3 py-2.5">
+            <div className="flex items-center gap-2 rounded-[6px] bg-surface-container-low px-3 py-2.5">
               <CalendarDays className="size-4 text-primary" />
               <div>
                 <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
@@ -80,7 +80,7 @@ export function TeacherDocumentList({
               </div>
             </div>
 
-            <div className="flex items-center gap-2 rounded-xl bg-surface-container-low px-3 py-2.5">
+            <div className="flex items-center gap-2 rounded-[6px] bg-surface-container-low px-3 py-2.5">
               <BookOpenText className="size-4 text-primary" />
               <div>
                 <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">

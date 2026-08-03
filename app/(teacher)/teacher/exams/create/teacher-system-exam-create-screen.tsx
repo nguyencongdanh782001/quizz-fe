@@ -5,9 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  FileSpreadsheet,
   RefreshCw,
-  Sparkles,
   TriangleAlert,
 } from "lucide-react";
 import { EXAM_FLOW_MESSAGES } from "@/components/exams/exam-flow-messages";
@@ -60,14 +58,14 @@ function ExamEditorLoadingState() {
       </p>
       <Skeleton className="h-5 w-48 rounded-full" />
       <div className="space-y-3">
-        <Skeleton className="h-10 w-72 rounded-2xl" />
-        <Skeleton className="h-5 w-full max-w-3xl rounded-2xl" />
-        <Skeleton className="h-5 w-full max-w-2xl rounded-2xl" />
+        <Skeleton className="h-10 w-72 rounded-[8px]" />
+        <Skeleton className="h-5 w-full max-w-3xl rounded-[8px]" />
+        <Skeleton className="h-5 w-full max-w-2xl rounded-[8px]" />
       </div>
 
       <div className="space-y-6">
-        <Skeleton className="h-80 rounded-[32px]" />
-        <Skeleton className="h-136 rounded-[32px]" />
+        <Skeleton className="h-80 rounded-[10px]" />
+        <Skeleton className="h-136 rounded-[10px]" />
       </div>
     </div>
   );
@@ -75,7 +73,7 @@ function ExamEditorLoadingState() {
 
 function ExamEditorErrorState({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="rounded-[30px] border border-destructive/15 bg-destructive/6 px-6 py-10 text-center shadow-[0_20px_60px_-48px_rgba(186,26,26,0.45)]">
+    <div className="rounded-[10px] border border-destructive/15 bg-destructive/6 px-6 py-10 text-center shadow-[0_1px_3px_rgba(30,41,59,0.05)]">
       <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-destructive/12 text-destructive">
         <TriangleAlert className="size-7" />
       </div>
@@ -90,7 +88,7 @@ function ExamEditorErrorState({ onRetry }: { onRetry: () => void }) {
           <RefreshCw className="mr-2 size-4" />
           Tải lại dữ liệu
         </Button>
-        <Button asChild type="button" size="lg">
+        <Button asChild type="button" size="lg" className="bg-gradient-to-r from-[#4867F8] to-[#C62CF2] text-white shadow-sm hover:opacity-95">
           <Link href="/teacher/exams">{EXAM_FLOW_MESSAGES.buttons.back}</Link>
         </Button>
       </div>
@@ -100,14 +98,16 @@ function ExamEditorErrorState({ onRetry }: { onRetry: () => void }) {
 
 export function TeacherSystemExamCreateScreen({
   editId,
+  initialImportOpen = false,
 }: {
   editId?: string | null;
+  initialImportOpen?: boolean;
 }) {
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(initialImportOpen);
   const [toast, setToast] = useState<ScreenToastState | null>(null);
   const redirectTimeoutRef = useRef<number | null>(null);
   const normalizedEditId = editId?.trim() ? editId.trim() : null;
@@ -231,49 +231,28 @@ export function TeacherSystemExamCreateScreen({
 
   return (
     <ToastProvider>
-      <div className="mx-auto w-full max-w-7xl space-y-8">
-        <Link
-          href="/teacher/exams"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-on-surface"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Quay lại danh sách đề thi
-        </Link>
-
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <h1 className="font-display text-3xl font-bold text-on-surface">
+      <div className="space-y-6 pb-12">
+        {/* Page Header - title + Trở về button on the same row */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-0.5">
+            <h1 className="text-lg font-bold text-[#1E293B]">
               {isEditMode
                 ? EXAM_FLOW_MESSAGES.titles.edit
                 : EXAM_FLOW_MESSAGES.titles.create}
             </h1>
-            <p className="mt-2 max-w-4xl text-sm leading-relaxed text-muted-foreground">
+            <p className="max-w-4xl text-xs leading-5 text-[#64748B]">
               {isEditMode
                 ? "Cập nhật đề thi theo từng bước rõ ràng: rà soát thông tin chung, chỉnh sửa câu hỏi và lưu lại phiên bản mới."
                 : "Hoàn thiện đề thi theo từng bước rõ ràng: nhập thông tin chung, xây dựng câu hỏi, sau đó xem lại toàn bộ nội dung trước khi lưu."}
             </p>
           </div>
-
-          {!isEditMode ? (
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end">
-              <Button asChild type="button" variant="outline" size="lg">
-                <Link href="/teacher/ai-exams?scope=system">
-                  <Sparkles className="size-4" />
-                  Tạo bằng AI
-                </Link>
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                onClick={() => setIsImportDialogOpen(true)}
-                className="w-full sm:w-auto"
-              >
-                <FileSpreadsheet className="size-4" />
-                Tạo đề thi từ Excel
-              </Button>
-            </div>
-          ) : null}
+          <Link
+            href="/teacher/exams"
+            className="flex shrink-0 items-center gap-1.5 rounded-[6px] bg-[#EF4444] px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#DC2626]"
+          >
+            <ArrowLeft className="size-3.5" />
+            Trở về
+          </Link>
         </div>
 
         {isEditMode && detailQuery.isLoading ? (

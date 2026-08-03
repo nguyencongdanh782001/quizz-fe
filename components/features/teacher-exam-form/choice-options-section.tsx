@@ -29,7 +29,9 @@ export function ChoiceOptionsSection({
   const questionStateTouched = getIn(touched, `questions.${questionIndex}`);
   const optionsError = getIn(errors, `questions.${questionIndex}.options`);
   const questionType = normalizeTeacherExamQuestionType(question.question_type);
-  const isSingleChoiceQuestion = questionType === "single_choice";
+  const isTrueFalseQuestion = questionType === "true_false";
+  const isSingleChoiceQuestion =
+    questionType === "single_choice" || isTrueFalseQuestion;
   const correctOptionId =
     question.options.find((option) => option.is_correct)?.client_id ?? "";
 
@@ -45,9 +47,11 @@ export function ChoiceOptionsSection({
               {EXAM_FLOW_MESSAGES.labels.answer}
             </p>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              {isSingleChoiceQuestion
-                ? EXAM_FLOW_MESSAGES.validation.singleQuestionOnlyOneCorrect
-                : EXAM_FLOW_MESSAGES.validation.minCorrectOptions}
+              {isTrueFalseQuestion
+                ? "Chọn Đúng hoặc Sai làm đáp án chính xác."
+                : isSingleChoiceQuestion
+                  ? EXAM_FLOW_MESSAGES.validation.singleQuestionOnlyOneCorrect
+                  : EXAM_FLOW_MESSAGES.validation.minCorrectOptions}
             </p>
           </div>
         </div>
@@ -55,7 +59,7 @@ export function ChoiceOptionsSection({
 
       {typeof optionsError === "string" &&
       (submitCount > 0 || Boolean(questionStateTouched)) ? (
-        <p className="rounded-2xl border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+        <p className="rounded-[8px] border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
           {optionsError}
         </p>
       ) : null}
@@ -74,7 +78,8 @@ export function ChoiceOptionsSection({
               optionId={option.client_id}
               selectionMode="single"
               isCorrect={option.is_correct}
-              canRemove={question.options.length > 2}
+              canRemove={!isTrueFalseQuestion && question.options.length > 2}
+              readOnly={isTrueFalseQuestion}
               onRemove={() => onRemoveOption(optionIndex)}
               onCorrectChange={() =>
                 onSelectSingleCorrectOption(option.client_id)
@@ -102,19 +107,21 @@ export function ChoiceOptionsSection({
         </div>
       )}
 
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={onAddOption}
-        className={cn(
-          "flex w-full items-center justify-center gap-2 rounded-[28px] border border-dashed border-outline/30 bg-surface px-4 py-5 text-sm font-medium text-on-surface transition-all",
-          "hover:border-primary/35 hover:bg-primary/5 hover:text-primary",
-        )}
-      >
-        <Plus className="mr-2 h-4 w-4" />
-        {EXAM_FLOW_MESSAGES.buttons.addOption}
-      </Button>
+      {!isTrueFalseQuestion ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onAddOption}
+          className={cn(
+            "flex w-full items-center justify-center gap-2 rounded-[6px] border border-dashed border-outline/30 bg-surface px-4 py-5 text-sm font-medium text-on-surface transition-all",
+            "hover:border-primary/35 hover:bg-primary/5 hover:text-primary",
+          )}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          {EXAM_FLOW_MESSAGES.buttons.addOption}
+        </Button>
+      ) : null}
     </div>
   );
 }

@@ -82,7 +82,7 @@ export function ClassJoinCodeInput({
             }}
             title="Tạo mã ngẫu nhiên"
             aria-label="Tạo mã ngẫu nhiên"
-            className="rounded-full"
+            className="rounded-[6px]"
           >
             <RefreshCw className="h-4 w-4" />
           </Button>

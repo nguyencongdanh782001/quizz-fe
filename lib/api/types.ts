@@ -240,6 +240,11 @@ export interface AIExamGenerationJobResponse {
   total_points: number;
   provider: string;
   model: string;
+  qc_reserved: number;
+  qc_charged: number;
+  qc_refunded: number;
+  free_questions_used: number;
+  qc_status: string;
   error_message?: string;
   created_at?: string | null;
   updated_at?: string | null;
@@ -260,6 +265,101 @@ export interface SaveAIExamToQuizResponse {
   quiz_id: number;
   exam_id: number;
   message: string;
+}
+
+export interface BillingPlanResponse {
+  code: string;
+  name: string;
+  price_vnd: number;
+  qc_amount: number;
+  duration_days: number;
+  discount_min_quantity: number;
+  discount_percent: number;
+  bonus_qc_percent: number;
+  daily_free_more_questions: number;
+  priority_level: number;
+}
+
+export interface BillingPlanListResponse {
+  items: BillingPlanResponse[];
+}
+
+export type PaymentOrderStatus =
+  | "creating"
+  | "pending"
+  | "paid"
+  | "expired"
+  | "failed";
+
+export interface CreatePaymentOrderRequest {
+  plan_code: string;
+  quantity: number;
+}
+
+export interface PaymentOrderResponse {
+  id: number;
+  transfer_code: string;
+  plan_code: string;
+  plan_name: string;
+  amount_vnd: number;
+  qc_amount: number;
+  quantity: number;
+  unit_price_vnd: number;
+  subtotal_vnd: number;
+  discount_percent: number;
+  base_qc_amount: number;
+  bonus_qc_amount: number;
+  entitlement_days: number;
+  status: PaymentOrderStatus;
+  provider: string;
+  payment_account: string | null;
+  qr_url: string;
+  expires_at: string;
+  paid_at: string | null;
+  created_at: string;
+}
+
+export interface PaymentOrderListResponse {
+  items: PaymentOrderResponse[];
+}
+
+export interface QCWalletResponse {
+  balance: number;
+  qc_per_question: number;
+  premium_active: boolean;
+  premium_expires_at: string | null;
+  free_more_questions_daily: number;
+  free_more_questions_remaining: number;
+  priority_level: number;
+}
+
+export interface AIQCCostEstimateRequest {
+  question_count: number;
+  operation: "initial" | "generate_more";
+}
+
+export interface AIQCCostEstimateResponse {
+  requested_questions: number;
+  free_questions: number;
+  charged_questions: number;
+  qc_cost: number;
+  balance: number;
+  sufficient_balance: boolean;
+  premium_active: boolean;
+  free_more_questions_remaining: number;
+}
+
+export interface QCTransactionResponse {
+  id: number;
+  amount: number;
+  balance_after: number;
+  transaction_type: string;
+  external_reference: string;
+  created_at: string;
+}
+
+export interface QCTransactionListResponse {
+  items: QCTransactionResponse[];
 }
 
 export interface TrackPageViewRequest {
@@ -440,6 +540,7 @@ export interface TeacherClassStudentSchema {
   full_name: string;
   username: string;
   email: string | null;
+  student_code: string;
   phone: string | null;
   avatar_url: string | null;
   gender: string | null;
@@ -504,7 +605,12 @@ export interface TeacherExamOptionSchema {
 
 export interface TeacherExamQuestionSchema {
   id: number;
-  question_type: "single_choice" | "multiple_choice" | "text";
+  question_type:
+    | "single_choice"
+    | "multiple_choice"
+    | "true_false"
+    | "short_answer"
+    | "text";
   prompt: string;
   explanation: string | null;
   image_url: string | null;
@@ -649,7 +755,13 @@ export interface TeacherCreateExamOptionRequest {
 }
 
 export interface TeacherCreateExamQuestionRequest {
-  question_type: "single_choice" | "multiple_choice" | "text";
+  question_type:
+    | "single_choice"
+    | "multiple_choice"
+    | "true_false"
+    | "fill_in_blank"
+    | "short_answer"
+    | "text";
   prompt: string;
   explanation: string;
   image_url: string;
@@ -659,27 +771,42 @@ export interface TeacherCreateExamQuestionRequest {
   accepted_answers: string[];
 }
 
+export type TeacherExamPointMode = "auto" | "manual";
+
 export interface TeacherCreateExamRequest {
   title: string;
   description: string;
   grade: string;
   image_url: string;
+  scope?: string;
+  classroom_id?: number | null;
   duration_minutes: number;
-  /**
-   * Wall-clock start time as "YYYY-MM-DDTHH:mm[:ss]" — the backend stores
-   * and returns this verbatim; we never wrap it in a `Date` (axios would
-   * re-serialize to UTC and shift by the browser's TZ offset).
-   */
   start_time?: string;
-  /** Wall-clock end time, same format as `start_time`. */
   end_time?: string;
   is_published: boolean;
   is_active: boolean;
+  total_points: number;
+  point_mode: TeacherExamPointMode;
   questions: TeacherCreateExamQuestionRequest[];
 }
 
-export type TeacherUpdateClassExamRequest = TeacherCreateExamRequest;
-export type TeacherUpdateExamRequest = TeacherCreateExamRequest;
+export type TeacherUpdateClassExamRequest = Partial<TeacherCreateExamRequest>;
+export interface TeacherUpdateExamRequest {
+  title?: string;
+  description?: string;
+  grade?: string;
+  image_url?: string;
+  scope?: string;
+  classroom_id?: number | null;
+  duration_minutes?: number;
+  start_time?: string;
+  end_time?: string;
+  is_published?: boolean;
+  is_active?: boolean;
+  total_points?: number;
+  point_mode?: TeacherExamPointMode;
+  questions?: TeacherCreateExamQuestionRequest[];
+}
 
 export interface TeacherCreateClassExamResponse {
   message: string;
@@ -833,6 +960,7 @@ export interface PaginatedResponse<T> {
 
 export interface ApiError {
   detail?: string;
+  details?: Record<string, unknown>;
   message?: string;
   code?: string;
   status?: number;

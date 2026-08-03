@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Users } from "lucide-react";
 import {
   Toast,
   ToastClose,
@@ -11,9 +10,6 @@ import {
 } from "@/components/ui/toast";
 import type { ClassStudent } from "@/types/class.types";
 import type { RemoveStudentResult } from "../hooks/use-class-detail";
-import { EmptyState } from "./empty-state";
-import { ErrorState } from "./error-state";
-import { LoadingState } from "./loading-state";
 import { RemoveStudentDialog } from "./remove-student-dialog";
 import { StudentTable } from "./student-table";
 
@@ -86,27 +82,20 @@ export function StudentsTab({
   return (
     <ToastProvider duration={3500}>
       <div className="space-y-4">
-        {isLoading ? (
-          <LoadingState label="danh sách học sinh" />
-        ) : error ? (
-          <ErrorState
-            title="Không thể tải học sinh"
-            message={error}
-            onRetry={onRetry}
-          />
-        ) : students.length === 0 ? (
-          <EmptyState
-            icon={Users}
-            title="Chưa có học sinh nào trong lớp"
-            description="Danh sách học sinh sẽ xuất hiện tại đây khi các em tham gia lớp bằng mã lớp."
-          />
-        ) : (
-          <StudentTable
-            students={students}
-            isRemovingStudent={isRemovingStudent}
-            onRemoveStudent={setSelectedStudent}
-          />
-        )}
+        <div>
+          <h2 className="font-display text-lg font-semibold text-[#1E293B]">
+            Danh sách học viên
+          </h2>
+        </div>
+
+        <StudentTable
+          students={students}
+          isLoading={isLoading}
+          error={error}
+          isRemovingStudent={isRemovingStudent}
+          onRetry={onRetry}
+          onRemoveStudent={setSelectedStudent}
+        />
       </div>
 
       <RemoveStudentDialog

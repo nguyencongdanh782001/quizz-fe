@@ -21,11 +21,19 @@ export const client = axios.create({
 function normalizeError(error: unknown): ApiError {
   if (axios.isAxiosError(error) && error.response) {
     const data = error.response.data;
+    const rawDetail = getField(data, "detail");
     const detail =
-      getStringField(data, "detail") ?? getStringField(data, "message");
+      (typeof rawDetail === "string" && rawDetail.trim()
+        ? rawDetail
+        : undefined) ?? getStringField(data, "message");
+    const details =
+      typeof rawDetail === "object" && rawDetail !== null && !Array.isArray(rawDetail)
+        ? (rawDetail as Record<string, unknown>)
+        : undefined;
 
     return {
       detail,
+      details,
       message: APP_MESSAGES.NETWORK_ERROR,
       code: getStringField(data, "code"),
       status: error.response.status,
@@ -41,6 +49,14 @@ function normalizeError(error: unknown): ApiError {
   }
 
   return { message: APP_MESSAGES.NETWORK_ERROR, status: 500 };
+}
+
+function getField(value: unknown, field: string): unknown {
+  if (typeof value !== "object" || value === null || !(field in value)) {
+    return undefined;
+  }
+
+  return (value as Record<string, unknown>)[field];
 }
 
 function getStringField(

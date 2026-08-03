@@ -65,7 +65,7 @@ export async function getTeacherSystemExamDetail(
   examId: number | string,
 ): Promise<TeacherExam> {
   const response = await client.get<TeacherSystemExamDetailResponse>(
-    `/teacher/system/exams/${examId}`,
+    `/teacher/exams/${examId}`,
   );
 
   return mapTeacherExam(response.data);
@@ -74,7 +74,7 @@ export async function getTeacherSystemExamDetail(
 export async function deleteTeacherSystemExam(
   examId: number | string,
 ): Promise<string> {
-  await client.delete<MessageResponse>(`/teacher/system/exams/${examId}`);
+  await client.delete<MessageResponse>(`/teacher/exams/${examId}`);
 
   return APP_MESSAGES.DELETE_EXAM_SUCCESS;
 }
@@ -131,7 +131,7 @@ export async function updateSystemExam(
   data: TeacherUpdateExamRequest,
 ): Promise<{ message: string; exam: TeacherExam }> {
   const response = await client.put<TeacherUpdateSystemExamResponse>(
-    `/teacher/system/exams/${examId}`,
+    `/teacher/exams/${examId}`,
     data,
   );
 

@@ -19,6 +19,9 @@ interface DeleteExamDialogProps {
   open: boolean;
   onConfirm: () => Promise<void> | void;
   onOpenChange: (open: boolean) => void;
+  title?: string;
+  description?: string;
+  actionLabel?: string;
 }
 
 export function DeleteExamDialog({
@@ -27,6 +30,9 @@ export function DeleteExamDialog({
   open,
   onConfirm,
   onOpenChange,
+  title = "Xác nhận xóa đề thi",
+  description,
+  actionLabel = "Xóa đề thi",
 }: DeleteExamDialogProps) {
   function handleConfirmClick(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
@@ -37,11 +43,13 @@ export function DeleteExamDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Xác nhận xóa đề thi</AlertDialogTitle>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>
-            {examTitle
-              ? `Đề thi "${examTitle}" sẽ bị xóa khỏi danh sách. Hành động này không thể hoàn tác.`
-              : "Hành động này không thể hoàn tác."}
+            {description
+              ? description
+              : examTitle
+                ? `Đề thi "${examTitle}" sẽ bị xóa khỏi danh sách. Hành động này không thể hoàn tác.`
+                : "Hành động này không thể hoàn tác."}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -53,12 +61,12 @@ export function DeleteExamDialog({
             {isDeleting ? (
               <>
                 <LoaderCircle className="mr-2 size-4 animate-spin" />
-                Đang xóa...
+                Đang xử lý...
               </>
             ) : (
               <>
                 <Trash2 className="mr-2 size-4" />
-                Xóa đề thi
+                {actionLabel}
               </>
             )}
           </AlertDialogAction>

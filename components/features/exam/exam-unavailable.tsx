@@ -56,8 +56,8 @@ export function ExamUnavailable({
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
-      <div className="max-w-md rounded-2xl border border-outline/10 bg-surface-container-lowest p-6 text-center shadow-[0_18px_44px_-32px_rgba(7,30,39,0.18)]">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-100 dark:bg-yellow-900/30">
+      <div className="max-w-md rounded-[8px] border border-outline/10 bg-surface-container-lowest p-6 text-center shadow-[0_1px_3px_rgba(30,41,59,0.05)]">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-[6px] bg-yellow-100 dark:bg-yellow-900/30">
           <AlertCircle className="h-6 w-6 text-yellow-700 dark:text-yellow-300" />
         </div>
         <ExamStatusBadge status={status} />
@@ -73,7 +73,7 @@ export function ExamUnavailable({
         )}
         <Link
           href={`/student/exam/${examId}`}
-          className="mt-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
+          className="mt-6 inline-flex items-center justify-center gap-2 rounded-[8px] bg-primary px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
         >
           <ArrowLeft className="h-4 w-4" />
           Quay lại trang đề thi

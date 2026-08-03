@@ -31,6 +31,8 @@ function buildPaginationParams(
 
 export const api = {
   student: {
+    results: () =>
+      client.get<StudentSystemResultListResponse>("/student/results"),
     system: {
       exams: (params?: PaginationParams) =>
         client.get<StudentSystemExamListResponse>(

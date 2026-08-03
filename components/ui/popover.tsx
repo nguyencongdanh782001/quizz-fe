@@ -35,7 +35,7 @@ function PopoverContent({
         align={align}
         sideOffset={sideOffset}
         className={cn(
-          "z-50 w-[min(calc(100vw-1rem),24rem)] rounded-[1.5rem] border border-outline/10 bg-surface-container-lowest p-3 text-popover-foreground shadow-[0_28px_80px_-42px_rgba(7,30,39,0.45)] outline-none backdrop-blur-xl",
+          "z-50 w-[min(calc(100vw-1rem),24rem)] rounded-[8px] border border-outline/10 bg-surface-container-lowest p-3 text-popover-foreground shadow-[0_16px_40px_-24px_rgba(7,30,39,0.42)] outline-none backdrop-blur-xl",
           "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
           className,
         )}

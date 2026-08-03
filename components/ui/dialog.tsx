@@ -59,7 +59,7 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-[min(100%-1.5rem,68rem)] max-h-[85vh] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-hidden rounded-[28px] border border-outline/10 bg-surface-container-lowest p-6 shadow-[0_30px_100px_-45px_rgba(7,30,39,0.55)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:p-7",
+          "fixed top-1/2 left-1/2 z-50 grid w-[min(100%-1.5rem,68rem)] max-h-[85vh] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-hidden rounded-[8px] border border-outline/10 bg-surface-container-lowest p-6 shadow-[0_24px_72px_-38px_rgba(7,30,39,0.5)] duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:p-7",
           className,
         )}
         {...props}
@@ -67,7 +67,7 @@ function DialogContent({
         {children}
         {showCloseButton ? (
           <DialogPrimitive.Close
-            className="absolute top-4 right-4 inline-flex size-9 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/12"
+            className="absolute top-4 right-4 inline-flex size-9 items-center justify-center rounded-[6px] text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/12"
             aria-label="Đóng"
           >
             <X className="size-4" />

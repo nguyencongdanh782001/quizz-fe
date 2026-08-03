@@ -39,6 +39,9 @@ const DATE_TIME_FORMATTER = new Intl.DateTimeFormat("vi-VN", {
 const QUESTION_TYPE_LABELS: Record<TeacherExamQuestionType, string> = {
   single_choice: "Một đáp án",
   multiple_choice: "Nhiều đáp án",
+  true_false: "Đúng / sai",
+  fill_in_blank: "Điền từ",
+  short_answer: "Trả lời ngắn",
   text: "Tự luận",
 };
 
@@ -98,9 +101,9 @@ function StatTile({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl bg-surface-container-lowest p-5 shadow-[0_16px_45px_-36px_rgba(7,30,39,0.28)]">
+    <div className="rounded-[8px] bg-surface-container-lowest p-5 shadow-[0_1px_3px_rgba(30,41,59,0.05)]">
       <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+        <div className="flex h-11 w-11 items-center justify-center rounded-[8px] bg-primary/10 text-primary">
           <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0">
@@ -129,7 +132,7 @@ function ImagePreview({
     <div
       role="img"
       aria-label={label}
-      className="mt-3 h-40 w-full rounded-2xl bg-surface bg-cover bg-center ring-1 ring-outline/10"
+      className="mt-3 h-40 w-full rounded-[8px] bg-surface bg-cover bg-center ring-1 ring-outline/10"
       style={{ backgroundImage: `url(${imageUrl})` }}
     />
   );
@@ -179,7 +182,7 @@ function AnswerPanel({
   return (
     <div
       className={cn(
-        "rounded-2xl border p-4",
+        "rounded-[8px] border p-4",
         tone === "success" &&
           "border-green-200/70 bg-green-50/70 text-green-800 dark:border-green-800/30 dark:bg-green-950/20 dark:text-green-200",
         tone === "danger" &&
@@ -209,7 +212,7 @@ function AnswerCard({
   return (
     <article
       className={cn(
-        "rounded-2xl border p-5 shadow-[0_16px_45px_-36px_rgba(7,30,39,0.28)]",
+        "rounded-[8px] border p-5 shadow-[0_1px_3px_rgba(30,41,59,0.05)]",
         answer.isCorrect
           ? "border-green-200/70 bg-green-50/50 dark:border-green-800/30 dark:bg-green-950/10"
           : "border-red-200/70 bg-red-50/40 dark:border-red-800/30 dark:bg-red-950/10",
@@ -250,7 +253,7 @@ function AnswerCard({
           />
         </div>
 
-        <div className="shrink-0 rounded-2xl bg-surface px-4 py-3 text-right">
+        <div className="shrink-0 rounded-[8px] bg-surface px-4 py-3 text-right">
           <p className="font-display text-xl font-bold text-on-surface">
             {formatScore(answer.pointsEarned)}/{formatScore(answer.maxPoints)}
           </p>
@@ -274,7 +277,7 @@ function AnswerCard({
       </div>
 
       {answer.explanation ? (
-        <div className="mt-3 rounded-2xl border border-outline/10 bg-surface px-4 py-3">
+        <div className="mt-3 rounded-[8px] border border-outline/10 bg-surface px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Giải thích
           </p>
@@ -387,7 +390,7 @@ export function TeacherClassExamAttemptResultScreen({
         Quay lại kết quả
       </Link>
 
-      <section className="rounded-2xl bg-surface-container-lowest p-6 shadow-[0_18px_50px_-42px_rgba(7,30,39,0.22)]">
+      <section className="rounded-[8px] bg-surface-container-lowest p-6 shadow-[0_1px_3px_rgba(30,41,59,0.05)]">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex min-w-0 items-start gap-4">
             <UserAvatar
@@ -418,10 +421,10 @@ export function TeacherClassExamAttemptResultScreen({
                 </span>
               </div>
 
-              <h1 className="font-display text-2xl font-bold text-on-surface">
+              <h1 className="text-lg font-bold text-[#1E293B]">
                 {result.studentName}
               </h1>
-              <p className="mt-1 text-sm font-medium text-on-surface-variant">
+              <p className="mt-1 text-xs text-[#64748B]">
                 {result.examTitle}
               </p>
               <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -431,7 +434,7 @@ export function TeacherClassExamAttemptResultScreen({
             </div>
           </div>
 
-          <div className="rounded-2xl bg-primary/10 px-6 py-4 text-center text-primary">
+          <div className="rounded-[8px] bg-primary/10 px-6 py-4 text-center text-primary">
             <p className="font-display text-4xl font-bold">
               {formatPercent(result.scorePercent)}
             </p>

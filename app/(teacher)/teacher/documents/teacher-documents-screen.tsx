@@ -73,13 +73,13 @@ function LoadingCards() {
             <div className="h-6 w-28 rounded-full bg-surface-container-low" />
           </div>
           <div className="space-y-2">
-            <div className="h-6 w-3/4 rounded-xl bg-surface-container-low" />
-            <div className="h-4 w-full rounded-xl bg-surface-container-low" />
-            <div className="h-4 w-5/6 rounded-xl bg-surface-container-low" />
+            <div className="h-6 w-3/4 rounded-[6px] bg-surface-container-low" />
+            <div className="h-4 w-full rounded-[6px] bg-surface-container-low" />
+            <div className="h-4 w-5/6 rounded-[6px] bg-surface-container-low" />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="h-16 rounded-xl bg-surface-container-low" />
-            <div className="h-16 rounded-xl bg-surface-container-low" />
+            <div className="h-16 rounded-[6px] bg-surface-container-low" />
+            <div className="h-16 rounded-[6px] bg-surface-container-low" />
           </div>
         </SurfacePanel>
       ))}
@@ -89,10 +89,12 @@ function LoadingCards() {
 
 interface TeacherDocumentsScreenProps {
   initialFilters: TeacherDocumentFilterState;
+  embeddedInLibrary?: boolean;
 }
 
 export function TeacherDocumentsScreen({
   initialFilters,
+  embeddedInLibrary = false,
 }: TeacherDocumentsScreenProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -105,9 +107,15 @@ export function TeacherDocumentsScreen({
   );
   const [toast, setToast] = useState<ScreenToastState | null>(null);
   const [debouncedSearch] = useDebounce(filters.search, 400);
-  const lastSyncedSearchRef = useRef(
-    buildTeacherDocumentSearchParams(initialFilters).toString(),
-  );
+  const lastSyncedSearchRef = useRef((() => {
+    const params = buildTeacherDocumentSearchParams(initialFilters);
+
+    if (embeddedInLibrary) {
+      params.set("tab", "documents");
+    }
+
+    return params.toString();
+  })());
   const appliedClassroomId =
     filters.scope === "classroom" ? filters.classroom_id : "";
 
@@ -115,19 +123,29 @@ export function TeacherDocumentsScreen({
     ...filters,
     search: debouncedSearch,
     classroom_id: appliedClassroomId,
+    ...(embeddedInLibrary ? { is_published: "true" as const } : {}),
   };
 
   const documentsQuery = useTeacherDocuments(
     toTeacherDocumentQuery(appliedFilters),
   );
   const classroomsQuery = useTeacherClassrooms();
-  const documents = documentsQuery.data ?? [];
+  const rawDocuments = documentsQuery.data ?? [];
+  const documents = embeddedInLibrary
+    ? rawDocuments.filter((doc) => doc.isPublished)
+    : rawDocuments;
   const hasActiveFilters = hasActiveTeacherDocumentFilters(filters);
   const isInitialLoading = documentsQuery.isPending && !documentsQuery.data;
   const isSearchDebouncing = debouncedSearch.trim() !== filters.search.trim();
 
   const syncUrl = useEffectEvent((nextFilters: TeacherDocumentFilterState) => {
-    const nextSearch = buildTeacherDocumentSearchParams(nextFilters).toString();
+    const nextParams = buildTeacherDocumentSearchParams(nextFilters);
+
+    if (embeddedInLibrary) {
+      nextParams.set("tab", "documents");
+    }
+
+    const nextSearch = nextParams.toString();
 
     if (nextSearch === lastSyncedSearchRef.current) {
       return;
@@ -258,7 +276,7 @@ export function TeacherDocumentsScreen({
         description="Lọc nhanh tài liệu theo tiêu đề, phạm vi, trạng thái xuất bản và lớp học để bạn tìm đúng học liệu đang cần mà không phải đi qua những bộ lọc thừa."
         icon={FileText}
         actions={
-          <Button asChild size="lg">
+          <Button asChild size="lg" className="bg-gradient-to-r from-[#4867F8] to-[#C62CF2] text-white shadow-sm hover:opacity-95">
             <Link href="/teacher/documents/create">
               <Plus className="mr-2 h-4 w-4" />
               Tải lên tài liệu
@@ -306,7 +324,7 @@ export function TeacherDocumentsScreen({
         <LoadingCards />
       ) : documentsQuery.isError ? (
         <SurfacePanel tone="muted" className="space-y-4 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[1.2rem] bg-destructive/10 text-destructive">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[8px] bg-destructive/10 text-destructive">
             <FileSearch className="h-7 w-7" />
           </div>
           <div>

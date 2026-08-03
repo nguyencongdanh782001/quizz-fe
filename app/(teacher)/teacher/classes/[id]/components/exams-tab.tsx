@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { BookOpen, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Toast,
@@ -14,10 +14,7 @@ import {
 } from "@/components/ui/toast";
 import { APP_MESSAGES } from "@/lib/app-messages";
 import type { Exam } from "@/types/exam.types";
-import { EmptyState } from "./empty-state";
-import { ErrorState } from "./error-state";
 import { ExamTable } from "./exam-table";
-import { LoadingState } from "./loading-state";
 
 type ExamToastState = {
   title: string;
@@ -55,66 +52,42 @@ export function ExamsTab({
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="font-display text-lg font-semibold text-on-surface">
-              Bài thi trong lớp
+            <h2 className="font-display text-lg font-semibold text-[#1E293B]">
+              Danh sách bài kiểm tra
             </h2>
-            <p className="text-sm text-muted-foreground">
-              Theo dõi và cập nhật các bài thi đã giao cho lớp này.
-            </p>
           </div>
           <Button asChild>
             <Link href={`/teacher/classes/${classId}/exams/create`}>
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="h-4 w-4" />
               Tạo bài thi
             </Link>
           </Button>
         </div>
 
-        {isLoading ? (
-          <LoadingState label="danh sách bài thi" />
-        ) : error ? (
-          <ErrorState
-            title="Không thể tải bài thi"
-            message={error}
-            onRetry={onRetry}
-          />
-        ) : exams.length === 0 ? (
-          <EmptyState
-            icon={BookOpen}
-            title="Chưa có bài thi nào"
-            description="Bạn có thể tạo bài thi mới và gán cho lớp này khi backend lớp học hỗ trợ danh sách bài thi riêng."
-            action={
-              <Button asChild>
-                <Link href={`/teacher/classes/${classId}/exams/create`}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Tạo bài thi
-                </Link>
-              </Button>
-            }
-          />
-        ) : (
-          <ExamTable
-            classId={classId}
-            exams={exams}
-            onToggleVisibility={(response) =>
-              setToast({
-                title: response.exam.is_published
-                  ? APP_MESSAGES.PUBLISH_EXAM_SUCCESS
-                  : APP_MESSAGES.PRIVATE_EXAM_SUCCESS,
-                open: true,
-                variant: "success",
-              })
-            }
-            onToggleError={(_message) =>
-              setToast({
-                title: APP_MESSAGES.UPDATE_EXAM_VISIBILITY_FAILED,
-                description: APP_MESSAGES.NETWORK_ERROR,
-                open: true,
-                variant: "error",
-              })
-            }
-          />
-        )}
+        <ExamTable
+          classId={classId}
+          exams={exams}
+          isLoading={isLoading}
+          error={error}
+          onRetry={onRetry}
+          onToggleVisibility={(response) =>
+            setToast({
+              title: response.exam.is_published
+                ? APP_MESSAGES.PUBLISH_EXAM_SUCCESS
+                : APP_MESSAGES.PRIVATE_EXAM_SUCCESS,
+              open: true,
+              variant: "success",
+            })
+          }
+          onToggleError={() =>
+            setToast({
+              title: APP_MESSAGES.UPDATE_EXAM_VISIBILITY_FAILED,
+              description: APP_MESSAGES.NETWORK_ERROR,
+              open: true,
+              variant: "error",
+            })
+          }
+        />
       </div>
 
       {toast ? (
@@ -123,7 +96,7 @@ export function ExamsTab({
           variant={toast.variant}
           onOpenChange={handleToastOpenChange}
         >
-          <div className="pr-6">
+          <div className="pr-8">
             <ToastTitle>{toast.title}</ToastTitle>
             {toast.description ? (
               <ToastDescription className="mt-1">
@@ -134,7 +107,6 @@ export function ExamsTab({
           <ToastClose />
         </Toast>
       ) : null}
-
       <ToastViewport />
     </ToastProvider>
   );

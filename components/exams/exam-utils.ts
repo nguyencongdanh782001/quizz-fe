@@ -16,7 +16,7 @@ import {
 // this module keep working. The canonical implementation lives in `@/lib/date`.
 export { formatExamDateTime };
 
-export const EXAMS_PAGE_SIZE = 9;
+export const EXAMS_PAGE_SIZE = 10;
 
 export const EXAM_PUBLISHED_OPTIONS: Array<{
   value: TeacherExamPublishedFilter;

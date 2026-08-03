@@ -46,7 +46,7 @@ export function ExamAvailabilityCard({ exam }: ExamAvailabilityCardProps) {
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-3xl border-2 px-6 py-5",
+        "overflow-hidden rounded-[10px] border-2 px-6 py-5",
         toneClass,
       )}
     >

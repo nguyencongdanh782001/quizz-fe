@@ -9,14 +9,13 @@ import {
   isOnboardingIncomplete,
 } from "@/lib/auth/onboarding";
 import { cn } from "@/lib/utils";
-import { SurfaceCard } from "@/components/common/SurfaceCard";
 import { InputField } from "@/components/common/form/input-field";
 import { SelectField } from "@/components/common/form/select-field";
 import { APP_MESSAGES } from "@/lib/app-messages";
 import { onboardingSchema } from "../schemas/onboarding.schema";
 import type { User } from "@/types/user.types";
 import { UserGender, UserRole } from "@/types/user.types";
-import { GraduationCap, Loader2, Users } from "lucide-react";
+import { GraduationCap, Loader2, Users, Check } from "lucide-react";
 import { FormikDatePickerField } from "@/features/account/components/user-info/formik-fields";
 
 interface RoleSelectionValues {
@@ -79,7 +78,7 @@ export function RoleSelectionForm({ initialUser }: RoleSelectionFormProps) {
   if (!isOnboardingIncomplete(currentUser)) {
     return (
       <div className="flex min-h-80 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#6366F1]" />
       </div>
     );
   }
@@ -100,104 +99,86 @@ export function RoleSelectionForm({ initialUser }: RoleSelectionFormProps) {
         setFieldValue,
         getFieldProps,
       }) => (
-        <Form className="space-y-7">
-          <div className="space-y-3 text-center">
-            <h2 className="font-display text-2xl font-bold text-on-surface sm:text-3xl">
+        <Form className="space-y-4">
+          <div>
+            <h2 className="text-2xl font-bold text-[#1E293B]">
               Chọn vai trò của bạn
             </h2>
-            <p className="mx-auto max-w-md text-sm leading-relaxed text-on-surface-variant">
-              Hoàn tất vài thông tin cuối cùng để cá nhân hoá trải nghiệm ngay từ lần đầu đăng nhập.
+            <p className="mt-0.5 text-xs text-[#64748B]">
+              Hoàn tất thông tin để bắt đầu trải nghiệm QuizzVN.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4">
-            <SurfaceCard
-              as="button"
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            <button
               type="button"
               onClick={() => {
                 void setFieldValue("role", "student");
                 void setFieldTouched("role", true, false);
               }}
               className={cn(
-                "w-full cursor-pointer p-6 text-left transition-all duration-200 group",
-                "hover:ring-2 hover:ring-primary/20",
-                values.role === "student" && "ring-2 ring-primary",
+                "relative flex cursor-pointer items-center justify-between rounded-[6px] border border-[#CBD5E1] bg-[#F8FAFC] p-3 text-left transition-all duration-200 hover:border-[#6366F1]",
+                values.role === "student" && "border-[#6366F1] bg-[#EEF2FF]/60 ring-1 ring-[#6366F1]",
               )}
             >
-              <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-container">
-                  <GraduationCap className="h-7 w-7 text-on-primary-container" />
+              <div className="flex items-center gap-3">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-[6px] bg-[#EEF2FF] text-[#6366F1]">
+                  <GraduationCap className="size-5" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-display text-lg font-bold text-on-surface transition-colors group-hover:text-primary">
-                    Học sinh
-                  </h3>
-                  <p className="mt-0.5 text-sm text-on-surface-variant">
-                    Làm bài thi, xem kết quả, tham gia lớp học.
-                  </p>
+                <div>
+                  <h3 className="font-bold text-xs text-[#1E293B]">Học sinh</h3>
+                  <p className="text-[11px] text-[#64748B]">Làm bài, xem kết quả</p>
                 </div>
-                {values.role === "student" && (
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary">
-                    <span className="text-xs text-white">&#10003;</span>
-                  </div>
-                )}
               </div>
-            </SurfaceCard>
+              {values.role === "student" && (
+                <div className="flex size-4.5 items-center justify-center rounded-full bg-[#6366F1] text-white">
+                  <Check className="size-3" />
+                </div>
+              )}
+            </button>
 
-            <SurfaceCard
-              as="button"
+            <button
               type="button"
               onClick={() => {
                 void setFieldValue("role", "teacher");
                 void setFieldTouched("role", true, false);
               }}
               className={cn(
-                "w-full cursor-pointer p-6 text-left transition-all duration-200 group",
-                "hover:ring-2 hover:ring-primary/20",
-                values.role === "teacher" && "ring-2 ring-primary",
+                "relative flex cursor-pointer items-center justify-between rounded-[6px] border border-[#CBD5E1] bg-[#F8FAFC] p-3 text-left transition-all duration-200 hover:border-[#6366F1]",
+                values.role === "teacher" && "border-[#6366F1] bg-[#EEF2FF]/60 ring-1 ring-[#6366F1]",
               )}
             >
-              <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary-container">
-                  <Users className="h-7 w-7 text-on-secondary-container" />
+              <div className="flex items-center gap-3">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-[6px] bg-[#F0FDF4] text-[#16A34A]">
+                  <Users className="size-5" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-display text-lg font-bold text-on-surface transition-colors group-hover:text-secondary">
-                    Giáo viên
-                  </h3>
-                  <p className="mt-0.5 text-sm text-on-surface-variant">
-                    Tạo bài thi, quản lý lớp học, theo dõi tiến độ.
-                  </p>
+                <div>
+                  <h3 className="font-bold text-xs text-[#1E293B]">Giáo viên</h3>
+                  <p className="text-[11px] text-[#64748B]">Tạo đề, quản lý lớp</p>
                 </div>
-                {values.role === "teacher" && (
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary">
-                    <span className="text-xs text-white">&#10003;</span>
-                  </div>
-                )}
               </div>
-            </SurfaceCard>
+              {values.role === "teacher" && (
+                <div className="flex size-4.5 items-center justify-center rounded-full bg-[#16A34A] text-white">
+                  <Check className="size-3" />
+                </div>
+              )}
+            </button>
           </div>
 
           {touched.role && errors.role && (
-            <p className="px-1 text-xs text-destructive">{errors.role}</p>
+            <p className="text-xs text-destructive">{errors.role}</p>
           )}
 
-          <section className="rounded-[2rem] border border-outline/10 bg-surface-container-lowest/75 p-5 shadow-[0_16px_44px_-34px_rgba(7,30,39,0.22)] sm:p-6">
-            <div className="mb-5 space-y-1">
-              <h3 className="font-display text-lg font-semibold text-on-surface">
-                Thông tin cá nhân
-              </h3>
-              <p className="text-sm text-on-surface-variant">
-                Chúng tôi chỉ cần những thông tin cơ bản để hoàn thiện hồ sơ ban đầu.
-              </p>
-            </div>
+          <div className="space-y-3 pt-1">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-[#64748B]">
+              Thông tin cá nhân
+            </h3>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <FormikDatePickerField
                 name="date_of_birth"
                 label="Ngày sinh"
                 placeholder="Chọn ngày sinh"
-                helperText="Chọn ngày sinh của bạn để hoàn tất hồ sơ."
                 required
               />
 
@@ -221,19 +202,16 @@ export function RoleSelectionForm({ initialUser }: RoleSelectionFormProps) {
               />
             </div>
 
-            <div className="mt-4">
-              <InputField
-                label="Trường học"
-                placeholder="Tên trường học của bạn"
-                error={touched.school_name ? errors.school_name : undefined}
-                helperText="Trường học là tuỳ chọn, bạn có thể bổ sung sau."
-                {...getFieldProps("school_name")}
-              />
-            </div>
-          </section>
+            <InputField
+              label="Trường học"
+              placeholder="Vui lòng nhập tên trường của bạn"
+              error={touched.school_name ? errors.school_name : undefined}
+              {...getFieldProps("school_name")}
+            />
+          </div>
 
           {submitError && (
-            <p className="text-center text-sm text-destructive">
+            <p className="text-center text-xs text-destructive">
               {submitError}
             </p>
           )}
@@ -242,13 +220,15 @@ export function RoleSelectionForm({ initialUser }: RoleSelectionFormProps) {
             type="submit"
             disabled={isSubmitting}
             className={cn(
-              "flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl py-3 text-base font-semibold",
-              "bg-primary text-white transition-all duration-200",
-              "hover:bg-primary/90",
-              "disabled:cursor-not-allowed disabled:opacity-40",
+              "cursor-pointer w-full h-11 rounded-[6px] font-bold text-xs text-white mt-2",
+              "bg-[linear-gradient(90deg,#3478ff_0%,#6557f5_54%,#d63cf4_100%)]",
+              "shadow-[0_8px_20px_rgba(101,87,245,0.3)] hover:opacity-95",
+              "transition-all duration-200",
+              "disabled:opacity-60 disabled:cursor-not-allowed",
+              "flex items-center justify-center gap-2",
             )}
           >
-            {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
             Hoàn tất
           </button>
         </Form>

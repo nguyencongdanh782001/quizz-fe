@@ -177,7 +177,7 @@ function CardHeader({
   return (
     <div className="flex items-start justify-between gap-4">
       <div className="flex min-w-0 items-start gap-3">
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-[1.15rem] bg-primary/10 text-primary">
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-[8px] bg-primary/10 text-primary">
           <Icon className="size-5" />
         </div>
         <div className="min-w-0">
@@ -306,8 +306,8 @@ function UploadDocumentCard({
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={cn(
-            "flex min-h-56 w-full flex-col items-center justify-center rounded-[1.6rem] border border-dashed px-5 py-8 text-center transition-all",
-            "bg-surface-container-lowest shadow-[0_20px_54px_-42px_rgba(15,23,42,0.34)]",
+            "flex min-h-56 w-full flex-col items-center justify-center rounded-[8px] border border-dashed px-5 py-8 text-center transition-all",
+            "bg-surface-container-lowest shadow-[0_1px_3px_rgba(30,41,59,0.05)]",
             "hover:border-primary/35 hover:bg-surface focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15",
             "disabled:cursor-not-allowed disabled:opacity-70",
             isDragging
@@ -316,14 +316,14 @@ function UploadDocumentCard({
             error && "border-destructive/45 bg-destructive/5",
           )}
         >
-          <span className="flex size-14 items-center justify-center rounded-[1.25rem] bg-primary/10 text-primary">
+          <span className="flex size-14 items-center justify-center rounded-[8px] bg-primary/10 text-primary">
             <UploadCloud className="size-6" />
           </span>
           <span className="mt-4 text-base font-semibold">
             Kéo thả tài liệu vào đây
           </span>
           <span className="mt-2 text-sm text-muted-foreground">hoặc</span>
-          <span className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[0_18px_34px_-20px_rgba(79,70,229,0.55)]">
+          <span className="mt-3 inline-flex items-center gap-2 rounded-[6px] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[0_1px_3px_rgba(30,41,59,0.05)]">
             <UploadCloud className="size-4" />
             Chọn tệp
           </span>
@@ -346,12 +346,12 @@ function UploadDocumentCard({
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={cn(
-            "flex flex-col gap-4 rounded-[1.35rem] border border-outline/12 bg-white/80 p-4 shadow-[0_18px_48px_-38px_rgba(15,23,42,0.3)] backdrop-blur sm:flex-row sm:items-center sm:justify-between",
+            "flex flex-col gap-4 rounded-[8px] border border-outline/12 bg-white/80 p-4 shadow-[0_1px_3px_rgba(30,41,59,0.05)] backdrop-blur sm:flex-row sm:items-center sm:justify-between",
             isDragging && "border-primary/45 bg-primary/5",
           )}
         >
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-[1.1rem] bg-secondary/10 text-secondary">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-[8px] bg-secondary/10 text-secondary">
               <FileText className="size-5" />
             </div>
             <div className="min-w-0">
@@ -452,9 +452,9 @@ function ScopeOption({
     <Label
       htmlFor={id}
       className={cn(
-        "flex cursor-pointer items-start gap-3 rounded-[1.25rem] border border-outline/15 bg-surface-container-lowest p-4 transition-all",
+        "flex cursor-pointer items-start gap-3 rounded-[8px] border border-outline/15 bg-surface-container-lowest p-4 transition-all",
         checked &&
-          "border-primary/35 bg-primary/6 shadow-[0_18px_44px_-34px_rgba(79,70,229,0.36)]",
+          "border-primary/35 bg-primary/6 shadow-[0_1px_3px_rgba(30,41,59,0.05)]",
         !checked && "hover:border-primary/25 hover:bg-surface",
         disabled && "cursor-not-allowed opacity-60",
       )}
@@ -466,7 +466,7 @@ function ScopeOption({
         className="mt-0.5"
       />
       <span className="flex min-w-0 flex-1 gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-[1rem] bg-primary/10 text-primary">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-[8px] bg-primary/10 text-primary">
           <Icon className="size-4" />
         </span>
         <span className="min-w-0">
@@ -562,7 +562,7 @@ function ScopeSelectionCard({
             <SelectTrigger
               aria-invalid={Boolean(classroomError)}
               className={cn(
-                "h-12 rounded-xl border-outline/15 bg-surface-container-lowest shadow-none",
+                "h-12 rounded-[6px] border-outline/15 bg-surface-container-lowest shadow-none",
                 classroomError &&
                   "border-destructive focus-visible:ring-destructive/20",
               )}
@@ -586,7 +586,7 @@ function ScopeSelectionCard({
           ) : null}
 
           {isClassroomsError ? (
-            <div className="flex flex-col gap-3 rounded-xl border border-destructive/15 bg-destructive/5 p-3 text-sm text-destructive sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 rounded-[6px] border border-destructive/15 bg-destructive/5 p-3 text-sm text-destructive sm:flex-row sm:items-center sm:justify-between">
               <span>Không thể tải lớp học.</span>
               <Button
                 type="button"
@@ -631,7 +631,7 @@ function PublishSettingsCard({
         description="Quyết định tài liệu được công khai ngay hay lưu nháp."
       />
 
-      <div className="flex items-center justify-between gap-4 rounded-[1.25rem] border border-outline/15 bg-surface-container-lowest p-4">
+      <div className="flex items-center justify-between gap-4 rounded-[8px] border border-outline/15 bg-surface-container-lowest p-4">
         <div className="min-w-0">
           <Label
             htmlFor="teacher-document-published"
@@ -657,7 +657,7 @@ function PublishSettingsCard({
         >
           <span
             className={cn(
-              "block size-5.5 rounded-full bg-white shadow-[0_4px_12px_-5px_rgba(7,30,39,0.7)] transition-transform",
+              "block size-5.5 rounded-full bg-white shadow-[0_1px_3px_rgba(30,41,59,0.05)] transition-transform",
               checked && "translate-x-6",
             )}
           />
@@ -684,10 +684,10 @@ function ActionFooter({
         </Button>
       ) : (
         <Button asChild type="button" variant="outline" size="lg">
-          <Link href="/teacher/documents">Hủy</Link>
+          <Link href="/teacher/library?tab=documents">Hủy</Link>
         </Button>
       )}
-      <Button type="submit" size="lg" disabled={disabled}>
+      <Button type="submit" size="lg" disabled={disabled} className="bg-gradient-to-r from-[#4867F8] to-[#C62CF2] text-white shadow-sm hover:opacity-95">
         {isUploading ? (
           <>
             <LoaderCircle className="size-4 animate-spin" />
@@ -763,7 +763,7 @@ export function TeacherDocumentsCreateScreen() {
 
       setIsRedirecting(true);
       redirectTimeoutRef.current = window.setTimeout(() => {
-        router.push("/teacher/documents");
+        router.push("/teacher/library?tab=documents");
       }, REDIRECT_DELAY_MS);
     } catch (error) {
       const message = getApiErrorMessage(error, CREATE_DOCUMENT_ERROR_MESSAGE);
@@ -785,7 +785,7 @@ export function TeacherDocumentsCreateScreen() {
     <ToastProvider>
       <div className="space-y-6">
         <Link
-          href="/teacher/documents"
+          href="/teacher/library?tab=documents"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-on-surface"
         >
           <ArrowLeft className="size-4" />
@@ -898,7 +898,7 @@ export function TeacherDocumentsCreateScreen() {
                 </div>
 
                 {formStatus?.submitError ? (
-                  <div className="rounded-2xl border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
+                  <div className="rounded-[8px] border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
                     <div className="flex items-start gap-3">
                       <AlertCircle className="mt-0.5 size-4 shrink-0" />
                       <div>

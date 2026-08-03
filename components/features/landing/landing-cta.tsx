@@ -42,7 +42,7 @@ export function LandingCTA() {
                 className="h-12 rounded-full bg-white px-6 hover:bg-white/90 text-white"
                 asChild
               >
-                <Link href="/register">
+                <Link href="/login">
                   Tạo lớp học ngay
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>

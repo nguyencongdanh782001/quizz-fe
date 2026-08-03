@@ -58,7 +58,7 @@ function SearchInput({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder="Tìm theo tiêu đề tài liệu..."
-          className="h-12 rounded-xl border-outline/15 bg-surface-container-lowest pl-10 shadow-none"
+          className="h-12 rounded-[6px] border-outline/15 bg-surface-container-lowest pl-10 shadow-none"
         />
       </div>
     </div>
@@ -92,7 +92,7 @@ function SelectField({
         }
         disabled={disabled}
       >
-        <SelectTrigger className="h-12 rounded-xl border-outline/15 bg-surface-container-lowest shadow-none">
+        <SelectTrigger className="h-12 rounded-[6px] border-outline/15 bg-surface-container-lowest shadow-none">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent position="popper">
@@ -143,7 +143,7 @@ export function DocumentFilterBar({
           size="lg"
           onClick={onReset}
           disabled={!hasActiveFilters}
-          className="h-11 rounded-xl px-4 text-muted-foreground hover:text-on-surface"
+          className="h-11 rounded-[6px] px-4 text-muted-foreground hover:text-on-surface"
         >
           <RotateCcw className="mr-2 size-4" />
           Đặt lại bộ lọc

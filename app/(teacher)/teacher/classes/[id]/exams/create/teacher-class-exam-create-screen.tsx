@@ -127,14 +127,14 @@ function ExamEditorLoadingState() {
       </p>
       <Skeleton className="h-5 w-48 rounded-full" />
       <div className="space-y-3">
-        <Skeleton className="h-10 w-72 rounded-2xl" />
-        <Skeleton className="h-5 w-full max-w-3xl rounded-2xl" />
-        <Skeleton className="h-5 w-full max-w-2xl rounded-2xl" />
+        <Skeleton className="h-10 w-72 rounded-[8px]" />
+        <Skeleton className="h-5 w-full max-w-3xl rounded-[8px]" />
+        <Skeleton className="h-5 w-full max-w-2xl rounded-[8px]" />
       </div>
 
       <div className="space-y-6">
-        <Skeleton className="h-80 rounded-[32px]" />
-        <Skeleton className="h-136 rounded-[32px]" />
+        <Skeleton className="h-80 rounded-[10px]" />
+        <Skeleton className="h-136 rounded-[10px]" />
       </div>
     </div>
   );
@@ -152,7 +152,7 @@ function ExamEditorErrorState({
   backHref: string;
 }) {
   return (
-    <div className="rounded-[30px] border border-destructive/15 bg-destructive/6 px-6 py-10 text-center shadow-[0_20px_60px_-48px_rgba(186,26,26,0.45)]">
+    <div className="rounded-[10px] border border-destructive/15 bg-destructive/6 px-6 py-10 text-center shadow-[0_1px_3px_rgba(30,41,59,0.05)]">
       <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-destructive/12 text-destructive">
         <TriangleAlert className="size-7" />
       </div>
@@ -422,12 +422,12 @@ export function TeacherClassExamCreateScreen({
 
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
-            <h1 className="font-display text-3xl font-bold text-on-surface">
+            <h1 className="text-lg font-bold text-[#1E293B]">
               {isEditMode
                 ? "Chỉnh sửa bài thi trong lớp"
                 : "Tạo bài thi trong lớp"}
             </h1>
-            <p className="mt-2 max-w-4xl text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-1 max-w-4xl text-xs leading-5 text-[#64748B]">
               {isEditMode
                 ? "Cập nhật bài thi theo từng bước rõ ràng: chỉnh sửa thông tin, cập nhật câu hỏi và lưu lại nội dung mới cho lớp học."
                 : "Hoàn thiện bài thi theo từng bước rõ ràng: nhập thông tin chung, xây dựng câu hỏi, sau đó xem lại toàn bộ nội dung trước khi gửi cho lớp."}
@@ -436,7 +436,7 @@ export function TeacherClassExamCreateScreen({
 
           {!isEditMode ? (
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
-              <div className="h-9 flex items-center justify-center gap-2 rounded-xl border border-primary/15 bg-primary/8 px-3 text-sm font-medium text-primary">
+              <div className="h-9 flex items-center justify-center gap-2 rounded-[6px] border border-primary/15 bg-primary/8 px-3 text-sm font-medium text-primary">
                 <PencilLine className="size-4" />
                 Tạo thủ công
               </div>
@@ -471,7 +471,7 @@ export function TeacherClassExamCreateScreen({
         </div>
 
         {copiedSystemExamTitle && !isEditMode ? (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">
+          <div className="rounded-[8px] border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">
             Đã sao chép đề thi từ hệ thống: {copiedSystemExamTitle}
           </div>
         ) : null}

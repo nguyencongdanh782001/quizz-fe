@@ -13,12 +13,50 @@ import type {
   TeacherExamQuestionType,
 } from "./types";
 import {
+  DEFAULT_TEACHER_EXAM_POINT_MODE,
   DEFAULT_TEACHER_EXAM_SCOPE,
   DEFAULT_TEACHER_EXAM_QUESTION_TYPE,
+  DEFAULT_TEACHER_EXAM_TOTAL_POINTS,
   TEACHER_EXAM_QUESTION_TYPES,
 } from "./types";
 
 const OPTION_KEYS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const POINT_PRECISION = 6;
+
+export function getTeacherExamQuestionPoints(
+  questionIndex: number,
+  questionCount: number,
+  totalPoints = DEFAULT_TEACHER_EXAM_TOTAL_POINTS,
+): number {
+  if (questionCount <= 0) {
+    return 0;
+  }
+
+  const precisionFactor = 10 ** POINT_PRECISION;
+  const basePoints =
+    Math.floor((totalPoints / questionCount) * precisionFactor) /
+    precisionFactor;
+
+  if (questionIndex === questionCount - 1) {
+    return Number(
+      (totalPoints - basePoints * (questionCount - 1)).toFixed(
+        POINT_PRECISION,
+      ),
+    );
+  }
+
+  return basePoints;
+}
+
+export function getTeacherExamTotalPoints(questionCount: number): number {
+  return questionCount > 0 ? DEFAULT_TEACHER_EXAM_TOTAL_POINTS : 0;
+}
+
+export function formatTeacherExamPoints(points: number): string {
+  return new Intl.NumberFormat("vi-VN", {
+    maximumFractionDigits: POINT_PRECISION,
+  }).format(points);
+}
 
 function createFormId(prefix: string): string {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}-${Date.now()
@@ -46,19 +84,68 @@ export function normalizeAcceptedAnswers(acceptedAnswers: string[]): string[] {
 
 export function isTextQuestionType(
   questionType: TeacherExamQuestionType,
-): boolean {
-  return questionType === "text";
+): questionType is Extract<
+  TeacherExamQuestionType,
+  "short_answer" | "text"
+> {
+  return questionType === "short_answer" || questionType === "text";
 }
 
 export function isChoiceQuestionType(
   questionType: TeacherExamQuestionType,
-): questionType is Exclude<TeacherExamQuestionType, "text"> {
-  return questionType === "single_choice" || questionType === "multiple_choice";
+): questionType is Exclude<
+  TeacherExamQuestionType,
+  "short_answer" | "text"
+> {
+  return (
+    questionType === "single_choice" ||
+    questionType === "multiple_choice" ||
+    questionType === "true_false"
+  );
+}
+
+type ChoiceQuestionType = Exclude<
+  TeacherExamQuestionType,
+  "short_answer" | "text"
+>;
+
+function createTrueFalseOptions(
+  correctAnswer: "true" | "false" = "true",
+): TeacherExamOptionFormValues[] {
+  return reindexTeacherExamOptions([
+    {
+      ...createEmptyOption(correctAnswer === "true"),
+      option_text: "Đúng",
+    },
+    {
+      ...createEmptyOption(correctAnswer === "false"),
+      option_text: "Sai",
+    },
+  ]);
+}
+
+function normalizeTrueFalseOptions(
+  options: TeacherExamOptionFormValues[],
+): TeacherExamOptionFormValues[] {
+  const correctOption = options.find((option) => option.is_correct);
+  const normalizedCorrectText = correctOption?.option_text
+    .trim()
+    .toLocaleLowerCase("vi-VN");
+  const falseIsCorrect =
+    normalizedCorrectText === "sai" ||
+    normalizedCorrectText === "false" ||
+    correctOption?.option_key.toUpperCase() === "B";
+
+  return createTrueFalseOptions(falseIsCorrect ? "false" : "true");
 }
 
 function createDefaultChoiceOptions(
-  questionType: Exclude<TeacherExamQuestionType, "text">,
+  questionType: ChoiceQuestionType,
 ): TeacherExamOptionFormValues[] {
+  if (questionType === "true_false") {
+    return createTrueFalseOptions();
+  }
+
   const defaultOptions = [createEmptyOption(true), createEmptyOption(false)];
 
   return questionType === "single_choice"
@@ -71,6 +158,8 @@ function createDefaultChoiceOptions(
     : reindexTeacherExamOptions(defaultOptions);
 }
 
+
+
 export function reindexTeacherExamOptions(
   options: TeacherExamOptionFormValues[],
 ): TeacherExamOptionFormValues[] {
@@ -81,9 +170,13 @@ export function reindexTeacherExamOptions(
 }
 
 export function normalizeChoiceOptions(
-  questionType: Exclude<TeacherExamQuestionType, "text">,
+  questionType: ChoiceQuestionType,
   options: TeacherExamOptionFormValues[],
 ): TeacherExamOptionFormValues[] {
+  if (questionType === "true_false") {
+    return normalizeTrueFalseOptions(options);
+  }
+
   const nextOptions = reindexTeacherExamOptions(
     options.length > 0 ? options : createDefaultChoiceOptions(questionType),
   );
@@ -118,7 +211,7 @@ export function applyTeacherExamQuestionType(
   question: TeacherExamQuestionFormValues,
   nextQuestionType: TeacherExamQuestionType,
 ): TeacherExamQuestionFormValues {
-  if (nextQuestionType === "text") {
+  if (isTextQuestionType(nextQuestionType)) {
     return {
       ...question,
       question_type: nextQuestionType,
@@ -153,11 +246,10 @@ export function createEmptyQuestion(
     image_url: "",
     order_index: orderIndex,
     points: 1,
-    accepted_answers: normalizedQuestionType === "text" ? [""] : [],
-    options:
-      normalizedQuestionType === "text"
-        ? []
-        : createDefaultChoiceOptions(normalizedQuestionType),
+    accepted_answers: isTextQuestionType(normalizedQuestionType) ? [""] : [],
+    options: isTextQuestionType(normalizedQuestionType)
+      ? []
+      : createDefaultChoiceOptions(normalizedQuestionType),
   };
 }
 
@@ -166,7 +258,7 @@ export function createInitialTeacherExamFormValues(): TeacherExamFormValues {
     title: "",
     description: "",
     grade: "",
-    image_url: "",
+    image_url: "/image/hình tạo đề 1.jpeg",
     scope: DEFAULT_TEACHER_EXAM_SCOPE,
     classroom_id: null,
     duration_minutes: 45,
@@ -182,15 +274,6 @@ function normalizeText(value: string): string {
   return value.trim();
 }
 
-/**
- * Convert an API-returned ISO timestamp (e.g. "2026-07-15T12:30:00.000Z")
- * into the form's `YYYY-MM-DDTHH:mm` input format. Pure regex — never
- * constructs a `Date`. The backend timestamps are treated as wall-clock;
- * we never add or subtract hours.
- *
- * If the input has no `T` separator (already in form shape, or empty),
- * it is returned unchanged.
- */
 function formatApiIsoToInput(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) return "";
@@ -201,7 +284,12 @@ function formatApiIsoToInput(value: string): string {
 export function normalizeTeacherExamQuestionType(
   questionType: string | null | undefined,
 ): TeacherExamQuestionType {
-  if (questionType === "text" || questionType === "multiple_choice") {
+  if (
+    questionType === "text" ||
+    questionType === "multiple_choice" ||
+    questionType === "true_false" ||
+    questionType === "short_answer"
+  ) {
     return questionType;
   }
 
@@ -232,6 +320,7 @@ export function reindexTeacherExamQuestions(
 function mapQuestion(
   question: TeacherExamQuestionFormValues,
   index: number,
+  points: number,
 ): TeacherCreateExamQuestionRequest {
   const questionType = normalizeTeacherExamQuestionType(question.question_type);
   const acceptedAnswers = normalizeAcceptedAnswers(question.accepted_answers);
@@ -245,7 +334,7 @@ function mapQuestion(
     explanation: normalizeText(question.explanation),
     image_url: normalizeText(question.image_url),
     order_index: index + 1,
-    points: question.points,
+    points,
     options: isChoiceQuestionType(questionType)
       ? options.map((option, optionIndex) => ({
           option_key: option.option_key || createOptionKey(optionIndex),
@@ -254,43 +343,7 @@ function mapQuestion(
           is_correct: option.is_correct,
         }))
       : [],
-    accepted_answers: questionType === "text" ? acceptedAnswers : [],
-  };
-}
-
-function buildExamPayload(
-  values: TeacherExamFormValues,
-): TeacherCreateExamRequest {
-  // Pass wall-clock strings straight through. Wrapping in `Date` would
-  // cause axios to re-serialize via `.toISOString()`, shifting by browser
-  // TZ and corrupting the value the backend stores.
-  const startTime = values.start_time.trim();
-  const endTime = values.end_time.trim();
-  return {
-    title: values.title.trim(),
-    description: normalizeText(values.description),
-    grade: normalizeText(values.grade),
-    image_url: normalizeText(values.image_url),
-    duration_minutes: values.duration_minutes,
-    start_time: startTime || undefined,
-    end_time: endTime || undefined,
-    is_published: values.is_published,
-    is_active: values.is_active,
-    questions: reindexTeacherExamQuestions(values.questions).map(mapQuestion),
-  };
-}
-
-export function mapTeacherExamFormToPayload(
-  values: TeacherExamFormValues,
-): TeacherCreateExamRequest {
-  return buildExamPayload(values);
-}
-
-export function mapTeacherExamFormToUpdatePayload(
-  values: TeacherExamFormValues,
-): TeacherUpdateExamRequest {
-  return {
-    ...buildExamPayload(values),
+    accepted_answers: isTextQuestionType(questionType) ? acceptedAnswers : [],
   };
 }
 
@@ -355,6 +408,54 @@ export function mapTeacherExamDetailToFormValues(
   };
 }
 
+function buildExamPayload(
+  values: TeacherExamFormValues,
+): TeacherCreateExamRequest {
+  // Pass wall-clock strings straight through. Wrapping in `Date` would
+  // cause axios to re-serialize via `.toISOString()`, shifting by browser
+  // TZ and corrupting the value the backend stores.
+  const startTime = values.start_time.trim();
+  const endTime = values.end_time.trim();
+  const questions = reindexTeacherExamQuestions(values.questions);
+
+  return {
+    title: values.title.trim(),
+    description: normalizeText(values.description),
+    grade: normalizeText(values.grade),
+    image_url: normalizeText(values.image_url),
+    scope: values.scope || undefined,
+    classroom_id: values.classroom_id ?? undefined,
+    duration_minutes: values.duration_minutes,
+    start_time: startTime || undefined,
+    end_time: endTime || undefined,
+    is_published: values.is_published,
+    is_active: values.is_active,
+    total_points: DEFAULT_TEACHER_EXAM_TOTAL_POINTS,
+    point_mode: DEFAULT_TEACHER_EXAM_POINT_MODE,
+    questions: questions.map((question, index) =>
+      mapQuestion(
+        question,
+        index,
+        getTeacherExamQuestionPoints(index, questions.length),
+      ),
+    ),
+  };
+}
+
+export function mapTeacherExamFormToPayload(
+  values: TeacherExamFormValues,
+): TeacherCreateExamRequest {
+  return buildExamPayload(values);
+}
+
+export function mapTeacherExamFormToUpdatePayload(
+  values: TeacherExamFormValues,
+): TeacherUpdateExamRequest {
+  return {
+    ...buildExamPayload(values),
+  };
+}
+
 export const teacherExamFormSchema = Yup.object({
   title: Yup.string()
     .trim()
@@ -366,7 +467,6 @@ export const teacherExamFormSchema = Yup.object({
   scope: Yup.string().trim().required(),
   classroom_id: Yup.number().nullable(),
   image_url: Yup.string()
-    .url("Link hình ảnh không hợp lệ")
     .optional()
     .nullable(),
   duration_minutes: Yup.number()
@@ -374,21 +474,7 @@ export const teacherExamFormSchema = Yup.object({
     .moreThan(0, EXAM_FLOW_MESSAGES.validation.durationGreaterThanZero)
     .required("Thời lượng là bắt buộc"),
   start_time: Yup.string(),
-  // .required(EXAM_FLOW_MESSAGES.validation.startTimeRequired)
-  // .test(
-  //   "valid-start-time",
-  //   "Thời gian bắt đầu không hợp lệ",
-  //   (value) =>
-  //     Boolean(value) && !Number.isNaN(new Date(value || "").getTime()),
-  // ),
   end_time: Yup.string()
-    // .required(EXAM_FLOW_MESSAGES.validation.endTimeRequired)
-    // .test(
-    //   "valid-end-time",
-    //   "Thời gian kết thúc không hợp lệ",
-    //   (value) =>
-    //     Boolean(value) && !Number.isNaN(new Date(value || "").getTime()),
-    // )
     .test(
       "end-after-start",
       EXAM_FLOW_MESSAGES.validation.endTimeAfterStart,
@@ -422,7 +508,6 @@ export const teacherExamFormSchema = Yup.object({
           .required(EXAM_FLOW_MESSAGES.validation.questionPromptRequired),
         explanation: Yup.string(),
         image_url: Yup.string()
-          .url("Link hình ảnh không hợp lệ")
           .optional()
           .nullable(),
         order_index: Yup.number().min(1).required(),
@@ -433,7 +518,8 @@ export const teacherExamFormSchema = Yup.object({
         accepted_answers: Yup.array()
           .of(Yup.string().trim().required("Đáp án không được để trống"))
           .when("question_type", {
-            is: "text",
+            is: (questionType: TeacherExamQuestionType) =>
+              questionType === "short_answer" || questionType === "text",
             then: (schema) =>
               schema.min(1, EXAM_FLOW_MESSAGES.validation.minAcceptedAnswers),
             otherwise: (schema) => schema.max(0).default([]),
@@ -441,7 +527,8 @@ export const teacherExamFormSchema = Yup.object({
         options: Yup.array().when("question_type", {
           is: (questionType: TeacherExamQuestionType) =>
             questionType === "single_choice" ||
-            questionType === "multiple_choice",
+            questionType === "multiple_choice" ||
+            questionType === "true_false",
           then: (schema) =>
             schema
               .of(
@@ -453,7 +540,6 @@ export const teacherExamFormSchema = Yup.object({
                     .trim()
                     .required("Nội dung đáp án là bắt buộc"),
                   image_url: Yup.string()
-                    .url("Link hình ảnh không hợp lệ")
                     .optional()
                     .nullable(),
                   is_correct: Yup.boolean().required(),
@@ -482,7 +568,10 @@ export const teacherExamFormSchema = Yup.object({
                     this.parent.question_type,
                   );
 
-                  if (questionType !== "single_choice") {
+                  if (
+                    questionType !== "single_choice" &&
+                    questionType !== "true_false"
+                  ) {
                     return true;
                   }
 
@@ -502,7 +591,7 @@ export const teacherExamFormSchema = Yup.object({
                   const correctOptionCount =
                     options?.filter((option) => option.is_correct).length ?? 0;
 
-                  return questionType === "text"
+                  return isTextQuestionType(questionType)
                     ? true
                     : correctOptionCount >= 1;
                 },

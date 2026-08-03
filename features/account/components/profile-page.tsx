@@ -2,27 +2,24 @@
 
 import { Form, Formik, type FormikHelpers } from "formik";
 import {
-  AtSign,
-  BadgeCheck,
-  CalendarDays,
-  Clock,
-  IdCard,
   KeyRound,
   Loader2,
-  Mail,
-  Phone,
   RefreshCw,
   Save,
-  School,
-  ShieldCheck,
-  type LucideIcon,
-  UserRound,
+  UploadCloud,
   XCircle,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
-import { AvatarUploadField } from "@/components/common/avatar-upload-field";
-import { Button } from "@/components/ui/button";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ReactNode,
+} from "react";
 import { UserAvatar } from "@/components/common/user-avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Toast,
@@ -44,6 +41,7 @@ import type {
   UserSchema,
 } from "@/lib/api/types";
 import { APP_MESSAGES } from "@/lib/app-messages";
+import { validateAvatarImageFile } from "@/lib/avatar-upload";
 import { mapUserSchemaToUser } from "@/lib/auth/user-mapper";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
@@ -51,23 +49,20 @@ import {
   changePasswordSchema,
   profileFormSchema,
 } from "../schemas/user-info.schema";
+import { ProfileWorkspace } from "./profile-workspace";
 import {
   createProfileInitialValues,
   genderOptions,
-  roleContentByRole,
 } from "./user-info/constants";
 import {
-  FormikInputField,
   FormikDatePickerField,
+  FormikInputField,
   FormikPasswordField,
-  FormikSelectField,
 } from "./user-info/formik-fields";
 import type {
   ChangePasswordFormValues,
   ProfileFormValues,
   UserInfoPageProps,
-  UserInfoRole,
-  UserInfoRoleContent,
 } from "./user-info/types";
 
 type ProfileToastVariant = "success" | "error" | "warning";
@@ -79,95 +74,18 @@ interface ProfileToastState {
   variant: ProfileToastVariant;
 }
 
-interface ProfileSectionProps {
-  user: UserSchema;
-  content: UserInfoRoleContent;
-  role: UserInfoRole;
-}
-
 interface ToastAwareProps {
   onToast: (variant: ProfileToastVariant, title: string) => void;
 }
+
+const cardClassName =
+  "rounded-[8px] border border-[#E2E8F0] bg-white p-5 shadow-[0_1px_3px_rgba(30,41,59,0.04)]";
 
 const emptyPasswordValues: ChangePasswordFormValues = {
   current_password: "",
   new_password: "",
   confirm_password: "",
 };
-
-function formatDate(value: string | null | undefined): string {
-  if (!value) {
-    return "Chưa cập nhật";
-  }
-
-  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
-
-  if (dateOnlyMatch) {
-    return `${dateOnlyMatch[3]}/${dateOnlyMatch[2]}/${dateOnlyMatch[1]}`;
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(date);
-}
-
-// function formatDateTime(value: string | null | undefined): string {
-//   if (!value) {
-//     return "Chưa có dữ liệu";
-//   }
-
-//   const date = new Date(value);
-
-//   if (Number.isNaN(date.getTime())) {
-//     return value;
-//   }
-
-//   return new Intl.DateTimeFormat("vi-VN", {
-//     day: "2-digit",
-//     month: "2-digit",
-//     year: "numeric",
-//     hour: "2-digit",
-//     minute: "2-digit",
-//   }).format(date);
-// }
-
-function getRoleLabel(
-  roleName: UserSchema["role_name"] | UserInfoRole,
-): string {
-  if (roleName === "teacher") {
-    return "Giáo viên";
-  }
-
-  if (roleName === "student") {
-    return "Học sinh";
-  }
-
-  return "Chưa phân quyền";
-}
-
-function getGenderLabel(gender: string | null | undefined): string {
-  if (gender === "male") {
-    return "Nam";
-  }
-
-  if (gender === "female") {
-    return "Nữ";
-  }
-
-  if (gender === "other") {
-    return "Khác";
-  }
-
-  return "Chưa cập nhật";
-}
 
 function isProfileGender(
   value: ProfileFormValues["gender"],
@@ -201,184 +119,26 @@ function toPasswordPayload(
   };
 }
 
-function ProfileAvatar({
-  user,
-  size = "default",
-  className,
-}: {
-  user: UserSchema;
-  size?: "default" | "hero";
-  className?: string;
-}) {
-  const sizeClassName =
-    size === "hero"
-      ? "size-20 rounded-2xl text-2xl shadow-[0_20px_44px_-24px_rgba(7,30,39,0.45)]"
-      : "size-16 rounded-2xl text-xl shadow-[0_18px_38px_-28px_rgba(7,30,39,0.45)]";
-
+function EmailCard({ user }: { user: UserSchema }) {
   return (
-    <UserAvatar
-      avatarUrl={user.avatar_url}
-      fullName={user.full_name}
-      avatarCacheKey={user.updated_at}
-      className={cn("ring-1 ring-white/30", sizeClassName, className)}
-    />
-  );
-}
-
-function ProfileHero({ user, content, role }: ProfileSectionProps) {
-  const roleLabel = getRoleLabel(user.role_name ?? role);
-
-  return (
-    <section
-      className={cn(
-        "relative overflow-hidden rounded-[28px] p-6 text-white shadow-[0_20px_60px_-36px_rgba(7,30,39,0.5)] sm:p-8",
-        content.heroClassName,
-      )}
-    >
-      <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.18),transparent_38%,rgba(255,255,255,0.1))]" />
-      <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <ProfileAvatar user={user} size="hero" />
-          <div>
-            <p className="text-sm font-medium text-white/72">Hồ sơ tài khoản</p>
-            <h1 className="mt-1 font-display text-3xl font-bold leading-tight sm:text-4xl">
-              Xin chào, {user.full_name}
-            </h1>
-            <p className="mt-2 text-base font-medium text-white/86">
-              {roleLabel}
-            </p>
-          </div>
-        </div>
-
-        <div className="inline-flex w-fit items-center gap-2 rounded-2xl border border-white/18 bg-white/12 px-4 py-3 text-sm font-medium text-white backdrop-blur-md">
-          <ShieldCheck className="size-4" />
-          <span>
-            {user.email_verified ? "Email đã xác thực" : "Email chưa xác thực"}
-          </span>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function InfoItem({
-  icon: Icon,
-  label,
-  value,
-  breakAll = false,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: string;
-  breakAll?: boolean;
-}) {
-  return (
-    <div className="group rounded-2xl border border-outline/10 bg-surface-container-lowest px-4 py-3 transition-all hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-[0_16px_32px_-26px_rgba(7,30,39,0.4)]">
-      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-        <Icon className="size-3.5" />
-        {label}
-      </div>
-      <p
-        className={cn(
-          "mt-2 text-sm font-semibold text-on-surface",
-          breakAll && "break-all",
-        )}
-      >
-        {value}
+    <section className={cardClassName}>
+      <h2 className="text-sm font-bold text-[#1E293B]">Email</h2>
+      <p className="mt-2 text-sm text-[#475569]">
+        Email chính được sử dụng để đăng nhập và nhận thông báo liên quan đến
+        tài khoản.
       </p>
-    </div>
-  );
-}
-
-function ProfileInformationCard({ user, role }: ProfileSectionProps) {
-  const roleLabel = getRoleLabel(user.role_name ?? role);
-  const hasAvatar = Boolean(user.avatar_url?.trim());
-
-  return (
-    <section className="rounded-2xl border border-outline/10 bg-surface-container-lowest p-5 shadow-[0_10px_38px_-30px_rgba(7,30,39,0.45)] sm:p-6">
-      <div className="flex items-center gap-3">
-        <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <UserRound className="size-5" />
-        </div>
-        <div>
-          <h2 className="font-display text-xl font-semibold text-on-surface">
-            Thông tin cá nhân
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Hồ sơ hiện tại của tài khoản.
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-6 grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
-        <div className="self-start overflow-hidden rounded-2xl border border-outline/10 bg-surface">
-          <div className="h-20 bg-linear-to-br from-primary/12 via-secondary/10 to-tertiary/12 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              Ảnh đại diện
-            </p>
-          </div>
-          <div className="-mt-8 flex flex-col items-center px-4 pb-4 text-center">
-            <ProfileAvatar
-              user={user}
-              className="bg-surface-container-lowest ring-4 ring-surface"
-            />
-            <div className="mt-3 w-full min-w-0">
-              <p className="truncate font-display font-semibold text-on-surface">
-                {user.full_name}
-              </p>
-              <p className="mt-1 truncate text-sm text-muted-foreground">
-                @{user.username}
-              </p>
-            </div>
-            <span
-              className={cn(
-                "mt-3 inline-flex max-w-full items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold",
-                hasAvatar
-                  ? "border-secondary/15 bg-secondary-container/70 text-on-secondary-container"
-                  : "border-primary/15 bg-primary-container/70 text-on-primary-container",
-              )}
-            >
-              {hasAvatar ? "Ảnh cá nhân" : "Ảnh mặc định"}
-            </span>
-          </div>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          <InfoItem icon={UserRound} label="Họ và tên" value={user.full_name} />
-          <InfoItem icon={Mail} label="Email" value={user.email} breakAll />
-          <InfoItem
-            icon={AtSign}
-            label="Tên đăng nhập"
-            value={user.username}
-            breakAll
-          />
-          <InfoItem
-            icon={Phone}
-            label="Số điện thoại"
-            value={user.phone || "Chưa cập nhật"}
-          />
-          <InfoItem
-            icon={BadgeCheck}
-            label="Giới tính"
-            value={getGenderLabel(user.profile?.gender)}
-          />
-          <InfoItem
-            icon={CalendarDays}
-            label="Ngày sinh"
-            value={formatDate(user.profile?.date_of_birth)}
-          />
-          <InfoItem
-            icon={School}
-            label="Trường học"
-            value={user.profile?.school_name || "Chưa cập nhật"}
-          />
-          <InfoItem icon={IdCard} label="Vai trò" value={roleLabel} />
-          <InfoItem
-            icon={Clock}
-            label="Ngày tham gia"
-            value={formatDate(user.created_at)}
-          />
-        </div>
+      <div className="mt-4 max-w-lg">
+        <Input
+          value={user.email}
+          readOnly
+          aria-label="Email tài khoản"
+          className="h-10 rounded-[6px] bg-[#F8FAFC]"
+        />
+        <p className="mt-2 text-xs text-[#64748B]">
+          {user.email_verified
+            ? "Email đã được xác minh và có thể dùng để đăng nhập."
+            : "Email chưa được xác minh."}
+        </p>
       </div>
     </section>
   );
@@ -387,14 +147,45 @@ function ProfileInformationCard({ user, role }: ProfileSectionProps) {
 function AvatarUploadCard({
   user,
   onToast,
-}: Pick<ProfileSectionProps, "user"> & ToastAwareProps) {
+}: { user: UserSchema } & ToastAwareProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const uploadAvatarMutation = useUpdateAvatar();
   const isUploading = uploadAvatarMutation.isPending;
+  const previewUrl = useMemo(
+    () => (selectedFile ? URL.createObjectURL(selectedFile) : null),
+    [selectedFile],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    const validationMessage = validateAvatarImageFile(file);
+
+    if (validationMessage) {
+      onToast("warning", validationMessage);
+      return;
+    }
+
+    setSelectedFile(file);
+  }
 
   async function handleUploadAvatar() {
     if (!selectedFile) {
-      onToast("warning", "Vui lòng chọn một ảnh trước khi tải lên.");
+      onToast("warning", "Vui lòng chọn một ảnh trước khi lưu.");
       return;
     }
 
@@ -403,61 +194,68 @@ function AvatarUploadCard({
       setSelectedFile(null);
       onToast("success", APP_MESSAGES.UPLOAD_AVATAR_SUCCESS);
     } catch {
-      onToast("warning", APP_MESSAGES.UPLOAD_AVATAR_FAILED);
+      onToast("error", APP_MESSAGES.UPLOAD_AVATAR_FAILED);
     }
   }
 
   return (
-    <section className="rounded-2xl border border-outline/10 bg-surface-container-lowest p-5 shadow-[0_10px_38px_-30px_rgba(7,30,39,0.45)] sm:p-6">
-      <div className="flex items-center gap-3">
-        <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <UserRound className="size-5" />
-        </div>
-        <div>
-          <h2 className="font-display text-xl font-semibold text-on-surface">
-            Ảnh đại diện
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Cập nhật ảnh đại diện mới để thông tin tài khoản đồng bộ ngay.
+    <section className={cardClassName}>
+      <h2 className="text-sm font-bold text-[#1E293B]">Ảnh đại diện</h2>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        onChange={handleFileChange}
+      />
+
+      <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
+        <button
+          type="button"
+          className="group relative size-24 shrink-0 rounded-full outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[#4F46E5]"
+          aria-label="Chọn ảnh đại diện từ thiết bị"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <UserAvatar
+            avatarUrl={previewUrl ?? user.avatar_url}
+            fullName={user.full_name}
+            avatarCacheKey={previewUrl ? undefined : user.updated_at}
+            className="size-24 text-2xl ring-4 ring-white shadow-sm"
+          />
+          <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 text-transparent transition-colors group-hover:bg-black/45 group-hover:text-white">
+            <UploadCloud className="size-5" />
+          </span>
+        </button>
+
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-[#1E293B]">
+            Nhấp vào ảnh để chọn tệp từ thiết bị
+          </p>
+          <p className="mt-1 text-xs leading-5 text-[#64748B]">
+            Hỗ trợ JPG, PNG hoặc WEBP, dung lượng tối đa 5MB.
+          </p>
+          <p className="mt-1 truncate text-xs text-[#64748B]">
+            {selectedFile
+              ? `Đã chọn: ${selectedFile.name}`
+              : "Chưa chọn ảnh mới."}
           </p>
         </div>
       </div>
 
-      <div className="mt-6 space-y-5">
-        <AvatarUploadField
-          fullName={user.full_name}
-          currentAvatarUrl={user.avatar_url}
-          currentAvatarCacheKey={user.updated_at}
-          selectedFile={selectedFile}
-          onSelectedFileChange={setSelectedFile}
-          helperText="Ảnh mới sẽ được áp dụng ngay sau khi tải lên thành công."
-          isUploading={isUploading}
-          previewClassName="sm:size-32"
-        />
-
-        <div className="flex flex-col-reverse gap-3 border-t border-outline/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            {selectedFile
-              ? `Tệp đã chọn: ${selectedFile.name}`
-              : "Chưa có ảnh mới nào được chọn."}
-          </p>
-
-          <Button
-            type="button"
-            className="h-11 rounded-xl px-5"
-            disabled={!selectedFile || isUploading}
-            onClick={() => {
-              void handleUploadAvatar();
-            }}
-          >
-            {isUploading ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Save className="size-4" />
-            )}
-            Tải ảnh lên
-          </Button>
-        </div>
+      <div className="mt-5">
+        <Button
+          type="button"
+          className="h-10 rounded-[6px] px-4"
+          disabled={!selectedFile || isUploading}
+          onClick={() => void handleUploadAvatar()}
+        >
+          {isUploading ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Save className="size-4" />
+          )}
+          Lưu ảnh
+        </Button>
       </div>
     </section>
   );
@@ -466,7 +264,7 @@ function AvatarUploadCard({
 function ProfileForm({
   user,
   onToast,
-}: Pick<ProfileSectionProps, "user"> & ToastAwareProps) {
+}: { user: UserSchema } & ToastAwareProps) {
   const updateProfileMutation = useUpdateProfileMutation();
   const initialValues = createProfileInitialValues(user);
 
@@ -494,152 +292,138 @@ function ProfileForm({
   }
 
   return (
-    <section className="rounded-2xl border border-outline/10 bg-surface-container-lowest p-5 shadow-[0_10px_38px_-30px_rgba(7,30,39,0.45)] sm:p-6">
-      <div className="flex items-center gap-3">
-        <div className="flex size-11 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
-          <BadgeCheck className="size-5" />
-        </div>
-        <div>
-          <h2 className="font-display text-xl font-semibold text-on-surface">
-            Chỉnh sửa hồ sơ
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Cập nhật các thông tin có thể chỉnh sửa.
-          </p>
-        </div>
-      </div>
+    <Formik<ProfileFormValues>
+      initialValues={initialValues}
+      enableReinitialize
+      validationSchema={profileFormSchema}
+      onSubmit={handleSubmit}
+    >
+      {({
+        errors,
+        isSubmitting,
+        setFieldTouched,
+        setFieldValue,
+        touched,
+        values,
+      }) => {
+        const isSaving = isSubmitting || updateProfileMutation.isPending;
 
-      <Formik<ProfileFormValues>
-        initialValues={initialValues}
-        enableReinitialize
-        validationSchema={profileFormSchema}
-        onSubmit={handleSubmit}
-      >
-        {({ isSubmitting }) => {
-          const isSaving = isSubmitting || updateProfileMutation.isPending;
-
-          return (
-            <Form className="mt-6 space-y-5">
-              <div className="grid gap-4 md:grid-cols-2">
+        return (
+          <Form className="space-y-4">
+            <section className={cardClassName}>
+              <h2 className="text-sm font-bold text-[#1E293B]">Tên hiển thị</h2>
+              <p className="mt-2 text-sm text-[#475569]">
+                Tên này được hiển thị ở khu vực tài khoản và các nội dung bạn
+                tham gia.
+              </p>
+              <div className="mt-4 max-w-lg">
                 <FormikInputField
                   name="full_name"
-                  label="Họ và tên"
-                  placeholder="Nhập họ và tên"
+                  label=""
+                  aria-label="Tên hiển thị"
+                  placeholder="Nhập tên hiển thị"
                   autoComplete="name"
+                  className="h-10 rounded-[6px]"
                   required
-                />
-                <FormikInputField
-                  name="phone"
-                  label="Số điện thoại"
-                  placeholder="Nhập số điện thoại"
-                  autoComplete="tel"
-                />
-                <FormikDatePickerField
-                  name="date_of_birth"
-                  label="Ngày sinh"
-                  placeholder="Chọn ngày sinh"
-                  helperText="Dùng lịch để chọn hoặc xóa để chọn lại."
-                  required
-                />
-                <FormikSelectField
-                  name="gender"
-                  label="Giới tính"
-                  options={genderOptions}
-                  placeholder="Chọn giới tính"
-                  required
-                />
-                <FormikInputField
-                  name="school_name"
-                  label="Trường học"
-                  placeholder="Nhập tên trường học"
-                  autoComplete="organization"
-                  className="md:col-span-2"
                 />
               </div>
-
-              <div className="flex justify-end border-t border-outline/10 pt-5">
+              <div className="mt-4">
                 <Button
                   type="submit"
                   disabled={isSaving}
-                  className="h-11 rounded-xl px-5"
+                  className="h-10 rounded-[6px] px-4"
                 >
                   {isSaving ? (
                     <Loader2 className="size-4 animate-spin" />
                   ) : (
                     <Save className="size-4" />
                   )}
-                  Lưu thay đổi
+                  Lưu tên hiển thị
                 </Button>
               </div>
-            </Form>
-          );
-        }}
-      </Formik>
-    </section>
+            </section>
+
+            <section className={cardClassName}>
+              <h2 className="text-sm font-bold text-[#1E293B]">
+                Thông tin khác
+              </h2>
+              <div className="mt-4 max-w-3xl space-y-4">
+                <fieldset>
+                  <legend className="text-sm font-medium text-[#1E293B]">
+                    Giới tính <span className="text-red-500">*</span>
+                  </legend>
+                  <div className="mt-2 flex flex-wrap gap-5">
+                    {genderOptions.map((option) => (
+                      <label
+                        key={option.value}
+                        className="flex cursor-pointer items-center gap-2 text-sm text-[#334155]"
+                      >
+                        <input
+                          type="radio"
+                          name="gender"
+                          value={option.value}
+                          checked={values.gender === option.value}
+                          onChange={() => {
+                            void setFieldValue("gender", option.value);
+                            void setFieldTouched("gender", true, false);
+                          }}
+                          className="size-4 accent-[#4F46E5]"
+                        />
+                        {option.label}
+                      </label>
+                    ))}
+                  </div>
+                  {touched.gender && errors.gender ? (
+                    <p className="mt-1 text-xs text-red-600">{errors.gender}</p>
+                  ) : null}
+                </fieldset>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormikDatePickerField
+                    name="date_of_birth"
+                    label="Ngày sinh"
+                    placeholder="Chọn ngày sinh"
+                    required
+                  />
+                  <FormikInputField
+                    name="phone"
+                    label="Số điện thoại"
+                    placeholder="Nhập số điện thoại"
+                    autoComplete="tel"
+                    className="rounded-[6px]"
+                  />
+                  <div className="sm:col-span-2">
+                    <FormikInputField
+                      name="school_name"
+                      label="Trường học"
+                      placeholder="Nhập tên trường học"
+                      autoComplete="organization"
+                      className="rounded-[6px]"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="mt-5">
+                <Button
+                  type="submit"
+                  disabled={isSaving}
+                  className="h-10 rounded-[6px] px-4"
+                >
+                  {isSaving ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Save className="size-4" />
+                  )}
+                  Lưu thông tin
+                </Button>
+              </div>
+            </section>
+          </Form>
+        );
+      }}
+    </Formik>
   );
 }
-
-// function AccountInformationCard({ user }: Pick<ProfileSectionProps, "user">) {
-//   const emailVerified = user.email_verified;
-
-//   return (
-//     <section className="rounded-2xl border border-outline/10 bg-surface-container-lowest p-5 shadow-[0_10px_38px_-30px_rgba(7,30,39,0.45)] sm:p-6">
-//       <div className="flex items-center gap-3">
-//         <div className="flex size-11 items-center justify-center rounded-2xl bg-tertiary/10 text-tertiary">
-//           <ShieldCheck className="size-5" />
-//         </div>
-//         <div>
-//           <h2 className="font-display text-xl font-semibold text-on-surface">
-//             Thông tin tài khoản
-//           </h2>
-//           <p className="text-sm text-muted-foreground">
-//             Trạng thái và lịch sử đăng nhập.
-//           </p>
-//         </div>
-//       </div>
-
-//       <div className="mt-6 space-y-3">
-//         <div className="rounded-2xl border border-outline/10 bg-surface px-4 py-4">
-//           <div className="flex items-center justify-between gap-3">
-//             <div>
-//               <p className="text-sm font-medium text-muted-foreground">
-//                 Email đã xác thực
-//               </p>
-//               <p className="mt-1 font-semibold text-on-surface">
-//                 {emailVerified ? "Đã xác thực" : "Chưa xác thực"}
-//               </p>
-//             </div>
-//             <div
-//               className={cn(
-//                 "flex size-10 items-center justify-center rounded-2xl",
-//                 emailVerified
-//                   ? "bg-emerald-50 text-emerald-600"
-//                   : "bg-destructive/10 text-destructive",
-//               )}
-//             >
-//               {emailVerified ? (
-//                 <CheckCircle2 className="size-5" />
-//               ) : (
-//                 <XCircle className="size-5" />
-//               )}
-//             </div>
-//           </div>
-//         </div>
-
-//         <InfoItem
-//           icon={Clock}
-//           label="Đăng nhập gần nhất"
-//           value={formatDateTime(user.last_login_at)}
-//         />
-//         <InfoItem
-//           icon={CalendarDays}
-//           label="Ngày tham gia"
-//           value={formatDateTime(user.created_at)}
-//         />
-//       </div>
-//     </section>
-//   );
-// }
 
 function ChangePasswordCard({ onToast }: ToastAwareProps) {
   const changePasswordMutation = useChangePasswordMutation();
@@ -660,16 +444,14 @@ function ChangePasswordCard({ onToast }: ToastAwareProps) {
   }
 
   return (
-    <section className="rounded-2xl border border-outline/10 bg-surface-container-lowest p-5 shadow-[0_10px_38px_-30px_rgba(7,30,39,0.45)] sm:p-6">
+    <section className={cn(cardClassName, "max-w-2xl")}>
       <div className="flex items-center gap-3">
-        <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+        <div className="flex size-10 items-center justify-center rounded-[6px] bg-[#EEF2FF] text-[#4F46E5]">
           <KeyRound className="size-5" />
         </div>
         <div>
-          <h2 className="font-display text-xl font-semibold text-on-surface">
-            Đổi mật khẩu
-          </h2>
-          <p className="text-sm text-muted-foreground">
+          <h2 className="text-sm font-bold text-[#1E293B]">Đổi mật khẩu</h2>
+          <p className="mt-1 text-xs text-[#64748B]">
             Mật khẩu mới cần tối thiểu 8 ký tự.
           </p>
         </div>
@@ -684,38 +466,37 @@ function ChangePasswordCard({ onToast }: ToastAwareProps) {
           const isSaving = isSubmitting || changePasswordMutation.isPending;
 
           return (
-            <Form className="mt-6 space-y-5">
-              <div className="grid gap-4">
-                <FormikPasswordField
-                  name="current_password"
-                  label="Mật khẩu hiện tại"
-                  placeholder="Nhập mật khẩu hiện tại"
-                  autoComplete="current-password"
-                  required
-                />
-                <FormikPasswordField
-                  name="new_password"
-                  label="Mật khẩu mới"
-                  placeholder="Nhập mật khẩu mới"
-                  autoComplete="new-password"
-                  helperText="Tối thiểu 8 ký tự."
-                  required
-                />
-                <FormikPasswordField
-                  name="confirm_password"
-                  label="Xác nhận mật khẩu mới"
-                  placeholder="Nhập lại mật khẩu mới"
-                  autoComplete="new-password"
-                  required
-                />
-              </div>
-
-              <div className="flex justify-end border-t border-outline/10 pt-5">
+            <Form className="mt-5 max-w-lg space-y-4">
+              <FormikPasswordField
+                name="current_password"
+                label="Mật khẩu hiện tại"
+                placeholder="Nhập mật khẩu hiện tại"
+                autoComplete="current-password"
+                className="rounded-[6px]"
+                required
+              />
+              <FormikPasswordField
+                name="new_password"
+                label="Mật khẩu mới"
+                placeholder="Nhập mật khẩu mới"
+                autoComplete="new-password"
+                helperText="Tối thiểu 8 ký tự."
+                className="rounded-[6px]"
+                required
+              />
+              <FormikPasswordField
+                name="confirm_password"
+                label="Xác nhận mật khẩu mới"
+                placeholder="Nhập lại mật khẩu mới"
+                autoComplete="new-password"
+                className="rounded-[6px]"
+                required
+              />
+              <div className="border-t border-[#E2E8F0] pt-4">
                 <Button
                   type="submit"
-                  variant="secondary"
                   disabled={isSaving}
-                  className="h-11 rounded-xl px-5"
+                  className="h-10 rounded-[6px] px-4"
                 >
                   {isSaving ? (
                     <Loader2 className="size-4 animate-spin" />
@@ -733,80 +514,25 @@ function ChangePasswordCard({ onToast }: ToastAwareProps) {
   );
 }
 
-function ProfilePageSkeleton({ role }: UserInfoPageProps) {
-  const content = roleContentByRole[role];
-
+function AccountSkeleton() {
   return (
-    <div className="space-y-6">
-      <section
-        className={cn(
-          "rounded-[28px] p-6 shadow-[0_20px_60px_-36px_rgba(7,30,39,0.5)] sm:p-8",
-          content.heroClassName,
-        )}
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <Skeleton className="size-20 rounded-2xl bg-white/25" />
-          <div className="space-y-3">
-            <Skeleton className="h-4 w-32 bg-white/25" />
-            <Skeleton className="h-9 w-72 max-w-full bg-white/25" />
-            <Skeleton className="h-5 w-28 bg-white/25" />
-          </div>
+    <ProfileWorkspace
+      account={
+        <div className="space-y-4">
+          {[160, 210, 180, 280].map((height) => (
+            <section key={height} className={cardClassName}>
+              <Skeleton className="h-5 w-36" />
+              <Skeleton className="mt-3 h-4 w-80 max-w-full" />
+              <Skeleton
+                className="mt-5 w-full rounded-[6px]"
+                style={{ height }}
+              />
+            </section>
+          ))}
         </div>
-      </section>
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)]">
-        <div className="space-y-6">
-          <SkeletonCard rows={9} />
-          <FormSkeleton />
-          <FormSkeleton />
-        </div>
-        {/* <SkeletonCard rows={3} /> */}
-      </div>
-    </div>
-  );
-}
-
-function SkeletonCard({ rows }: { rows: number }) {
-  return (
-    <section className="rounded-2xl border border-outline/10 bg-surface-container-lowest p-5 sm:p-6">
-      <div className="flex items-center gap-3">
-        <Skeleton className="size-11 rounded-2xl" />
-        <div className="space-y-2">
-          <Skeleton className="h-5 w-44" />
-          <Skeleton className="h-4 w-56 max-w-full" />
-        </div>
-      </div>
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        {Array.from({ length: rows }).map((_, index) => (
-          <Skeleton key={index} className="h-20 rounded-2xl" />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function FormSkeleton() {
-  return (
-    <section className="rounded-2xl border border-outline/10 bg-surface-container-lowest p-5 sm:p-6">
-      <div className="flex items-center gap-3">
-        <Skeleton className="size-11 rounded-2xl" />
-        <div className="space-y-2">
-          <Skeleton className="h-5 w-40" />
-          <Skeleton className="h-4 w-64 max-w-full" />
-        </div>
-      </div>
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <div key={index} className="space-y-2">
-            <Skeleton className="h-4 w-28" />
-            <Skeleton className="h-11 rounded-xl" />
-          </div>
-        ))}
-      </div>
-      <div className="mt-5 flex justify-end border-t border-outline/10 pt-5">
-        <Skeleton className="h-11 w-36 rounded-xl" />
-      </div>
-    </section>
+      }
+      password={<Skeleton className="h-[420px] max-w-2xl rounded-[8px]" />}
+    />
   );
 }
 
@@ -818,11 +544,11 @@ function ProfilePageError({
   onRetry: () => void;
 }) {
   return (
-    <section className="rounded-2xl border border-destructive/15 bg-destructive/5 p-8 text-center">
-      <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+    <section className="rounded-[8px] border border-red-200 bg-red-50 p-8 text-center">
+      <div className="mx-auto flex size-12 items-center justify-center rounded-[6px] bg-red-100 text-red-600">
         <XCircle className="size-6" />
       </div>
-      <h1 className="mt-4 font-display text-xl font-semibold text-on-surface">
+      <h1 className="mt-4 text-sm font-bold text-[#1E293B]">
         Không thể tải thông tin tài khoản
       </h1>
       <div className="mt-5 flex justify-center">
@@ -831,7 +557,7 @@ function ProfilePageError({
           variant="outline"
           onClick={onRetry}
           disabled={isRetrying}
-          className="h-10 px-4"
+          className="h-10 rounded-[6px] px-4"
         >
           <RefreshCw className={cn("size-4", isRetrying && "animate-spin")} />
           Thử lại
@@ -866,7 +592,6 @@ function ProfileToast({
 }
 
 export function ProfilePage({ role }: UserInfoPageProps) {
-  const content = roleContentByRole[role];
   const {
     data: user,
     isError,
@@ -884,49 +609,38 @@ export function ProfilePage({ role }: UserInfoPageProps) {
   }, [hydrateFromUser, user]);
 
   function showToast(variant: ProfileToastVariant, title: string) {
-    setToast({
-      id: Date.now(),
-      open: true,
-      title,
-      variant,
-    });
+    setToast({ id: Date.now(), open: true, title, variant });
   }
 
   let body: ReactNode;
 
   if (isLoading) {
-    body = <ProfilePageSkeleton role={role} />;
+    body = <AccountSkeleton />;
   } else if (isError || !user) {
     body = (
       <ProfilePageError
         isRetrying={isRefetching}
-        onRetry={() => {
-          void refetch();
-        }}
+        onRetry={() => void refetch()}
       />
     );
   } else {
     body = (
-      <div className="space-y-6">
-        <ProfileHero user={user} content={content} role={role} />
-
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)]">
-          <div className="space-y-6">
+      <ProfileWorkspace
+        account={
+          <div className="space-y-4">
+            <EmailCard user={user} />
             <AvatarUploadCard user={user} onToast={showToast} />
-            <ProfileInformationCard user={user} content={content} role={role} />
             <ProfileForm user={user} onToast={showToast} />
-            <ChangePasswordCard onToast={showToast} />
           </div>
-
-          {/* <AccountInformationCard user={user} /> */}
-        </div>
-      </div>
+        }
+        password={<ChangePasswordCard onToast={showToast} />}
+      />
     );
   }
 
   return (
     <ToastProvider>
-      {body}
+      <div data-profile-role={role}>{body}</div>
       <ProfileToast
         toast={toast}
         onOpenChange={(open) => {

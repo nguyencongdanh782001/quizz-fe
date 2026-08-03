@@ -1,139 +1,149 @@
+import Image from "next/image";
 import Link from "next/link";
-import { Globe, Mail, MessageCircle, Phone, Play, Radio } from "lucide-react";
-import { Logo } from "@/components/common/Logo";
+import { Mail, Phone } from "lucide-react";
 
-const footerGroups = {
-  sanPham: [
-    { label: "Tổng quan", href: "#tong-quan" },
-    { label: "Tính năng", href: "#tinh-nang" },
-    { label: "Bảng điều khiển", href: "#dashboard" },
-    { label: "Phản hồi", href: "#phan-hoi" },
-  ],
-  truyCap: [
-    { label: "Đăng ký", href: "/register" },
-    { label: "Đăng nhập", href: "/login" },
-    { label: "Vai trò người dùng", href: "/select-role" },
-  ],
-  hoTro: [
-    { label: "Điều khoản sử dụng", href: "#" },
-    { label: "Chính sách bảo mật", href: "#" },
-    { label: "Trung tâm trợ giúp", href: "#" },
-  ],
-} as const;
+const companyLinks = [
+  { label: "Giới thiệu", href: "#about" },
+  { label: "Kho đề thi", href: "#courses" },
+  { label: "Bảng giá", href: "#pricing" },
+] as const;
+
+const supportLinks = [
+  { label: "Câu hỏi thường gặp", href: "#faqs" },
+  { label: "Đăng nhập", href: "/login" },
+  { label: "Đăng ký tài khoản", href: "/login" },
+] as const;
 
 const socials = [
-  { label: "Trang thông tin", href: "#", icon: Globe },
-  { label: "Kênh video", href: "#", icon: Play },
-  { label: "Hỗ trợ chat", href: "#", icon: MessageCircle },
-  { label: "Bản tin", href: "#", icon: Radio },
+  { label: "Facebook", href: "https://facebook.com", src: "/images/landing/fb.png" },
+  { label: "Instagram", href: "https://instagram.com", src: "/images/landing/ig.png" },
+  { label: "TikTok", href: "https://tiktok.com", src: "/images/landing/tik.png" },
+  { label: "YouTube", href: "https://youtube.com", src: "/images/landing/ytb.png" },
 ] as const;
 
 export function LandingFooter() {
   return (
-    <footer className="relative z-10 mt-10 bg-on-surface px-4 pb-8 pt-16 text-surface sm:px-6">
-      <div className="mx-auto max-w-7xl">
-        <div className="grid gap-10 border-b border-white/10 pb-10 lg:grid-cols-[1.1fr_0.9fr_0.8fr_0.8fr]">
-          <div className="space-y-5">
-            <div className="flex items-center gap-3">
-              <Logo size="md" className="text-white" />
-              <p className="text-sm text-white/55">
-                Nền tảng học tập và quản lý lớp học hiện đại
-              </p>
-            </div>
-
-            <p className="max-w-md text-sm leading-7 text-white/65">
-              Kết nối bài thi, lớp học, tài liệu và phân tích học tập trong một
-              trải nghiệm nhất quán để giáo viên và học sinh cùng tiến bộ.
+    <footer className="border-t border-[#fceddd] bg-[#fff7f0] pb-6 pt-16 text-[#111827]">
+      <div className="mx-auto max-w-[1280px] px-5 md:px-8">
+        <div className="flex flex-col justify-between gap-8 pb-8 lg:flex-row lg:items-center">
+          <div className="max-w-lg">
+            <Image
+              src="/images/landing/logo-quizzvn.png"
+              alt="QuizzVN"
+              width={240}
+              height={60}
+              className="h-8 sm:h-9 md:h-10 w-auto object-contain"
+            />
+            <p className="mt-2 text-sm leading-7 text-[#6b7280]">
+              Giải pháp kiểm tra và đánh giá trực tuyến thông minh, hỗ trợ giáo
+              viên và học sinh Việt Nam học tập hiệu quả hơn.
             </p>
+          </div>
+          <div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <label htmlFor="landing-newsletter" className="sr-only">
+                Email nhận bản tin
+              </label>
+              <input
+                id="landing-newsletter"
+                type="email"
+                placeholder="Nhập email của bạn"
+                className="h-12 w-full rounded-lg border border-[#d1d5db] bg-white px-4 text-sm text-[#111827] outline-none focus:border-[#e55a3b] sm:w-80"
+              />
+              <button
+                type="button"
+                className="h-12 rounded-lg bg-[#e55a3b] px-7 text-sm font-bold text-white transition-colors hover:bg-[#d4492a]"
+              >
+                Đăng ký
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-[#6b7280]">
+              Nhận tin tức và cập nhật mới từ QuizzVN.
+            </p>
+          </div>
+        </div>
 
-            <div className="space-y-3 text-sm text-white/70">
+        <div className="grid gap-8 py-9 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <h3 className="text-sm font-extrabold">Liên hệ</h3>
+            <div className="mt-4 space-y-3 text-sm text-[#6b7280]">
               <a
                 href="mailto:support@quizzvn.vn"
-                className="flex items-center gap-3 hover:text-white"
+                className="flex items-center gap-2 hover:text-[#e55a3b]"
               >
-                <Mail className="h-4 w-4" />
-                <span>support@quizzvn.vn</span>
+                <Mail className="h-4 w-4" /> support@quizzvn.vn
               </a>
               <a
                 href="tel:19001234"
-                className="flex items-center gap-3 hover:text-white"
+                className="flex items-center gap-2 hover:text-[#e55a3b]"
               >
-                <Phone className="h-4 w-4" />
-                <span>1900 1234</span>
+                <Phone className="h-4 w-4" /> 1900 1234
               </a>
             </div>
           </div>
-
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-white/70">
-              Sản phẩm
-            </h3>
+            <h3 className="text-sm font-extrabold">QuizzVN</h3>
             <div className="mt-4 space-y-3">
-              {footerGroups.sanPham.map((link) => (
+              {companyLinks.map((item) => (
                 <Link
-                  key={link.label}
-                  href={link.href}
-                  className="block text-sm text-white/65 transition-colors hover:text-white"
+                  key={item.label}
+                  href={item.href}
+                  className="block text-sm text-[#6b7280] hover:text-[#e55a3b]"
                 >
-                  {link.label}
+                  {item.label}
                 </Link>
               ))}
             </div>
           </div>
-
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-white/70">
-              Truy cập
-            </h3>
+            <h3 className="text-sm font-extrabold">Hỗ trợ</h3>
             <div className="mt-4 space-y-3">
-              {footerGroups.truyCap.map((link) => (
+              {supportLinks.map((item) => (
                 <Link
-                  key={link.label}
-                  href={link.href}
-                  className="block text-sm text-white/65 transition-colors hover:text-white"
+                  key={item.label}
+                  href={item.href}
+                  className="block text-sm text-[#6b7280] hover:text-[#e55a3b]"
                 >
-                  {link.label}
+                  {item.label}
                 </Link>
               ))}
             </div>
           </div>
-
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-white/70">
-              Hỗ trợ
-            </h3>
-            <div className="mt-4 space-y-3">
-              {footerGroups.hoTro.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className="block text-sm text-white/65 transition-colors hover:text-white"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-            <div className="mt-6 flex items-center gap-3">
-              {socials.map(({ label, href, icon: Icon }) => (
+            <h3 className="text-sm font-extrabold">Theo dõi chúng tôi</h3>
+            <div className="mt-4 flex items-center gap-3">
+              {socials.map(({ label, href, src }) => (
                 <Link
                   key={label}
                   href={href}
                   aria-label={label}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block transition-transform hover:scale-110"
                 >
-                  <Icon className="h-4 w-4" />
+                  <Image
+                    src={src}
+                    alt={label}
+                    width={32}
+                    height={32}
+                    className="h-8 w-8 object-contain"
+                  />
                 </Link>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 pt-6 text-sm text-white/45 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} QuizzVn. Mọi quyền được bảo lưu.</p>
-          <p>
-            Thiết kế lại để mang lại trải nghiệm giáo dục số hiện đại, rõ ràng
-            và giàu dữ liệu hơn.
-          </p>
+        <div className="flex flex-col items-center justify-between gap-3 rounded-xl bg-[#111827] px-6 py-5 text-xs text-slate-300 sm:flex-row">
+          <p>© {new Date().getFullYear()} QuizzVN. Mọi quyền được bảo lưu.</p>
+          <div className="flex gap-4">
+            <Link href="#" className="hover:text-white">
+              Điều khoản sử dụng
+            </Link>
+            <Link href="#" className="hover:text-white">
+              Chính sách bảo mật
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

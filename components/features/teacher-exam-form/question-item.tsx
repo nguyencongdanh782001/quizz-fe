@@ -19,6 +19,9 @@ import { TextAnswerSection } from "./text-answer-section";
 import {
   applyTeacherExamQuestionType,
   createEmptyOption,
+  formatTeacherExamPoints,
+  getTeacherExamQuestionPoints,
+  isTextQuestionType,
   normalizeTeacherExamQuestionType,
   normalizeChoiceOptions,
   reindexTeacherExamOptions,
@@ -37,6 +40,18 @@ const QUESTION_TYPE_OPTIONS: Array<{
     label: EXAM_FLOW_MESSAGES.questionTypes.multiple,
   },
   {
+    value: "true_false",
+    label: EXAM_FLOW_MESSAGES.questionTypes.trueFalse,
+  },
+  {
+    value: "fill_in_blank",
+    label: EXAM_FLOW_MESSAGES.questionTypes.fillInBlank,
+  },
+  {
+    value: "short_answer",
+    label: EXAM_FLOW_MESSAGES.questionTypes.shortAnswer,
+  },
+  {
     value: "text",
     label: EXAM_FLOW_MESSAGES.questionTypes.text,
   },
@@ -53,6 +68,18 @@ const QUESTION_TYPE_BADGE_CONFIG: Record<
   multiple_choice: {
     badgeClassName: "bg-tertiary/12 text-tertiary",
     label: getTeacherExamQuestionTypeLabel("multiple_choice"),
+  },
+  true_false: {
+    badgeClassName: "bg-emerald-100 text-emerald-700",
+    label: getTeacherExamQuestionTypeLabel("true_false"),
+  },
+  fill_in_blank: {
+    badgeClassName: "bg-sky-100 text-sky-700",
+    label: getTeacherExamQuestionTypeLabel("fill_in_blank"),
+  },
+  short_answer: {
+    badgeClassName: "bg-amber-100 text-amber-700",
+    label: getTeacherExamQuestionTypeLabel("short_answer"),
   },
   text: {
     badgeClassName: "bg-secondary/15 text-secondary",
@@ -88,6 +115,10 @@ export function QuestionItem({
   const cardRef = useRef<HTMLDivElement>(null);
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const question = values.questions[questionIndex];
+  const questionPoints = getTeacherExamQuestionPoints(
+    questionIndex,
+    values.questions.length,
+  );
   const questionType = normalizeTeacherExamQuestionType(question.question_type);
   const badgeConfig = QUESTION_TYPE_BADGE_CONFIG[questionType];
   const questionTypeError = getIn(
@@ -110,8 +141,6 @@ export function QuestionItem({
   );
   const imageError = getIn(errors, `questions.${questionIndex}.image_url`);
   const imageTouched = getIn(touched, `questions.${questionIndex}.image_url`);
-  const pointsError = getIn(errors, `questions.${questionIndex}.points`);
-  const pointsTouched = getIn(touched, `questions.${questionIndex}.points`);
   const questionStateError = getIn(errors, `questions.${questionIndex}`);
   const questionStateTouched = getIn(touched, `questions.${questionIndex}`);
   const shouldShowError = (fieldTouched: unknown, fieldError: unknown) =>
@@ -152,7 +181,7 @@ export function QuestionItem({
   }
 
   function handleAddOption() {
-    if (questionType === "text") {
+    if (isTextQuestionType(questionType) || questionType === "true_false") {
       return;
     }
 
@@ -171,6 +200,10 @@ export function QuestionItem({
   }
 
   function handleRemoveOption(optionIndex: number) {
+    if (questionType === "true_false") {
+      return;
+    }
+
     const nextOptions = question.options.filter(
       (_, currentIndex) => currentIndex !== optionIndex,
     );
@@ -193,7 +226,7 @@ export function QuestionItem({
     void setFieldValue(
       `questions.${questionIndex}.options`,
       normalizeChoiceOptions(
-        "single_choice",
+        questionType === "true_false" ? "true_false" : "single_choice",
         question.options.map((option) => ({
           ...option,
           is_correct: option.client_id === selectedOptionId,
@@ -224,7 +257,7 @@ export function QuestionItem({
       id={`question-${question.client_id}`}
       tabIndex={-1}
       className={cn(
-        "rounded-[28px] border p-5 shadow-[0_18px_44px_-34px_rgba(7,30,39,0.18)] outline-none transition-all duration-300 animate-in fade-in-0 slide-in-from-bottom-2",
+        "rounded-[10px] border p-5 shadow-[0_1px_3px_rgba(30,41,59,0.08)] outline-none transition-all duration-300 animate-in fade-in-0 slide-in-from-bottom-2",
         shouldHighlightQuestionError
           ? "border-destructive/30 bg-destructive/5"
           : "border-outline/15 bg-surface-container-lowest",
@@ -341,19 +374,14 @@ export function QuestionItem({
 
           <InputField
             id={`question-${question.client_id}-points`}
-            label={EXAM_FLOW_MESSAGES.labels.points}
-            required
+            label="Điểm (tự động)"
             type="number"
-            min={1}
-            value={question.points}
-            onChange={(event) =>
-              void setFieldValue(
-                `questions.${questionIndex}.points`,
-                Number(event.target.value),
-              )
-            }
-            error={shouldShowError(pointsTouched, pointsError)}
-            placeholder="1"
+            min={0}
+            step="any"
+            readOnly
+            value={questionPoints}
+            helperText={`${formatTeacherExamPoints(questionPoints)} điểm trên tổng 10 điểm.`}
+            className="bg-[#F8FAFC]"
           />
         </div>
 
@@ -369,7 +397,7 @@ export function QuestionItem({
           size="compact"
         />
 
-        {questionType === "text" ? (
+        {isTextQuestionType(questionType) ? (
           <TextAnswerSection questionIndex={questionIndex} />
         ) : (
           <ChoiceOptionsSection

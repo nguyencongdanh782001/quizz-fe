@@ -43,62 +43,42 @@ export function PageHero({
   children,
 }: PageHeroProps) {
   return (
-    <SurfacePanel
-      tone="accent"
-      className={cn("relative overflow-hidden p-6 sm:p-7 lg:p-8", className)}
-    >
-      <div className="app-glow -right-32 -top-20 h-44 w-44 bg-primary/18" />
-      <div className="app-glow -bottom-16 left-10 h-36 w-36 bg-secondary/18" />
-
-      <div className="relative grid gap-8 xl:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.9fr)] xl:items-end">
-        <div className="space-y-5">
-          {eyebrow ? (
-            <Badge
-              variant={badgeVariant}
-              className="w-fit rounded-full px-4 py-1.5"
-            >
-              {eyebrow}
-            </Badge>
-          ) : null}
-
-          <div className="flex items-start gap-4">
-            {Icon ? (
-              <div className="hidden rounded-[1.5rem] bg-white/70 p-4 text-primary shadow-[0_22px_44px_-22px_rgba(79,70,229,0.48)] backdrop-blur-sm sm:flex">
-                <Icon className="h-6 w-6" />
-              </div>
-            ) : null}
-            <div className="min-w-0">
-              <h1 className="font-display text-3xl font-semibold tracking-tight text-on-surface sm:text-4xl lg:text-5xl">
-                {title}
-              </h1>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">
-                {description}
-              </p>
+    <SurfacePanel className={cn("p-4 sm:p-5", className)}>
+      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+        <div className="flex min-w-0 items-start gap-3">
+          {Icon ? (
+            <div className="mt-0.5 hidden size-10 shrink-0 items-center justify-center rounded-[9px] border border-[#C7D0FF] bg-[#EEF2FF] text-[#4F62F2] sm:flex">
+              <Icon className="size-5" />
             </div>
-          </div>
-
-          {actions ? (
-            <div className="flex flex-wrap gap-3">{actions}</div>
           ) : null}
-          {children}
-        </div>
-
-        {metrics?.length ? (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {metrics.map((metric) => (
-              <StatCard
-                key={metric.label}
-                compact
-                label={metric.label}
-                value={metric.value}
-                description={metric.description}
-                icon={metric.icon}
-                tone={metric.tone}
-              />
-            ))}
+          <div className="min-w-0">
+            {eyebrow ? (
+              <Badge variant={badgeVariant} className="mb-2 h-6 rounded-[6px] px-2 text-[10.5px]">
+                {eyebrow}
+              </Badge>
+            ) : null}
+            <h1 className="text-lg font-bold text-[#1E293B]">{title}</h1>
+            <p className="mt-1 max-w-3xl text-xs leading-5 text-[#64748B]">{description}</p>
+            {children}
           </div>
-        ) : null}
+        </div>
+        {actions ? <div className="flex shrink-0 flex-wrap gap-2">{actions}</div> : null}
       </div>
+
+      {metrics?.length ? (
+        <div className="mt-4 grid gap-3 border-t border-[#E3E7EE] pt-4 sm:grid-cols-2 xl:grid-cols-4">
+          {metrics.map((metric) => (
+            <StatCard
+              key={metric.label}
+              label={metric.label}
+              value={metric.value}
+              description={metric.description}
+              icon={metric.icon}
+              tone={metric.tone}
+            />
+          ))}
+        </div>
+      ) : null}
     </SurfacePanel>
   );
 }

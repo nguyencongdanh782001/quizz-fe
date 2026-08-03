@@ -19,8 +19,6 @@ import {
 } from "@/lib/teacher-classes";
 import type { ApiError, TeacherUpdateClassRequest } from "@/lib/api/types";
 import type { ClassStudent, ClassInfo } from "@/types/class.types";
-import type { Document } from "@/types/document.types";
-import type { Exam } from "@/types/exam.types";
 import { teacherClassDetailQueryKeys } from "../query-keys";
 
 export type TeacherClassTab = "students" | "exams" | "documents";

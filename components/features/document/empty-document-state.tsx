@@ -29,11 +29,11 @@ export function EmptyDocumentState({
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.10),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(8,145,178,0.12),_transparent_30%)]" />
       <div className="relative mx-auto flex max-w-2xl flex-col items-center">
-        <div className="relative flex h-24 w-24 items-center justify-center rounded-[2rem] bg-linear-to-br from-primary/12 via-white/80 to-secondary/15 shadow-[0_24px_60px_-30px_rgba(79,70,229,0.45)]">
+        <div className="relative flex h-24 w-24 items-center justify-center rounded-[2rem] bg-linear-to-br from-primary/12 via-white/80 to-secondary/15 shadow-[0_1px_3px_rgba(30,41,59,0.05)]">
           <div className="absolute -left-3 top-1 rounded-full bg-primary/15 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
             LMS
           </div>
-          <div className="absolute right-0 bottom-0 flex size-10 items-center justify-center rounded-2xl bg-surface-container-lowest shadow-[0_16px_32px_-24px_rgba(15,23,42,0.32)]">
+          <div className="absolute right-0 bottom-0 flex size-10 items-center justify-center rounded-[8px] bg-surface-container-lowest shadow-[0_1px_3px_rgba(30,41,59,0.05)]">
             <BookOpenText className="size-5 text-primary" />
           </div>
           <Sparkles className="size-10 text-primary" />
@@ -54,7 +54,7 @@ export function EmptyDocumentState({
           ].map((item) => (
             <div
               key={item}
-              className="rounded-[1.1rem] border border-outline/10 bg-white/70 px-4 py-3 text-left text-sm text-on-surface"
+              className="rounded-[8px] border border-outline/10 bg-white/70 px-4 py-3 text-left text-sm text-on-surface"
             >
               {item}
             </div>

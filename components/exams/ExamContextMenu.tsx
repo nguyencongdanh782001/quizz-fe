@@ -45,7 +45,7 @@ export function ExamContextMenu({
           <MoreVertical className="size-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-60">
+      <DropdownMenuContent align="end" className="min-w-44">
         <DropdownMenuItem onSelect={() => onViewDetail(exam)}>
           <Eye className="size-4" />
           Xem chi tiết

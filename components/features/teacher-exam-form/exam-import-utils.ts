@@ -4,6 +4,8 @@ import {
   createEmptyQuestion,
   createInitialTeacherExamFormValues,
   createOptionKey,
+  isChoiceQuestionType,
+  isTextQuestionType,
   normalizeChoiceOptions,
   reindexTeacherExamQuestions,
 } from "./utils";
@@ -54,8 +56,12 @@ interface ImportOptionDraft {
 const SUPPORTED_QUESTION_TYPES = [
   "single_choice",
   "multiple_choice",
+  "true_false",
+  "short_answer",
   "text",
 ] as const satisfies readonly TeacherExamQuestionType[];
+
+type SupportedQuestionType = (typeof SUPPORTED_QUESTION_TYPES)[number];
 
 const TRUE_VALUES = new Set(["true", "1", "yes", "y", "x", "co", "có", "dung", "đúng"]);
 const FALSE_VALUES = new Set(["false", "0", "no", "n", "khong", "không", "sai", ""]);
@@ -142,13 +148,13 @@ function formatRowError(
   };
 }
 
-function parseQuestionType(value: string): TeacherExamQuestionType | null {
+function parseQuestionType(value: string): SupportedQuestionType | null {
   const normalizedValue = value.trim();
 
   return SUPPORTED_QUESTION_TYPES.includes(
-    normalizedValue as TeacherExamQuestionType,
+    normalizedValue as SupportedQuestionType,
   )
-    ? (normalizedValue as TeacherExamQuestionType)
+    ? (normalizedValue as SupportedQuestionType)
     : null;
 }
 
@@ -357,17 +363,17 @@ function parseQuestionRows(
     );
     const options = optionsByQuestionOrder.get(safeOrderIndex) ?? [];
 
-    if (safeQuestionType === "text" && acceptedAnswers.length === 0) {
+    if (isTextQuestionType(safeQuestionType) && acceptedAnswers.length === 0) {
       errors.push(
         formatRowError(
           "questions",
           rowNumber,
-          "Câu hỏi tự luận phải có accepted_answers",
+          "Câu trả lời bằng văn bản phải có accepted_answers",
         ),
       );
     }
 
-    if (safeQuestionType !== "text") {
+    if (isChoiceQuestionType(safeQuestionType)) {
       const correctOptionCount = options.filter((option) => option.isCorrect).length;
 
       if (options.length < 2) {
@@ -380,12 +386,16 @@ function parseQuestionRows(
         );
       }
 
-      if (safeQuestionType === "single_choice" && correctOptionCount !== 1) {
+      if (
+        (safeQuestionType === "single_choice" ||
+          safeQuestionType === "true_false") &&
+        correctOptionCount !== 1
+      ) {
         errors.push(
           formatRowError(
             "questions",
             rowNumber,
-            "Câu hỏi một đáp án phải có đúng 1 đáp án đúng",
+            "Câu hỏi một đáp án hoặc đúng/sai phải có đúng 1 đáp án đúng",
           ),
         );
       }
@@ -428,7 +438,7 @@ function mapQuestionDraftsToFormValues(
           questionIndex + 1,
         );
         const mappedOptions =
-          questionDraft.questionType === "text"
+          isTextQuestionType(questionDraft.questionType)
             ? []
             : questionDraft.options.map((optionDraft, optionIndex) => ({
                 ...createEmptyOption(optionDraft.isCorrect),
@@ -439,11 +449,11 @@ function mapQuestionDraftsToFormValues(
         return {
           ...baseQuestion,
           accepted_answers:
-            questionDraft.questionType === "text"
+            isTextQuestionType(questionDraft.questionType)
               ? questionDraft.acceptedAnswers
               : [],
           options:
-            questionDraft.questionType === "text"
+            isTextQuestionType(questionDraft.questionType)
               ? []
               : normalizeChoiceOptions(questionDraft.questionType, mappedOptions),
           order_index: questionIndex + 1,

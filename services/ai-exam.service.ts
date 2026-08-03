@@ -13,11 +13,13 @@ const AI_EXAM_REQUEST_TIMEOUT_MS = 120_000;
 
 export async function generateAIExam(
   data: GenerateExamRequest,
+  idempotencyKey: string,
 ): Promise<AIExamGenerationJobResponse> {
   const response = await client.post<AIExamGenerationJobResponse>(
     "/api/ai-exams/generate/",
     data,
     {
+      headers: { "Idempotency-Key": idempotencyKey },
       timeout: AI_EXAM_REQUEST_TIMEOUT_MS,
     },
   );
@@ -38,11 +40,13 @@ export async function getAIExamJob(
 export async function generateMoreAIQuestions(
   jobId: number | string,
   data: GenerateMoreQuestionsRequest,
+  idempotencyKey: string,
 ): Promise<AIExamGenerationJobResponse> {
   const response = await client.post<AIExamGenerationJobResponse>(
     `/api/ai-exams/jobs/${jobId}/generate-more/`,
     data,
     {
+      headers: { "Idempotency-Key": idempotencyKey },
       timeout: AI_EXAM_REQUEST_TIMEOUT_MS,
     },
   );

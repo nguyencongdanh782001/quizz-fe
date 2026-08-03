@@ -75,7 +75,13 @@ function toBooleanValue(value: unknown, fallback = false): boolean {
 }
 
 function toQuestionType(value: unknown): TeacherExamQuestionType {
-  if (value === "text" || value === "multiple_choice") {
+  if (
+    value === "text" ||
+    value === "multiple_choice" ||
+    value === "true_false" ||
+    value === "fill_in_blank" ||
+    value === "short_answer"
+  ) {
     return value;
   }
 

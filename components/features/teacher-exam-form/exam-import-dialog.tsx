@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import type { WorkBook } from "xlsx";
 import {
   CheckCircle2,
@@ -28,6 +28,7 @@ import {
   type ExamImportParseResult,
   type SpreadsheetRow,
 } from "./exam-import-utils";
+import { getTeacherExamTotalPoints } from "./utils";
 
 type XlsxModule = typeof import("xlsx");
 
@@ -218,14 +219,7 @@ export function ExamImportDialog({
   const hasValidationErrors = (parseResult?.errors.length ?? 0) > 0;
   const canImport = Boolean(parseResult) && !hasValidationErrors && !isParsing;
   const questionCount = parseResult?.values.questions.length ?? 0;
-  const totalPoints = useMemo(
-    () =>
-      parseResult?.values.questions.reduce(
-        (total, question) => total + question.points,
-        0,
-      ) ?? 0,
-    [parseResult],
-  );
+  const totalPoints = getTeacherExamTotalPoints(questionCount);
 
   useEffect(() => {
     if (!open) {
@@ -429,7 +423,7 @@ export function ExamImportDialog({
 
             <div className="space-y-4">
               {parseResult?.errors.length ? (
-                <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+                <div className="rounded-[8px] border border-red-200 bg-red-50 p-4">
                   <div className="flex items-center gap-2 text-sm font-semibold text-red-700">
                     <TriangleAlert className="size-4" />
                     Lỗi kiểm tra dữ liệu
@@ -447,7 +441,7 @@ export function ExamImportDialog({
               ) : null}
 
               {parseResult ? (
-                <div className="rounded-2xl border border-outline/10 bg-surface p-4">
+                <div className="rounded-[8px] border border-outline/10 bg-surface p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-xs font-medium text-muted-foreground">
@@ -480,33 +474,33 @@ export function ExamImportDialog({
                     </div>
                   </div>
 
-                  <div className="mt-4 overflow-hidden rounded-xl border border-outline/10">
+                  <div className="mt-4 overflow-hidden rounded-[8px] border border-[#DDE2EB]">
                     <div className="max-h-80 overflow-auto">
-                      <table className="w-full min-w-2xl text-left text-sm">
-                        <thead className="sticky top-0 bg-surface-container-low text-xs text-muted-foreground">
+                      <table className="w-full min-w-2xl text-left">
+                        <thead className="sticky top-0 bg-[#F3F4F6] text-xs font-semibold text-[#111827]">
                           <tr>
-                            <th className="px-3 py-2 font-medium">Câu</th>
-                            <th className="px-3 py-2 font-medium">Loại</th>
-                            <th className="px-3 py-2 font-medium">Nội dung</th>
-                            <th className="px-3 py-2 font-medium">Điểm</th>
-                            <th className="px-3 py-2 font-medium">Dữ liệu</th>
+                            <th className="px-3.5 py-3.5">Câu</th>
+                            <th className="px-3.5 py-3.5">Loại</th>
+                            <th className="px-3.5 py-3.5">Nội dung</th>
+                            <th className="px-3.5 py-3.5">Điểm</th>
+                            <th className="px-3.5 py-3.5">Dữ liệu</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-outline/10">
+                        <tbody className="divide-y divide-[#DDE2EB] text-xs text-[#111827]">
                           {parseResult.values.questions.map(
                             (question, index) => (
-                              <tr key={question.client_id}>
-                                <td className="px-3 py-3 text-muted-foreground">
+                              <tr key={question.client_id} className="transition-colors hover:bg-[#F8FAFC]">
+                                <td className="px-3.5 py-2.5 text-muted-foreground">
                                   {index + 1}
                                 </td>
-                                <td className="px-3 py-3">
+                                <td className="px-3.5 py-2.5">
                                   {getQuestionTypeLabel(question.question_type)}
                                 </td>
-                                <td className="px-3 py-3 text-on-surface">
+                                <td className="px-3.5 py-2.5 text-on-surface">
                                   {question.prompt || "Chưa có nội dung"}
                                 </td>
-                                <td className="px-3 py-3">{question.points}</td>
-                                <td className="px-3 py-3 text-muted-foreground">
+                                <td className="px-3.5 py-2.5">{question.points}</td>
+                                <td className="px-3.5 py-2.5 text-muted-foreground">
                                   {question.question_type === "text"
                                     ? `${question.accepted_answers.length} đáp án chấp nhận`
                                     : `${question.options.length} lựa chọn`}
@@ -520,7 +514,7 @@ export function ExamImportDialog({
                   </div>
                 </div>
               ) : (
-                <div className="flex min-h-72 items-center justify-center rounded-2xl border border-dashed border-outline/20 bg-surface p-6 text-center text-sm text-muted-foreground">
+                <div className="flex min-h-72 items-center justify-center rounded-[8px] border border-dashed border-outline/20 bg-surface p-6 text-center text-sm text-muted-foreground">
                   Sau khi tải file lên, phần xem trước và lỗi kiểm tra sẽ hiển
                   thị tại đây.
                 </div>

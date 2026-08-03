@@ -172,7 +172,7 @@ function ResultPageContent({ examId }: { examId: string }) {
     <div className="space-y-8 w-full mx-auto">
       {retakeToastMessage && (
         <div className="fixed right-4 top-4 z-50 max-w-sm" role="alert">
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-[0_16px_40px_-24px_rgba(220,38,38,0.45)] dark:border-red-800/30 dark:bg-red-950/85 dark:text-red-200">
+          <div className="rounded-[8px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-[0_1px_3px_rgba(30,41,59,0.05)] dark:border-red-800/30 dark:bg-red-950/85 dark:text-red-200">
             <div className="flex items-start gap-3">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <div className="min-w-0 flex-1">
@@ -203,7 +203,7 @@ function ResultPageContent({ examId }: { examId: string }) {
       {/* Score card */}
       <div
         className={cn(
-          "rounded-2xl p-8 text-center",
+          "rounded-[8px] p-8 text-center",
           isExcellent
             ? "bg-linear-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-200 dark:border-green-800/30"
             : "bg-linear-to-br from-sky-50 to-cyan-50 dark:from-sky-950/20 dark:to-cyan-950/20 border border-sky-200 dark:border-sky-800/30",
@@ -265,7 +265,7 @@ function ResultPageContent({ examId }: { examId: string }) {
               onClick={() => void handleRetakeExam()}
               disabled={isStartingRetake}
               aria-busy={isStartingRetake}
-              className="min-w-55 rounded-2xl px-6"
+              className="min-w-55 rounded-[8px] px-6"
             >
               <RotateCcw
                 className={cn("h-4 w-4", isStartingRetake && "animate-spin")}
@@ -280,14 +280,14 @@ function ResultPageContent({ examId }: { examId: string }) {
       <div className="flex gap-3">
         <Link
           href="/student/exams"
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-[6px] text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
         >
           <BookOpen className="w-4 h-4" />
           Làm bài khác
         </Link>
         <Link
           href="/student"
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium border border-outline/20 text-on-surface hover:bg-surface-container-low transition-colors"
+          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-[6px] text-sm font-medium border border-outline/20 text-on-surface hover:bg-surface-container-low transition-colors"
         >
           <Home className="w-4 h-4" />
           Trang chủ
@@ -306,7 +306,7 @@ function ResultPageContent({ examId }: { examId: string }) {
                 <div
                   key={answer.questionId}
                   className={cn(
-                    "rounded-xl p-4 border",
+                    "rounded-[6px] p-4 border",
                     answer.isCorrect
                       ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800/30"
                       : "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800/30",
@@ -327,7 +327,7 @@ function ResultPageContent({ examId }: { examId: string }) {
                           <p>Đã chọn: {answer.selectedOptionText}</p>
                         )}
                         {answer.submittedAnswerText && (
-                          <div className="mt-2 rounded-xl border border-outline/10 bg-surface/70 p-3">
+                          <div className="mt-2 rounded-[6px] border border-outline/10 bg-surface/70 p-3">
                             <p className="font-medium text-on-surface">
                               Câu trả lời của bạn:
                             </p>

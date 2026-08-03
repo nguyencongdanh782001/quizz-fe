@@ -149,10 +149,10 @@ export function useDocumentPreview(
 function PreviewFrameSkeleton() {
   return (
     <div className="space-y-4">
-      <Skeleton className="h-88 w-full rounded-[1.4rem]" />
+      <Skeleton className="h-88 w-full rounded-[8px]" />
       <div className="grid gap-3 sm:grid-cols-2">
-        <Skeleton className="h-20 rounded-[1.2rem]" />
-        <Skeleton className="h-20 rounded-[1.2rem]" />
+        <Skeleton className="h-20 rounded-[8px]" />
+        <Skeleton className="h-20 rounded-[8px]" />
       </div>
     </div>
   );
@@ -187,14 +187,14 @@ export function DocumentPreviewContent({
 
   if (previewKind === "image") {
     return assetUrl ? (
-      <div className="overflow-hidden rounded-[1.4rem] border border-outline/10 bg-surface-container-lowest p-3">
+      <div className="overflow-hidden rounded-[8px] border border-outline/10 bg-surface-container-lowest p-3">
         <Image
           src={assetUrl}
           alt={document.title}
           width={1600}
           height={1200}
           unoptimized
-          className="h-auto max-h-[70vh] w-full rounded-[1.1rem] object-contain"
+          className="h-auto max-h-[70vh] w-full rounded-[8px] object-contain"
         />
       </div>
     ) : (
@@ -214,7 +214,7 @@ export function DocumentPreviewContent({
     }
 
     return (
-      <div className="overflow-hidden rounded-[1.4rem] border border-outline/10 bg-surface-container-lowest">
+      <div className="overflow-hidden rounded-[8px] border border-outline/10 bg-surface-container-lowest">
         <div className="flex items-center justify-between border-b border-outline/10 px-4 py-3">
           <div className="flex items-center gap-2 text-sm font-medium text-on-surface">
             <FileText className="size-4 text-primary" />
@@ -236,7 +236,7 @@ export function DocumentPreviewContent({
 
 function PreviewUnavailable({ document }: { document: Document }) {
   return (
-    <div className="grid gap-4 rounded-[1.4rem] border border-dashed border-outline/15 bg-surface-container-lowest p-6 sm:grid-cols-[minmax(0,1fr)_240px] sm:items-center">
+    <div className="grid gap-4 rounded-[8px] border border-dashed border-outline/15 bg-surface-container-lowest p-6 sm:grid-cols-[minmax(0,1fr)_240px] sm:items-center">
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-sm font-medium text-on-surface">
           <AlertTriangle className="size-4 text-amber-600" />
@@ -247,7 +247,7 @@ function PreviewUnavailable({ document }: { document: Document }) {
           mở thông tin chi tiết hoặc tải tệp xuống để xem bằng ứng dụng phù hợp.
         </p>
       </div>
-      <div className="rounded-[1.2rem] bg-white/70 p-4 text-sm text-muted-foreground">
+      <div className="rounded-[8px] bg-white/70 p-4 text-sm text-muted-foreground">
         <p className="font-medium text-on-surface">
           {document.fileName || document.title}
         </p>
@@ -268,7 +268,7 @@ function PreviewError({
   description: string;
 }) {
   return (
-    <div className="rounded-[1.4rem] border border-red-200/70 bg-red-50/85 p-6 text-red-800 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-200">
+    <div className="rounded-[8px] border border-red-200/70 bg-red-50/85 p-6 text-red-800 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-200">
       <div className="flex items-start gap-3">
         <AlertTriangle className="mt-0.5 size-5 shrink-0" />
         <div className="space-y-2">
@@ -287,7 +287,7 @@ function DocumentDetailsSidebar({ document }: { document: Document }) {
   const previewKind = getDocumentPreviewKind(document);
 
   return (
-    <aside className="space-y-4 rounded-[1.4rem] border border-outline/10 bg-surface-container-lowest p-4 sm:p-5">
+    <aside className="space-y-4 rounded-[8px] border border-outline/10 bg-surface-container-lowest p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
@@ -337,7 +337,7 @@ function DocumentDetailsSidebar({ document }: { document: Document }) {
       </div>
 
       {document.description ? (
-        <div className="rounded-[1.2rem] bg-white/76 p-4">
+        <div className="rounded-[8px] bg-white/76 p-4">
           <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
             Mô tả
           </p>
@@ -347,7 +347,7 @@ function DocumentDetailsSidebar({ document }: { document: Document }) {
         </div>
       ) : null}
 
-      <div className="rounded-[1.2rem] bg-primary/6 p-4 text-sm text-muted-foreground">
+      <div className="rounded-[8px] bg-primary/6 p-4 text-sm text-muted-foreground">
         <p className="font-medium text-on-surface">Người đăng</p>
         <p className="mt-1">{document.uploadedByName || "Chưa rõ"}</p>
       </div>
@@ -365,8 +365,8 @@ function MetaRow({
   value: string;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-[1.1rem] bg-white/72 p-3">
-      <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+    <div className="flex items-start gap-3 rounded-[8px] bg-white/72 p-3">
+      <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-[6px] bg-primary/10 text-primary">
         <Icon className="size-4" />
       </div>
       <div className="min-w-0">
@@ -394,13 +394,13 @@ export function DocumentViewer({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "h-dvh w-screen max-h-none rounded-none border-0 bg-surface/96 p-0 sm:h-[min(100dvh-1.5rem,52rem)] sm:w-[min(100vw-1.5rem,82rem)] sm:rounded-[32px] sm:border sm:border-outline/10",
+          "h-dvh w-screen max-h-none rounded-none border-0 bg-surface/96 p-0 sm:h-[min(100dvh-1.5rem,52rem)] sm:w-[min(100vw-1.5rem,82rem)] sm:rounded-[10px] sm:border sm:border-outline/10",
           className,
         )}
         showCloseButton={false}
       >
         <div className=" flex h-full flex-col overflow-hidden">
-          <div className="rounded-[1.4rem] flex items-center justify-between gap-3 border-b border-outline/10 bg-surface-container-lowest/90 px-4 py-4 sm:px-6">
+          <div className="rounded-[8px] flex items-center justify-between gap-3 border-b border-outline/10 bg-surface-container-lowest/90 px-4 py-4 sm:px-6">
             <div className="min-w-0">
               <DialogTitle className="line-clamp-1 text-lg sm:text-xl">
                 {document.title}

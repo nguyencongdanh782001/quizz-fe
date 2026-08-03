@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { CheckCircle2, Save } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +50,8 @@ interface DraftFormState {
   topic: string;
 }
 
+type TrueFalseAnswer = "true" | "false";
+
 interface AIQuestionDraftCardProps {
   disabled?: boolean;
   draft: AIQuestionDraftResponse;
@@ -59,7 +61,10 @@ interface AIQuestionDraftCardProps {
 function draftToFormState(draft: AIQuestionDraftResponse): DraftFormState {
   return {
     content: draft.content,
-    correct_answer: formatCorrectAnswer(draft.correct_answer),
+    correct_answer:
+      draft.question_type === "true_false"
+        ? normalizeTrueFalseAnswer(draft.correct_answer)
+        : formatCorrectAnswer(draft.correct_answer),
     difficulty: draft.difficulty,
     explanation: draft.explanation,
     is_approved: draft.is_approved,
@@ -71,15 +76,80 @@ function draftToFormState(draft: AIQuestionDraftResponse): DraftFormState {
 }
 
 function isChoiceType(questionType: AIExamQuestionType): boolean {
-  return questionType === "multiple_choice" || questionType === "true_false";
+  return questionType === "multiple_choice";
+}
+
+function normalizeTrueFalseAnswer(value: unknown): TrueFalseAnswer {
+  if (value === false || value === 0) {
+    return "false";
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLocaleLowerCase("vi-VN");
+
+    if (["false", "0", "sai"].includes(normalized)) {
+      return "false";
+    }
+  }
+
+  return "true";
+}
+
+function getDraftValidationMessage(values: DraftFormState): string | null {
+  if (!values.content.trim()) {
+    return "Nội dung câu hỏi không được để trống.";
+  }
+
+  if (!Number.isFinite(values.points) || values.points <= 0) {
+    return "Điểm của câu hỏi phải lớn hơn 0.";
+  }
+
+  if (values.question_type === "multiple_choice") {
+    const options = splitDraftOptions(values.options);
+
+    if (options.length !== 4) {
+      return "Câu trắc nghiệm phải có đúng 4 lựa chọn.";
+    }
+
+    if (new Set(options.map((option) => option.toLocaleLowerCase("vi-VN"))).size !== options.length) {
+      return "Các lựa chọn của câu trắc nghiệm không được trùng nhau.";
+    }
+
+    if (!options.includes(values.correct_answer.trim())) {
+      return "Vui lòng chọn một đáp án đúng có trong danh sách lựa chọn.";
+    }
+  }
+
+  if (
+    values.question_type === "short_answer" &&
+    splitDraftOptions(values.correct_answer).length === 0
+  ) {
+    return "Câu trả lời ngắn phải có ít nhất một đáp án chấp nhận.";
+  }
+
+  if (values.question_type === "essay" && !values.explanation.trim()) {
+    return "Câu tự luận phải có hướng dẫn chấm hoặc đáp án tham khảo.";
+  }
+
+  return null;
 }
 
 function buildDraftPayload(values: DraftFormState): UpdateAIQuestionDraftRequest {
   const isChoice = isChoiceType(values.question_type);
+  let correctAnswer: UpdateAIQuestionDraftRequest["correct_answer"] =
+    values.correct_answer.trim() || null;
+
+  if (values.question_type === "true_false") {
+    correctAnswer = values.correct_answer === "true";
+  } else if (values.question_type === "short_answer") {
+    correctAnswer = splitDraftOptions(values.correct_answer);
+  } else if (values.question_type === "essay") {
+    correctAnswer = values.correct_answer.trim() || null;
+  }
 
   return {
     content: values.content.trim(),
-    correct_answer: values.correct_answer.trim() || null,
+    correct_answer: correctAnswer,
     difficulty: values.difficulty,
     explanation: values.explanation.trim(),
     is_approved: values.is_approved,
@@ -98,6 +168,7 @@ export function AIQuestionDraftCard({
   const [values, setValues] = useState<DraftFormState>(() =>
     draftToFormState(draft),
   );
+  const [validationError, setValidationError] = useState<string | null>(null);
   const patchMutation = useMutation({
     mutationFn: async () =>
       updateAIQuestionDraft(draft.id, buildDraftPayload(values)),
@@ -108,15 +179,41 @@ export function AIQuestionDraftCard({
     ? getApiErrorMessage(patchMutation.error, "Không thể lưu câu hỏi nháp")
     : null;
 
-  useEffect(() => {
-    setValues(draftToFormState(draft));
-  }, [draft]);
-
   function updateValues(patch: Partial<DraftFormState>) {
+    setValidationError(null);
     setValues((current) => ({
       ...current,
       ...patch,
     }));
+  }
+
+  function handleQuestionTypeChange(questionType: AIExamQuestionType) {
+    if (questionType === "true_false") {
+      updateValues({
+        correct_answer: normalizeTrueFalseAnswer(values.correct_answer),
+        options: "",
+        question_type: questionType,
+      });
+      return;
+    }
+
+    if (questionType === "short_answer" || questionType === "essay") {
+      updateValues({ options: "", question_type: questionType });
+      return;
+    }
+
+    updateValues({ question_type: questionType });
+  }
+
+  function handleSave() {
+    const message = getDraftValidationMessage(values);
+
+    if (message) {
+      setValidationError(message);
+      return;
+    }
+
+    void patchMutation.mutateAsync();
   }
 
   return (
@@ -175,7 +272,7 @@ export function AIQuestionDraftCard({
                 value={values.question_type}
                 disabled={disabled}
                 onValueChange={(value) =>
-                  updateValues({ question_type: value as AIExamQuestionType })
+                  handleQuestionTypeChange(value as AIExamQuestionType)
                 }
               >
                 <SelectTrigger>
@@ -246,18 +343,68 @@ export function AIQuestionDraftCard({
         ) : null}
 
         <div className="grid gap-4 xl:grid-cols-2">
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-on-surface">
-              Đáp án đúng
-            </span>
-            <Input
-              value={values.correct_answer}
-              disabled={disabled}
-              onChange={(event) =>
-                updateValues({ correct_answer: event.target.value })
-              }
-            />
-          </label>
+          {values.question_type === "true_false" ? (
+            <label className="space-y-2">
+              <span className="text-sm font-medium text-on-surface">
+                Đáp án đúng
+              </span>
+              <Select
+                value={values.correct_answer}
+                disabled={disabled}
+                onValueChange={(value) =>
+                  updateValues({ correct_answer: value as TrueFalseAnswer })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Đúng</SelectItem>
+                  <SelectItem value="false">Sai</SelectItem>
+                </SelectContent>
+              </Select>
+            </label>
+          ) : values.question_type === "multiple_choice" ? (
+            <label className="space-y-2">
+              <span className="text-sm font-medium text-on-surface">
+                Đáp án đúng
+              </span>
+              <Select
+                value={values.correct_answer}
+                disabled={disabled || splitDraftOptions(values.options).length === 0}
+                onValueChange={(value) => updateValues({ correct_answer: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn đáp án đúng" />
+                </SelectTrigger>
+                <SelectContent>
+                  {splitDraftOptions(values.options).map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
+          ) : values.question_type === "short_answer" ? (
+            <label className="space-y-2">
+              <span className="text-sm font-medium text-on-surface">
+                Đáp án chấp nhận, mỗi dòng một đáp án
+              </span>
+              <Textarea
+                value={values.correct_answer}
+                disabled={disabled}
+                className="min-h-24"
+                onChange={(event) =>
+                  updateValues({ correct_answer: event.target.value })
+                }
+              />
+            </label>
+          ) : (
+            <div className="rounded-lg border border-outline/10 bg-surface px-4 py-3 text-sm text-muted-foreground">
+              Câu tự luận sử dụng phần hướng dẫn chấm bên dưới làm đáp án tham khảo.
+            </div>
+          )}
 
           <label className="space-y-2">
             <span className="text-sm font-medium text-on-surface">Chủ đề</span>
@@ -270,7 +417,11 @@ export function AIQuestionDraftCard({
         </div>
 
         <label className="block space-y-2">
-          <span className="text-sm font-medium text-on-surface">Giải thích</span>
+          <span className="text-sm font-medium text-on-surface">
+            {values.question_type === "essay"
+              ? "Hướng dẫn chấm / đáp án tham khảo"
+              : "Giải thích"}
+          </span>
           <Textarea
             value={values.explanation}
             disabled={disabled}
@@ -280,8 +431,10 @@ export function AIQuestionDraftCard({
         </label>
 
         <div className="flex flex-col gap-3 border-t border-outline/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
-          {patchError ? (
-            <p className="text-sm text-destructive">{patchError}</p>
+          {validationError || patchError ? (
+            <p className="text-sm text-destructive">
+              {validationError ?? patchError}
+            </p>
           ) : (
             <p className="inline-flex items-center gap-2 text-sm text-muted-foreground">
               <CheckCircle2 className="size-4 text-primary" />
@@ -294,7 +447,7 @@ export function AIQuestionDraftCard({
             variant="outline"
             size="lg"
             disabled={disabled || patchMutation.isPending}
-            onClick={() => void patchMutation.mutateAsync()}
+            onClick={handleSave}
           >
             <Save className="size-4" />
             {patchMutation.isPending ? "Đang lưu..." : "Lưu câu"}

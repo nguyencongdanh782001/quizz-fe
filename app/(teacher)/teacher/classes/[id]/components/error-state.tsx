@@ -11,7 +11,7 @@ export function ErrorState({
   onRetry: () => void | Promise<void>;
 }) {
   return (
-    <div className="rounded-2xl border border-red-200/60 bg-red-50/80 p-5 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
+    <div className="rounded-[8px] border border-red-200/60 bg-red-50/80 p-5 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
       <div className="flex items-start gap-3">
         <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
         <div className="flex-1">

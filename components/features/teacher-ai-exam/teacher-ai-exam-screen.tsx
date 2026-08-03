@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   CircleAlert,
+  Coins,
   FolderOpen,
   History,
   LoaderCircle,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardContent,
@@ -34,12 +36,21 @@ import {
   ToastViewport,
 } from "@/components/ui/toast";
 import { aiExamQueryKeys } from "@/hooks/queries/ai-exam.query-keys";
+import { billingQueryKeys } from "@/hooks/queries/billing.query-keys";
 import { teacherExamQueryKeys } from "@/hooks/queries/exam.query-keys";
 import { getApiErrorMessage } from "@/lib/api/error-message";
 import type {
+  AIQCCostEstimateResponse,
   AIExamGenerationJobResponse,
+  AIExamQuestionType,
+  AIExamQuestionTypeDistribution,
   AIQuestionDraftResponse,
+  ApiError,
 } from "@/lib/api/types";
+import {
+  estimateAIQCCost,
+  getQCWallet,
+} from "@/services/billing.service";
 import {
   generateAIExam,
   generateMoreAIQuestions,
@@ -57,10 +68,13 @@ import type {
   SaveAIExamFormState,
 } from "./types";
 import {
+  AI_QUESTION_TYPE_OPTIONS,
   DEFAULT_GENERATE_FORM,
   DEFAULT_SAVE_FORM,
+  buildEvenQuestionTypeDistribution,
   buildGeneratePayload,
   getGenerationValidationMessage,
+  getQuestionTypeDistributionTotal,
   getStatusLabel,
   isJobFailed,
   isJobRunning,
@@ -230,12 +244,6 @@ function removeRecentAIExamDraft(jobId: number) {
   return nextDrafts;
 }
 
-/**
- * Format a draft's `createdAt` for the AI exam recent-drafts card.
- * Pulls wall-clock components from the API string directly — never
- * constructs a `Date` so we never shift by browser TZ. Returns
- * "Vừa tạo" when the string is missing or not in the expected shape.
- */
 function formatRecentAIExamDate(value: string) {
   const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(value.trim());
 
@@ -245,6 +253,74 @@ function formatRecentAIExamDate(value: string) {
 
   const [, , mm, dd, hh, mi] = match;
   return `${dd}/${mm} ${hh}:${mi}`;
+}
+
+function createIdempotencyKey(operation: "initial" | "generate-more") {
+  return `${operation}-${crypto.randomUUID()}`;
+}
+
+function getInsufficientQCMessage(error: unknown): string | null {
+  const apiError = error as ApiError;
+  if (apiError?.status !== 402) {
+    return null;
+  }
+
+  const balance = Number(apiError.details?.balance ?? 0);
+  const missingQC = Number(apiError.details?.missing_qc ?? 0);
+  return `Số dư ${balance.toLocaleString("vi-VN")} QC, còn thiếu ${missingQC.toLocaleString("vi-VN")} QC.`;
+}
+
+function QCCostSummary({
+  estimate,
+  isLoading,
+}: {
+  estimate?: AIQCCostEstimateResponse;
+  isLoading: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-outline/15 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center gap-3">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <Coins className="size-4" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-on-surface">Chi phí tạo câu hỏi</p>
+          {isLoading ? (
+            <p className="mt-0.5 text-xs text-muted-foreground">Đang tính QuizzCoin...</p>
+          ) : estimate ? (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {estimate.free_questions > 0
+                ? `${estimate.free_questions} câu miễn phí · `
+                : ""}
+              {estimate.qc_cost.toLocaleString("vi-VN")} QC cho {estimate.requested_questions} câu
+            </p>
+          ) : (
+            <p className="mt-0.5 text-xs text-muted-foreground">Chưa có thông tin chi phí.</p>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center gap-3 sm:justify-end">
+        {estimate ? (
+          <div className="text-left sm:text-right">
+            <p className="text-xs text-muted-foreground">Số dư</p>
+            <p
+              className={`font-semibold ${
+                estimate.sufficient_balance ? "text-on-surface" : "text-red-600"
+              }`}
+            >
+              {estimate.balance.toLocaleString("vi-VN")} QC
+            </p>
+          </div>
+        ) : null}
+        <Button asChild type="button" variant="outline" size="sm">
+          <Link href="/teacher/billing" target="_blank" rel="noreferrer">
+            <Coins className="size-4" />
+            Nạp QC
+          </Link>
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 export function TeacherAIExamScreen({
@@ -273,11 +349,51 @@ export function TeacherAIExamScreen({
     useState<SaveAIExamFormState>(DEFAULT_SAVE_FORM);
   const [generateMoreCount, setGenerateMoreCount] = useState(5);
   const [generateMoreInstructions, setGenerateMoreInstructions] = useState("");
+  const [generateMoreQuestionTypes, setGenerateMoreQuestionTypes] = useState<
+    AIExamQuestionType[]
+  >([]);
+  const [
+    generateMoreQuestionTypeDistribution,
+    setGenerateMoreQuestionTypeDistribution,
+  ] = useState<AIExamQuestionTypeDistribution>({});
+  const [generateMoreValuesJobId, setGenerateMoreValuesJobId] = useState<
+    number | null
+  >(null);
   const [recentDrafts, setRecentDrafts] = useState<RecentAIExamDraft[]>([]);
   const [saveValuesJobId, setSaveValuesJobId] = useState<number | null>(null);
   const [selectedDraftId, setSelectedDraftId] = useState<number | null>(null);
   const [toast, setToast] = useState<AIExamToastState | null>(null);
   const jobId = jobSeed?.id ?? activeJobId;
+
+  const walletQuery = useQuery({
+    queryKey: billingQueryKeys.wallet(),
+    queryFn: getQCWallet,
+    refetchOnWindowFocus: true,
+  });
+
+  const initialCostQuery = useQuery({
+    queryKey: billingQueryKeys.estimate(formValues.question_count, "initial"),
+    queryFn: () =>
+      estimateAIQCCost({
+        operation: "initial",
+        question_count: formValues.question_count,
+      }),
+    enabled: jobId === null && formValues.question_count > 0,
+    refetchOnWindowFocus: true,
+    staleTime: 15_000,
+  });
+
+  const moreCostQuery = useQuery({
+    queryKey: billingQueryKeys.estimate(generateMoreCount, "generate_more"),
+    queryFn: () =>
+      estimateAIQCCost({
+        operation: "generate_more",
+        question_count: generateMoreCount,
+      }),
+    enabled: jobId !== null && generateMoreCount > 0,
+    refetchOnWindowFocus: true,
+    staleTime: 15_000,
+  });
 
   const jobQuery = useQuery({
     queryKey: jobId === null ? aiExamQueryKeys.job("missing") : aiExamQueryKeys.job(jobId),
@@ -314,6 +430,17 @@ export function TeacherAIExamScreen({
     sortedDrafts[0] ??
     null;
   const approvedCount = drafts.filter((draft) => draft.is_approved).length;
+  const generateMoreTypeTotal = getQuestionTypeDistributionTotal(
+    generateMoreQuestionTypeDistribution,
+    generateMoreQuestionTypes,
+  );
+  const hasValidGenerateMoreDistribution =
+    generateMoreQuestionTypes.length > 0 &&
+    generateMoreTypeTotal === generateMoreCount &&
+    generateMoreQuestionTypes.every(
+      (questionType) =>
+        (generateMoreQuestionTypeDistribution[questionType] ?? 0) > 0,
+    );
   const jobBusy = Boolean(job && isJobRunning(job.status));
   const jobFailed = Boolean(job && isJobFailed(job.status));
   const canSave =
@@ -342,6 +469,33 @@ export function TeacherAIExamScreen({
 
     setRecentDrafts(getScopedRecentAIExamDrafts(nextDrafts, scope, classId));
   }, [classId, job, scope]);
+
+  useEffect(() => {
+    if (!job || generateMoreValuesJobId === job.id) {
+      return;
+    }
+
+    const defaultQuestionType =
+      job.question_types[0] ?? AI_QUESTION_TYPE_OPTIONS[0].value;
+    const nextQuestionTypes = [defaultQuestionType];
+
+    setGenerateMoreQuestionTypes(nextQuestionTypes);
+    setGenerateMoreQuestionTypeDistribution(
+      buildEvenQuestionTypeDistribution(
+        generateMoreCount,
+        nextQuestionTypes,
+      ),
+    );
+    setGenerateMoreValuesJobId(job.id);
+  }, [generateMoreCount, generateMoreValuesJobId, job]);
+
+  useEffect(() => {
+    if (!job || jobBusy || !["charged", "refunded"].includes(job.qc_status)) {
+      return;
+    }
+
+    void queryClient.invalidateQueries({ queryKey: billingQueryKeys.wallet() });
+  }, [job, jobBusy, queryClient]);
 
   useEffect(() => {
     if (!jobQuery.data || saveValuesJobId === jobQuery.data.id) {
@@ -377,7 +531,13 @@ export function TeacherAIExamScreen({
   }, [selectedDraftId, sortedDrafts]);
 
   const generateMutation = useMutation({
-    mutationFn: generateAIExam,
+    mutationFn: ({
+      idempotencyKey,
+      payload,
+    }: {
+      idempotencyKey: string;
+      payload: ReturnType<typeof buildGeneratePayload>;
+    }) => generateAIExam(payload, idempotencyKey),
     onSuccess: (nextJob) => {
       setActiveJobId(nextJob.id);
       setJobSeed(nextJob);
@@ -393,13 +553,23 @@ export function TeacherAIExamScreen({
         description: "AI đang xử lý, danh sách câu hỏi sẽ tự cập nhật.",
         variant: "success",
       });
+      void queryClient.invalidateQueries({
+        queryKey: billingQueryKeys.wallet(),
+      });
     },
     onError: (error) => {
+      const insufficientMessage = getInsufficientQCMessage(error);
+      if (insufficientMessage) {
+        setFormError(insufficientMessage);
+      }
       setToast({
         open: true,
-        title: "Không thể tạo đề bằng AI",
-        description: getApiErrorMessage(error),
-        variant: "error",
+        title: insufficientMessage ? "Không đủ QuizzCoin" : "Không thể tạo đề bằng AI",
+        description: insufficientMessage ?? getApiErrorMessage(error),
+        variant: insufficientMessage ? "warning" : "error",
+      });
+      void queryClient.invalidateQueries({
+        queryKey: billingQueryKeys.wallet(),
       });
     },
   });
@@ -410,11 +580,18 @@ export function TeacherAIExamScreen({
         throw new Error("Chưa có đề AI để tạo thêm câu hỏi.");
       }
 
+      if (!hasValidGenerateMoreDistribution) {
+        throw new Error(
+          "Vui lòng chọn loại câu hỏi và phân bổ đủ số câu cần tạo thêm.",
+        );
+      }
+
       return generateMoreAIQuestions(job.id, {
         additional_instructions: generateMoreInstructions.trim(),
         count: generateMoreCount,
-        question_types: job.question_types,
-      });
+        question_type_distribution: generateMoreQuestionTypeDistribution,
+        question_types: generateMoreQuestionTypes,
+      }, createIdempotencyKey("generate-more"));
     },
     onSuccess: (nextJob) => {
       setJobSeed(nextJob);
@@ -429,13 +606,20 @@ export function TeacherAIExamScreen({
       void queryClient.invalidateQueries({
         queryKey: aiExamQueryKeys.job(nextJob.id),
       });
+      void queryClient.invalidateQueries({
+        queryKey: billingQueryKeys.wallet(),
+      });
     },
     onError: (error) => {
+      const insufficientMessage = getInsufficientQCMessage(error);
       setToast({
         open: true,
-        title: "Không thể tạo thêm câu hỏi",
-        description: getApiErrorMessage(error),
-        variant: "error",
+        title: insufficientMessage ? "Không đủ QuizzCoin" : "Không thể tạo thêm câu hỏi",
+        description: insufficientMessage ?? getApiErrorMessage(error),
+        variant: insufficientMessage ? "warning" : "error",
+      });
+      void queryClient.invalidateQueries({
+        queryKey: billingQueryKeys.wallet(),
       });
     },
   });
@@ -547,7 +731,54 @@ export function TeacherAIExamScreen({
     }
 
     setFormError(null);
-    generateMutation.mutate(buildGeneratePayload(formValues));
+    if (initialCostQuery.data && !initialCostQuery.data.sufficient_balance) {
+      setFormError(
+        `Cần ${initialCostQuery.data.qc_cost.toLocaleString("vi-VN")} QC nhưng ví chỉ còn ${initialCostQuery.data.balance.toLocaleString("vi-VN")} QC.`,
+      );
+      return;
+    }
+
+    generateMutation.mutate({
+      idempotencyKey: createIdempotencyKey("initial"),
+      payload: buildGeneratePayload(formValues),
+    });
+  }
+
+  function updateGenerateMoreCount(nextValue: number) {
+    const nextCount = Math.min(50, Math.max(1, nextValue || 1));
+
+    setGenerateMoreCount(nextCount);
+    setGenerateMoreQuestionTypeDistribution(
+      buildEvenQuestionTypeDistribution(
+        nextCount,
+        generateMoreQuestionTypes,
+      ),
+    );
+  }
+
+  function toggleGenerateMoreQuestionType(questionType: AIExamQuestionType) {
+    const selected = generateMoreQuestionTypes.includes(questionType);
+    const nextQuestionTypes = selected
+      ? generateMoreQuestionTypes.filter((item) => item !== questionType)
+      : [...generateMoreQuestionTypes, questionType];
+
+    setGenerateMoreQuestionTypes(nextQuestionTypes);
+    setGenerateMoreQuestionTypeDistribution(
+      buildEvenQuestionTypeDistribution(
+        generateMoreCount,
+        nextQuestionTypes,
+      ),
+    );
+  }
+
+  function updateGenerateMoreQuestionTypeCount(
+    questionType: AIExamQuestionType,
+    nextValue: number,
+  ) {
+    setGenerateMoreQuestionTypeDistribution((current) => ({
+      ...current,
+      [questionType]: Math.min(50, Math.max(1, nextValue || 1)),
+    }));
   }
 
   function handleDraftUpdated(draft: AIQuestionDraftResponse) {
@@ -570,16 +801,25 @@ export function TeacherAIExamScreen({
           {scope === "class" ? "Quay lại lớp học" : "Quay lại danh sách đề thi"}
         </Link>
 
-        <div className="max-w-3xl">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="font-display text-2xl font-semibold text-on-surface">
+            <h1 className="text-lg font-bold text-[#1E293B]">
               Tạo đề thi bằng AI
             </h1>
-            <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-1 text-xs leading-5 text-[#64748B]">
               Sinh câu hỏi nháp bằng AI, rà soát từng câu rồi lưu thành đề thi
               trong hệ thống hiện tại.
             </p>
           </div>
+          <Link
+            href="/teacher/billing"
+            className="inline-flex w-fit items-center gap-2 rounded-md border border-outline/15 bg-white px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:border-primary/30 hover:text-primary"
+          >
+            <Coins className="size-4 text-primary" />
+            {walletQuery.isLoading
+              ? "Đang tải ví"
+              : `${(walletQuery.data?.balance ?? 0).toLocaleString("vi-VN")} QC`}
+          </Link>
         </div>
 
         <div
@@ -591,6 +831,10 @@ export function TeacherAIExamScreen({
         >
           {!job ? (
             <div className="space-y-6">
+              <QCCostSummary
+                estimate={initialCostQuery.data}
+                isLoading={initialCostQuery.isLoading}
+              />
               <AIGenerateForm
                 values={formValues}
                 onValuesChange={setFormValues}
@@ -610,7 +854,7 @@ export function TeacherAIExamScreen({
           >
             <Card
               size="sm"
-              className="min-h-[410px] rounded-2xl border border-outline/10 bg-surface-container-lowest shadow-[0_14px_34px_-30px_rgba(7,30,39,0.24)]"
+              className="min-h-[410px] rounded-[10px] border border-[#DDE2EB] bg-surface-container-lowest shadow-[0_1px_3px_rgba(30,41,59,0.08)]"
             >
               <CardHeader>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -759,6 +1003,24 @@ export function TeacherAIExamScreen({
                     ) : null}
 
                     <div className="grid gap-3 rounded-xl border border-outline/10 bg-surface p-3">
+                      <div className="flex flex-col gap-2 border-b border-outline/10 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-2 text-sm text-on-surface">
+                          <Coins className="size-4 text-primary" />
+                          {moreCostQuery.isLoading
+                            ? "Đang tính chi phí tạo thêm..."
+                            : moreCostQuery.data
+                              ? `${moreCostQuery.data.free_questions} câu miễn phí · ${moreCostQuery.data.qc_cost.toLocaleString("vi-VN")} QC`
+                              : "Chưa có thông tin chi phí"}
+                        </div>
+                        <Link
+                          href="/teacher/billing"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-sm font-semibold text-primary hover:underline"
+                        >
+                          Số dư {(moreCostQuery.data?.balance ?? walletQuery.data?.balance ?? 0).toLocaleString("vi-VN")} QC
+                        </Link>
+                      </div>
                       <div className="grid gap-3 lg:grid-cols-[132px_minmax(0,1fr)_auto] lg:items-end">
                         <label className="space-y-2">
                           <span className="text-sm font-medium text-on-surface">
@@ -770,8 +1032,8 @@ export function TeacherAIExamScreen({
                             max={50}
                             value={generateMoreCount}
                             onChange={(event) =>
-                              setGenerateMoreCount(
-                                Math.max(1, Number(event.target.value) || 1),
+                              updateGenerateMoreCount(
+                                Number(event.target.value),
                               )
                             }
                           />
@@ -793,12 +1055,93 @@ export function TeacherAIExamScreen({
                           type="button"
                           variant="outline"
                           className="h-10 px-4"
-                          disabled={jobBusy || generateMoreMutation.isPending}
+                          disabled={
+                            jobBusy ||
+                            generateMoreMutation.isPending ||
+                            !hasValidGenerateMoreDistribution
+                          }
                           onClick={() => generateMoreMutation.mutate()}
                         >
                           <Plus className="size-4" />
                           Tạo thêm
                         </Button>
+                      </div>
+
+                      <div className="space-y-3 border-t border-outline/10 pt-3">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <p className="text-sm font-medium text-on-surface">
+                            Loại câu tạo thêm
+                          </p>
+                          <span
+                            className={
+                              hasValidGenerateMoreDistribution
+                                ? "text-xs font-medium text-muted-foreground"
+                                : "text-xs font-medium text-amber-700"
+                            }
+                          >
+                            {generateMoreTypeTotal}/{generateMoreCount} câu
+                          </span>
+                        </div>
+
+                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                          {AI_QUESTION_TYPE_OPTIONS.map((option) => (
+                            <label
+                              key={option.value}
+                              className="flex items-center gap-2 rounded-md border border-outline/10 bg-surface-container-lowest px-3 py-2 text-sm font-medium text-on-surface"
+                            >
+                              <Checkbox
+                                checked={generateMoreQuestionTypes.includes(
+                                  option.value,
+                                )}
+                                onCheckedChange={() =>
+                                  toggleGenerateMoreQuestionType(option.value)
+                                }
+                              />
+                              {option.label}
+                            </label>
+                          ))}
+                        </div>
+
+                        {generateMoreQuestionTypes.length > 1 ? (
+                          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                            {generateMoreQuestionTypes.map((questionType) => {
+                              const option = AI_QUESTION_TYPE_OPTIONS.find(
+                                (item) => item.value === questionType,
+                              );
+
+                              return (
+                                <label key={questionType} className="space-y-1.5">
+                                  <span className="text-xs font-medium text-muted-foreground">
+                                    {option?.label ?? questionType}
+                                  </span>
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    max={50}
+                                    value={
+                                      generateMoreQuestionTypeDistribution[
+                                        questionType
+                                      ] ?? 0
+                                    }
+                                    onChange={(event) =>
+                                      updateGenerateMoreQuestionTypeCount(
+                                        questionType,
+                                        Number(event.target.value),
+                                      )
+                                    }
+                                  />
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+
+                        {!hasValidGenerateMoreDistribution ? (
+                          <p className="text-xs font-medium text-amber-700">
+                            Chọn loại câu hỏi và phân bổ đủ {generateMoreCount} câu
+                            trước khi tạo thêm.
+                          </p>
+                        ) : null}
                       </div>
 
                       <div className="flex flex-col gap-2 border-t border-outline/10 pt-3 sm:flex-row sm:items-center sm:justify-between">
@@ -841,7 +1184,7 @@ export function TeacherAIExamScreen({
             <div className="grid max-w-7xl gap-5 xl:grid-cols-[minmax(0,760px)_minmax(280px,360px)] xl:items-start xl:justify-start">
               {selectedDraft ? (
                 <AIQuestionDraftCard
-                  key={selectedDraft.id}
+                  key={`${selectedDraft.id}-${selectedDraft.updated_at ?? "initial"}`}
                   draft={selectedDraft}
                   disabled={jobBusy}
                   onUpdated={handleDraftUpdated}
@@ -850,7 +1193,7 @@ export function TeacherAIExamScreen({
 
               <Card
                 size="sm"
-                className="rounded-2xl border border-outline/10 bg-surface-container-lowest shadow-[0_14px_34px_-30px_rgba(7,30,39,0.24)] xl:sticky xl:top-4"
+                className="rounded-[10px] border border-[#DDE2EB] bg-surface-container-lowest shadow-[0_1px_3px_rgba(30,41,59,0.08)] xl:sticky xl:top-4"
               >
                 <CardHeader>
                   <div className="flex items-start justify-between gap-3">
