@@ -34,6 +34,7 @@ export function useStudentClassExams(
 ) {
   const limit = params.limit ?? 50;
   const initialOffset = params.offset ?? 0;
+  const { limit: _limit, offset: _offset, ...staticParams } = params;
 
   return useInfiniteQuery<
     StudentSystemExamListResult,
@@ -49,6 +50,7 @@ export function useStudentClassExams(
     }),
     queryFn: ({ pageParam }) =>
       getStudentClassExams(String(classId), {
+        ...staticParams,
         limit,
         offset: pageParam,
         throwOnError: options.throwOnError,

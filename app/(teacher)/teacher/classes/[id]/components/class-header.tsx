@@ -8,9 +8,13 @@ import type { ClassInfo } from "@/types/class.types";
 export function ClassHeader({
   cls,
   actions,
+  testCount,
+  examCount,
 }: {
   cls: ClassInfo;
   actions?: React.ReactNode;
+  testCount?: number;
+  examCount?: number;
 }) {
   const router = useRouter();
   const code = cls.joinCode || cls.inviteCode || "--";
@@ -66,7 +70,7 @@ export function ClassHeader({
 
         <div className="rounded-[8px] bg-[#DCFCE7] p-4 text-center">
           <div className="text-2xl font-bold text-[#16A34A]">
-            {cls.examCount ?? 0}
+            {testCount ?? cls.examCount ?? 0}
           </div>
           <div className="mt-1 text-xs font-medium text-[#64748B]">
             Bài kiểm tra
@@ -75,7 +79,7 @@ export function ClassHeader({
 
         <div className="rounded-[8px] bg-[#F3E8FF] p-4 text-center">
           <div className="text-2xl font-bold text-[#9333EA]">
-            {cls.documentCount ?? 0}
+            {examCount ?? 0}
           </div>
           <div className="mt-1 text-xs font-medium text-[#64748B]">
             Đề thi ôn tập

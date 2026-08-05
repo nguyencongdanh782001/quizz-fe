@@ -156,6 +156,7 @@ const studentSections: NavSection[] = [
         href: "/student/library",
         label: "Thư viện của tôi",
         icon: Library,
+        isActive: (pathname: string) => pathname.startsWith("/student/library"),
       },
       {
         href: "/student/recent",
@@ -179,18 +180,13 @@ const studentSections: NavSection[] = [
         label: "Lớp học",
         icon: GraduationCap,
       },
-      {
-        href: "/student/exams",
-        label: "Đề thi",
-        icon: Files,
-        isActive: (pathname) =>
-          pathname === "/student/exams" ||
-          pathname.startsWith("/student/exam/"),
-      },
+
       {
         href: "/student/materials",
-        label: "Thư viện tài liệu",
+        label: "Khám phá đề thi",
         icon: FolderOpen,
+        isActive: (pathname: string) =>
+          pathname.startsWith("/student/materials"),
       },
       {
         href: "/student/profile",
@@ -232,7 +228,7 @@ export function AppShell({ role, children }: AppShellProps) {
 
   const userName = user?.full_name?.trim() || "Người dùng";
   const searchDestination =
-    role === "teacher" ? "/teacher/exams" : "/student/exams";
+    role === "teacher" ? "/teacher/exams" : "/student/materials";
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -249,9 +245,7 @@ export function AppShell({ role, children }: AppShellProps) {
       <aside
         className={cn(
           "relative hidden shrink-0 border-r border-[#DDE2EB] bg-white transition-[width] duration-200 lg:block",
-          sidebarCollapsed
-            ? "w-[72px]"
-            : "w-[240px] xl:w-[256px]",
+          sidebarCollapsed ? "w-[72px]" : "w-[240px] xl:w-[256px]",
         )}
       >
         <div className="sticky top-0 h-screen">
@@ -483,7 +477,8 @@ function NotificationDropdown({ role }: { role: AppRole }) {
             {
               id: "1",
               title: "Học sinh nộp bài thi",
-              description: "Bùi Nhân vừa nộp bài thi 'Đề kiểm tra Giữa kỳ I - Toán 12'.",
+              description:
+                "Bùi Nhân vừa nộp bài thi 'Đề kiểm tra Giữa kỳ I - Toán 12'.",
               time: "10 phút trước",
               unread: true,
               type: "assignment" as const,
@@ -491,7 +486,8 @@ function NotificationDropdown({ role }: { role: AppRole }) {
             {
               id: "2",
               title: "Cập nhật hệ thống QuizzVN",
-              description: "Tính năng tạo đề bằng AI từ file PDF đã nâng cấp tốc độ xử lý.",
+              description:
+                "Tính năng tạo đề bằng AI từ file PDF đã nâng cấp tốc độ xử lý.",
               time: "1 giờ trước",
               unread: true,
               type: "system" as const,
@@ -499,7 +495,8 @@ function NotificationDropdown({ role }: { role: AppRole }) {
             {
               id: "3",
               title: "Học sinh tham gia lớp",
-              description: "5 học sinh mới vừa gia nhập lớp '12A1 - Chuyên Toán'.",
+              description:
+                "5 học sinh mới vừa gia nhập lớp '12A1 - Chuyên Toán'.",
               time: "Hôm qua",
               unread: false,
               type: "class" as const,
@@ -509,7 +506,8 @@ function NotificationDropdown({ role }: { role: AppRole }) {
             {
               id: "1",
               title: "Đề thi mới được giao",
-              description: "Thầy Giáo vừa giao đề thi mới 'Kiểm tra 1 tiết Lý 12'.",
+              description:
+                "Thầy Giáo vừa giao đề thi mới 'Kiểm tra 1 tiết Lý 12'.",
               time: "15 phút trước",
               unread: true,
               type: "assignment" as const,
@@ -517,7 +515,8 @@ function NotificationDropdown({ role }: { role: AppRole }) {
             {
               id: "2",
               title: "Kết quả thi mới",
-              description: "Bạn vừa đạt 9.5/10 điểm bài thi 'Ôn tập Tiếng Anh'.",
+              description:
+                "Bạn vừa đạt 9.5/10 điểm bài thi 'Ôn tập Tiếng Anh'.",
               time: "2 giờ trước",
               unread: true,
               type: "result" as const,
@@ -525,7 +524,8 @@ function NotificationDropdown({ role }: { role: AppRole }) {
             {
               id: "3",
               title: "Thông báo lớp học",
-              description: "Lịch thi lại môn Hóa học sẽ bắt đầu lúc 8h00 ngày mai.",
+              description:
+                "Lịch thi lại môn Hóa học sẽ bắt đầu lúc 8h00 ngày mai.",
               time: "Hôm qua",
               unread: false,
               type: "class" as const,
@@ -551,8 +551,7 @@ function NotificationDropdown({ role }: { role: AppRole }) {
   );
 
   const filteredNotifications = useMemo(
-    () =>
-      notifications.filter((n) => (filter === "unread" ? n.unread : true)),
+    () => notifications.filter((n) => (filter === "unread" ? n.unread : true)),
     [filter, notifications],
   );
 

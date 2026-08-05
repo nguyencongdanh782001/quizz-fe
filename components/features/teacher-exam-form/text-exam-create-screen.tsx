@@ -33,6 +33,7 @@ interface ParsedQuestion {
   prompt: string;
   typeText: string;
   options: ParsedOption[];
+  acceptedAnswers: string[];
 }
 
 const TAB_1_SAMPLE = `When we went back to the bookstore, the bookseller _ the book we wanted.
@@ -59,9 +60,9 @@ I knew they were talking about me _________ they stopped when I entered the room
 C. despite
 D. therefore`;
 
-const TAB_3_SAMPLE = `[FILL]Background, in relation to computers, on the screen, the color on which characters are displayed. [For example], a white background may be used for black characters.
+const TAB_3_SAMPLE = `[FILL] Bộ nhớ tạm của máy tính được gọi là [RAM].
 
-[FILL] [Generally], only multitasking operating systems are able to support background processing.`;
+[FILL] Thủ đô của Việt Nam là [Hà Nội | Ha Noi].`;
 
 const TAB_4_SAMPLE = `[READ-5] Read the following passage and mark the letter A, B, C, or D on your answer sheet to indicate the correct answer to each of the questions.<br/>We get great pleasure from reading. The more advanced a man is, the greater delight he will find in reading. The ordinary man may think that subjects like philosophy or science are very difficult and that if philosophers and scientists read these subjects, it is not for pleasure. But this is not true. The mathematician finds the same pleasure in his mathematics as the school boy in an adventure story. For both, it is a play of the imagination, a mental recreation and exercise.<br/>The pleasure derived from this activity is common to all kinds of reading. But different types of books give us different types of pleasure. First in order of popularity is novel-reading. Novels contain pictures of`;
 
@@ -74,6 +75,7 @@ const GRADE_OPTIONS = [
   "Tiểu học",
   "Trung tâm đào tạo",
   "Doanh nghiệp",
+  "Khác",
 ];
 
 const SCHOOL_OPTIONS = [
@@ -106,6 +108,31 @@ const TOPIC_OPTIONS = [
   "Khác",
 ];
 
+function parseFillQuestionPrompt(rawPrompt: string): {
+  prompt: string;
+  acceptedAnswers: string[];
+} {
+  const promptWithoutMarker = rawPrompt.replace(/^\s*\[FILL\]\s*/i, "").trim();
+
+  const acceptedAnswers: string[] = [];
+  const prompt = promptWithoutMarker
+    .replace(/\[([^\[\]]+)\]/g, (_match, answerGroup: string) => {
+      const answers = answerGroup
+        .split("|")
+        .map((answer) => answer.trim())
+        .filter(Boolean);
+
+      acceptedAnswers.push(...answers);
+      return "_____";
+    })
+    .trim();
+
+  return {
+    prompt,
+    acceptedAnswers: Array.from(new Set(acceptedAnswers)),
+  };
+}
+
 function parseTextExamContent(rawText: string): {
   sections: string[];
   questions: ParsedQuestion[];
@@ -124,23 +151,29 @@ function parseTextExamContent(rawText: string): {
   let questionCounter = 0;
 
   function finalizeQuestion() {
-    const promptText = currentPromptLines
+    const rawPromptText = currentPromptLines
       .join("\n")
       .replace(/<br\s*\/?>/gi, "\n")
       .trim();
-    if (promptText) {
-      questionCounter++;
-      let typeText = "Một đáp án";
 
-      if (promptText.startsWith("[FILL]")) {
+    if (rawPromptText) {
+      questionCounter++;
+
+      let prompt = rawPromptText;
+      let typeText = "Một đáp án";
+      let acceptedAnswers: string[] = [];
+
+      if (/^\s*\[FILL\]/i.test(rawPromptText)) {
         typeText = "Điền từ";
-      } else if (
-        promptText.startsWith("[READ-") ||
-        promptText.match(/^\[READ-\d+\]/i)
-      ) {
+
+        const parsedFillQuestion = parseFillQuestionPrompt(rawPromptText);
+        prompt = parsedFillQuestion.prompt;
+        acceptedAnswers = parsedFillQuestion.acceptedAnswers;
+      } else if (/^\s*\[READ-\d+\]/i.test(rawPromptText)) {
         typeText = "Đọc hiểu";
       } else {
         const correctCount = currentOptions.filter((o) => o.isCorrect).length;
+
         if (correctCount > 1) {
           typeText = "Nhiều đáp án";
         } else if (correctCount === 0 && currentOptions.length > 0) {
@@ -151,11 +184,13 @@ function parseTextExamContent(rawText: string): {
       questions.push({
         id: questionCounter,
         sectionTitle: currentSection || undefined,
-        prompt: promptText,
+        prompt,
         typeText,
         options: [...currentOptions],
+        acceptedAnswers,
       });
     }
+
     currentPromptLines = [];
     currentOptions = [];
   }
@@ -466,6 +501,21 @@ export function TextExamCreateScreen() {
       return;
     }
 
+    const invalidFillQuestion = questions.find(
+      (question) =>
+        question.typeText === "Điền từ" &&
+        question.acceptedAnswers.length === 0,
+    );
+
+    if (invalidFillQuestion) {
+      showMessage(
+        "error",
+        `Câu ${invalidFillQuestion.id} chưa có đáp án trong dấu [ ].`,
+      );
+      setSelectedQuestionIndex(invalidFillQuestion.id - 1);
+      return;
+    }
+
     setIsSubmitting(true);
     setNotification(null);
     try {
@@ -491,6 +541,8 @@ export function TextExamCreateScreen() {
         is_active: scope !== "unlisted",
         total_points: DEFAULT_TEACHER_EXAM_TOTAL_POINTS,
         point_mode: DEFAULT_TEACHER_EXAM_POINT_MODE,
+        assignment_type: "exam",
+        max_attempts: null,
         questions: questions.map((q, idx) => {
           const isFillInBlank = q.typeText === "Điền từ";
           const isMultipleChoice = q.typeText === "Nhiều đáp án";
@@ -500,27 +552,7 @@ export function TextExamCreateScreen() {
               ? "fill_in_blank"
               : "single_choice";
 
-          const acceptedAnswers: string[] = [];
-          if (isFillInBlank) {
-            const rawMatches = Array.from(q.prompt.matchAll(/\[(.*?)\]/g));
-            for (const match of rawMatches) {
-              const textInside = match[1]?.trim() || "";
-              if (!textInside) continue;
-              const upperText = textInside.toUpperCase();
-              if (
-                upperText === "FILL" ||
-                upperText === "READ" ||
-                upperText.startsWith("READ-")
-              ) {
-                continue;
-              }
-              const parts = textInside
-                .split("|")
-                .map((p) => p.trim())
-                .filter(Boolean);
-              acceptedAnswers.push(...parts);
-            }
-          }
+          const acceptedAnswers = isFillInBlank ? q.acceptedAnswers : [];
 
           return {
             prompt: q.prompt,
@@ -575,7 +607,8 @@ export function TextExamCreateScreen() {
         <div>
           <h1 className="text-lg font-bold text-[#1E293B]">Tạo đề thi nhanh</h1>
           <p className="text-xs text-[#64748B]">
-            Soạn thảo văn bản trực tiếp để tự động trích xuất câu hỏi và xem trước kết quả.
+            Soạn thảo văn bản trực tiếp để tự động trích xuất câu hỏi và xem
+            trước kết quả.
           </p>
         </div>
 
@@ -647,7 +680,11 @@ export function TextExamCreateScreen() {
               placeholder="Chọn trình độ"
               options={GRADE_OPTIONS}
               className="w-full sm:w-1/2"
-              errorMessage={showErrors && !grade.trim() ? "Trường này là bắt buộc." : undefined}
+              errorMessage={
+                showErrors && !grade.trim()
+                  ? "Trường này là bắt buộc."
+                  : undefined
+              }
             />
           ) : (
             <div className="space-y-4">
@@ -660,7 +697,11 @@ export function TextExamCreateScreen() {
                   onChange={(val) => setGrade(val)}
                   placeholder="Chọn trình độ"
                   options={GRADE_OPTIONS}
-                  errorMessage={showErrors && !grade.trim() ? "Trường này là bắt buộc." : undefined}
+                  errorMessage={
+                    showErrors && !grade.trim()
+                      ? "Trường này là bắt buộc."
+                      : undefined
+                  }
                 />
 
                 <TagCombobox
@@ -777,9 +818,18 @@ export function TextExamCreateScreen() {
                     </span>
                   </div>
 
-                  <p className="text-xs font-bold leading-relaxed text-[#1E293B]">
+                  <p className="whitespace-pre-wrap text-xs font-bold leading-relaxed text-[#1E293B]">
                     {activeQuestion.prompt}
                   </p>
+
+                  {activeQuestion.typeText === "Điền từ" && (
+                    <div className="rounded-[6px] border border-emerald-200 bg-emerald-50/60 px-3 py-2 text-[11px] text-emerald-800">
+                      <span className="font-bold">Đáp án chấp nhận: </span>
+                      {activeQuestion.acceptedAnswers.length > 0
+                        ? activeQuestion.acceptedAnswers.join(" hoặc ")
+                        : "Chưa khai báo đáp án"}
+                    </div>
+                  )}
 
                   {activeQuestion.options.length > 0 && (
                     <div className="grid grid-cols-1 gap-2.5 pt-1 sm:grid-cols-2">
@@ -843,22 +893,43 @@ export function TextExamCreateScreen() {
             <div className="flex-1 overflow-y-auto p-4 space-y-3 text-xs text-[#1E293B] [scrollbar-width:thin] [scrollbar-color:#CBD5E1_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-button]:hidden [&::-webkit-scrollbar-button]:size-0 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300/40 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400/60">
               {/* General Rules */}
               <div className="space-y-1 text-[11px] leading-relaxed text-[#334155]">
-                <h4 className="font-bold text-[#1E293B] text-xs mb-1">
-                  Quy tắc soạn câu hỏi
+                <h4 className="mb-1 text-xs font-bold text-[#1E293B]">
+                  Quy tắc chung
                 </h4>
+
                 <p>
-                  - Mỗi câu hỏi cách nhau{" "}
-                  <strong className="text-[#1E293B]">1 dòng</strong> hoặc{" "}
-                  <strong className="text-[#1E293B]">nhiều dòng</strong>
+                  - Mỗi câu hỏi phải được ngăn cách bằng ít nhất{" "}
+                  <strong className="text-[#1E293B]">1 dòng trống</strong>.
                 </p>
-                <p>- Đáp án đúng là đáp án có dấu * đằng trước</p>
+
                 <p>
-                  - Nếu muốn xuống dòng trong câu hỏi hoặc đáp án thì bạn cần bổ
-                  sung thêm ký tự &lt;br /&gt; tại điểm muốn xuống dòng
+                  - Muốn xuống dòng bên trong câu hỏi hoặc đáp án, dùng{" "}
+                  <code className="rounded bg-[#EEF2FF] px-1 py-0.5 font-mono text-[#4F46E5]">
+                    &lt;br /&gt;
+                  </code>
+                  .
                 </p>
+
                 <p>
-                  - Nếu câu hỏi sai cấu trúc trên, hệ thống sẽ báo lỗi và câu
-                  hỏi không được hiển thị
+                  - Có thể tạo tiêu đề phần bằng cách bắt đầu một dòng với dấu{" "}
+                  <code className="rounded bg-[#EEF2FF] px-1 py-0.5 font-mono text-[#4F46E5]">
+                    &apos;
+                  </code>
+                  , ví dụ:{" "}
+                  <code className="rounded bg-[#EEF2FF] px-1 py-0.5 font-mono text-[#4F46E5]">
+                    &apos;Phần 1
+                  </code>
+                  .
+                </p>
+
+                <p>
+                  - Câu hỏi không đúng một trong các cấu trúc bên dưới sẽ không
+                  được trích xuất.
+                </p>
+
+                <p>
+                  - Chọn từng loại câu hỏi bên dưới để xem cú pháp riêng và ví
+                  dụ.
                 </p>
               </div>
 
@@ -920,37 +991,153 @@ export function TextExamCreateScreen() {
                 </div>
               </div>
 
-              {/* Sub-rules for Tab 3 & Tab 4 */}
-              {activeTab === "tab3" && (
-                <div className="space-y-0.5 text-[11px] text-[#334155] leading-relaxed rounded-[6px] bg-[#F8FAFC] p-2 border border-[#E2E8F0]">
-                  <p className="font-bold text-[#1E293B]">Quy tắc</p>
-                  <p>
-                    - Thêm <strong className="text-[#1E293B]">[FILL]</strong> ở
-                    trước câu hỏi để hệ thống nhận biết.
-                  </p>
-                  <p>
-                    - Ô trống cần điền từ thi viết cú pháp{" "}
-                    <strong className="text-[#1E293B]">[đáp án đúng 1]</strong>
-                  </p>
-                  <p>
-                    - Nếu ô trống có nhiều đáp án đúng thì viết cú pháp{" "}
-                    <strong className="text-[#1E293B]">
-                      [đáp án đúng 1 | đáp án đúng 2]
-                    </strong>
-                  </p>
-                </div>
-              )}
+              {/* Rules for the selected question type */}
+              <div className="space-y-1 rounded-[6px] border border-[#E2E8F0] bg-[#F8FAFC] p-2 text-[11px] leading-relaxed text-[#334155]">
+                {activeTab === "tab1" && (
+                  <>
+                    <p className="font-bold text-[#1E293B]">
+                      Quy tắc dạng 1 đáp án
+                    </p>
+                    <p>- Viết nội dung câu hỏi ở dòng đầu tiên.</p>
+                    <p>
+                      - Mỗi phương án nằm trên một dòng riêng và bắt đầu bằng{" "}
+                      <strong className="text-[#1E293B]">A., B., C., D.</strong>
+                    </p>
+                    <p>
+                      - Chỉ đặt dấu{" "}
+                      <strong className="text-[#1E293B]">*</strong> trước đúng{" "}
+                      <strong className="text-[#1E293B]">1 phương án</strong>.
+                    </p>
+                    <p>
+                      - Ví dụ đáp án đúng:{" "}
+                      <code className="rounded bg-[#EEF2FF] px-1 py-0.5 font-mono text-[#4F46E5]">
+                        *B. had sold
+                      </code>
+                    </p>
+                    <p>
+                      - Để bắt đầu câu tiếp theo, chừa ít nhất{" "}
+                      <strong className="text-[#1E293B]">1 dòng trống</strong>.
+                    </p>
+                  </>
+                )}
 
-              {activeTab === "tab4" && (
-                <div className="space-y-0.5 text-[11px] text-[#334155] leading-relaxed rounded-[6px] bg-[#F8FAFC] p-2 border border-[#E2E8F0]">
-                  <p className="font-bold text-[#1E293B]">Quy tắc</p>
-                  <p>
-                    - Thêm <strong className="text-[#1E293B]">[READ-n]</strong>{" "}
-                    đằng trước câu hỏi, ở đây “n” là số câu hỏi con. (n từ 1 đến
-                    9)
-                  </p>
-                </div>
-              )}
+                {activeTab === "tab2" && (
+                  <>
+                    <p className="font-bold text-[#1E293B]">
+                      Quy tắc dạng nhiều đáp án
+                    </p>
+                    <p>- Viết nội dung câu hỏi ở dòng đầu tiên.</p>
+                    <p>
+                      - Mỗi phương án nằm trên một dòng riêng và bắt đầu bằng{" "}
+                      <strong className="text-[#1E293B]">A., B., C., D.</strong>
+                    </p>
+                    <p>
+                      - Đặt dấu <strong className="text-[#1E293B]">*</strong>{" "}
+                      trước{" "}
+                      <strong className="text-[#1E293B]">
+                        tất cả phương án đúng
+                      </strong>
+                      .
+                    </p>
+                    <p>
+                      - Câu hỏi phải có ít nhất{" "}
+                      <strong className="text-[#1E293B]">
+                        2 phương án đúng
+                      </strong>{" "}
+                      để được nhận diện là dạng nhiều đáp án.
+                    </p>
+                    <p>
+                      - Ví dụ:{" "}
+                      <code className="rounded bg-[#EEF2FF] px-1 py-0.5 font-mono text-[#4F46E5]">
+                        *B. fluently
+                      </code>{" "}
+                      và{" "}
+                      <code className="rounded bg-[#EEF2FF] px-1 py-0.5 font-mono text-[#4F46E5]">
+                        *D. well
+                      </code>
+                    </p>
+                  </>
+                )}
+
+                {activeTab === "tab3" && (
+                  <>
+                    <p className="font-bold text-[#1E293B]">
+                      Quy tắc dạng điền từ
+                    </p>
+                    <p>
+                      - Đặt <strong className="text-[#1E293B]">[FILL]</strong> ở
+                      đầu câu để hệ thống nhận diện câu điền từ.
+                    </p>
+                    <p>
+                      - Đặt đáp án tại đúng vị trí cần để trống bằng cú pháp{" "}
+                      <strong className="text-[#1E293B]">[đáp án]</strong>.
+                    </p>
+                    <p>
+                      - Nếu chấp nhận nhiều cách trả lời, ngăn cách bằng dấu{" "}
+                      <strong className="text-[#1E293B]">|</strong>, ví dụ{" "}
+                      <strong className="text-[#1E293B]">
+                        [Hà Nội | Ha Noi]
+                      </strong>
+                      .
+                    </p>
+                    <p>
+                      - Không dùng dấu{" "}
+                      <strong className="text-[#1E293B]">*</strong> cho dạng
+                      điền từ.
+                    </p>
+                    <p>
+                      - Khi xem trước và làm bài,{" "}
+                      <strong className="text-[#1E293B]">[FILL]</strong> sẽ bị
+                      ẩn và nội dung trong dấu{" "}
+                      <strong className="text-[#1E293B]">[ ]</strong> sẽ được
+                      thay bằng ô trống.
+                    </p>
+                    <p>
+                      - Không dùng dấu{" "}
+                      <strong className="text-[#1E293B]">[ ]</strong> cho nội
+                      dung thông thường; hãy dùng dấu ngoặc tròn.
+                    </p>
+                  </>
+                )}
+
+                {activeTab === "tab4" && (
+                  <>
+                    <p className="font-bold text-[#1E293B]">
+                      Quy tắc dạng đọc hiểu
+                    </p>
+                    <p>
+                      - Đặt <strong className="text-[#1E293B]">[READ-n]</strong>{" "}
+                      ở đầu đoạn đọc;{" "}
+                      <strong className="text-[#1E293B]">n</strong> là số câu
+                      hỏi con, từ 1 đến 9.
+                    </p>
+                    <p>
+                      - Nội dung đoạn đọc được viết ngay sau{" "}
+                      <strong className="text-[#1E293B]">[READ-n]</strong>.
+                    </p>
+                    <p>
+                      - Muốn xuống dòng trong đoạn đọc, dùng{" "}
+                      <code className="rounded bg-[#EEF2FF] px-1 py-0.5 font-mono text-[#4F46E5]">
+                        &lt;br /&gt;
+                      </code>
+                      .
+                    </p>
+                    <p>
+                      - Sau đoạn đọc, nhập từng câu hỏi con theo cú pháp của{" "}
+                      <strong className="text-[#1E293B]">Dạng 1 đáp án</strong>.
+                    </p>
+                    <p>
+                      - Mỗi câu hỏi con phải có đúng 1 phương án được đánh dấu{" "}
+                      <strong className="text-[#1E293B]">*</strong>.
+                    </p>
+                    <p>
+                      - Chừa ít nhất{" "}
+                      <strong className="text-[#1E293B]">1 dòng trống</strong>{" "}
+                      giữa đoạn đọc và từng câu hỏi con.
+                    </p>
+                  </>
+                )}
+              </div>
 
               {/* Code Box with subtle thin scrollbar */}
               <div className="relative max-h-[160px] overflow-y-auto rounded-[6px] border border-[#CBD5E1] bg-white p-3 font-mono text-[11px] text-[#1E293B] leading-relaxed [scrollbar-width:thin] [scrollbar-color:#CBD5E1_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-button]:hidden [&::-webkit-scrollbar-button]:size-0 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300/40 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400/60">

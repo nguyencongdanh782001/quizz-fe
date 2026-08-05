@@ -3,25 +3,152 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNow } from "@/hooks/use-now";
 import {
+  BarChart3,
+  CheckCircle2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Clock,
+  Clock3,
+  Play,
   RefreshCw,
   Search,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { getStudentClasses } from "@/lib/student-classes";
 import { getStudentClassExams } from "@/lib/student-system-exams";
-import { getStudentResults } from "@/lib/student-system-results";
-import { useStudentSystemExams } from "@/hooks/queries/use-student-system-exams";
+import type { Exam } from "@/types/exam.types";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
 
-type StudentLibraryTab = "tests" | "exams";
+type LibraryTab = "tests" | "exams";
+type ClassExamAssignmentType = "test" | "exam";
+type EffectiveExamStatus = "upcoming" | "active" | "closed";
+type StatusFilter = "all" | EffectiveExamStatus;
+
+function getEffectiveExamStatus(
+  exam: {
+    isActive?: boolean;
+    startTime?: string | null;
+    endTime?: string | null;
+  },
+  now: Date,
+): EffectiveExamStatus {
+  const nowTime = now.getTime();
+
+  const startTime = exam.startTime
+    ? new Date(exam.startTime).getTime()
+    : Number.NaN;
+
+  const endTime = exam.endTime ? new Date(exam.endTime).getTime() : Number.NaN;
+
+  if (Number.isFinite(startTime) && nowTime < startTime) {
+    return "upcoming";
+  }
+
+  if (Number.isFinite(endTime) && nowTime >= endTime) {
+    return "closed";
+  }
+
+  if (!exam.isActive) {
+    return "closed";
+  }
+
+  return "active";
+}
+
+function getStatusLabel(status: EffectiveExamStatus): string {
+  if (status === "upcoming") {
+    return "Chưa mở";
+  }
+
+  if (status === "closed") {
+    return "Đã hết hạn";
+  }
+
+  return "Đang diễn ra";
+}
+
+function getStatusClassName(status: EffectiveExamStatus): string {
+  if (status === "upcoming") {
+    return "inline-flex items-center gap-1 whitespace-nowrap rounded-[4px] bg-amber-50 px-2 py-1 text-[10.5px] font-semibold text-amber-700";
+  }
+
+  if (status === "closed") {
+    return "inline-flex items-center gap-1 whitespace-nowrap rounded-[4px] bg-rose-50 px-2 py-1 text-[10.5px] font-semibold text-rose-700";
+  }
+
+  return "inline-flex items-center gap-1 whitespace-nowrap rounded-[4px] bg-emerald-50 px-2 py-1 text-[10.5px] font-semibold text-emerald-700";
+}
+
+function matchesStatusFilter(
+  exam: Exam,
+  statusFilter: StatusFilter,
+  now: Date,
+): boolean {
+  if (statusFilter === "all") {
+    return true;
+  }
+
+  return getEffectiveExamStatus(exam, now) === statusFilter;
+}
+
+function ExamStatusBadge({ exam, now }: { exam: Exam; now: Date }) {
+  const status = getEffectiveExamStatus(exam, now);
+
+  return (
+    <span className={getStatusClassName(status)}>
+      <CheckCircle2 className="size-3" />
+      {getStatusLabel(status)}
+    </span>
+  );
+}
+
+function StudentExamAction({ exam, now }: { exam: Exam; now: Date }) {
+  const status = getEffectiveExamStatus(exam, now);
+
+  if (status === "active") {
+    return (
+      <Link
+        href={`/student/exam/${exam.id}`}
+        className="inline-flex h-8 items-center gap-1.5 rounded-[4px] bg-[#3F63F3] px-3 text-[11px] font-semibold text-white transition-colors hover:bg-[#3554D8]"
+      >
+        <Play className="size-3.5" />
+        Làm bài
+      </Link>
+    );
+  }
+
+  if (status === "upcoming") {
+    return (
+      <span className="inline-flex h-8 cursor-not-allowed items-center rounded-[4px] bg-amber-50 px-3 text-[11px] font-semibold text-amber-700">
+        Chưa mở
+      </span>
+    );
+  }
+
+  if ((exam.attemptCount ?? 0) > 0) {
+    return (
+      <Link
+        href="/student/results"
+        className="inline-flex h-8 items-center gap-1.5 rounded-[4px] border border-[#DDE2EB] px-3 text-[11px] font-semibold text-[#4050DC] transition-colors hover:bg-[#EEF2FF]"
+      >
+        <BarChart3 className="size-3.5" />
+        Xem kết quả
+      </Link>
+    );
+  }
+
+  return (
+    <span className="inline-flex h-8 cursor-not-allowed items-center rounded-[4px] bg-[#EEF0F4] px-3 text-[11px] font-semibold text-[#98A2B3]">
+      Đã hết hạn
+    </span>
+  );
+}
 
 const dateTimeFormatter = new Intl.DateTimeFormat("vi-VN", {
   day: "2-digit",
@@ -31,12 +158,22 @@ const dateTimeFormatter = new Intl.DateTimeFormat("vi-VN", {
   minute: "2-digit",
 });
 
-function formatDateTime(value?: string | null) {
-  if (!value) return "Không giới hạn";
+function formatDateTime(value?: string | null): string {
+  if (!value) {
+    return "Không giới hạn";
+  }
+
   const date = new Date(value);
+
   return Number.isNaN(date.getTime())
     ? "Chưa cập nhật"
     : dateTimeFormatter.format(date);
+}
+
+function normalizeText(value?: string | null): string {
+  return String(value ?? "")
+    .trim()
+    .toLocaleLowerCase("vi");
 }
 
 function PaginationFooter({
@@ -56,20 +193,24 @@ function PaginationFooter({
 }) {
   function commitJumpPage(value: string) {
     const requestedPage = Number.parseInt(value, 10);
-    if (Number.isFinite(requestedPage)) {
-      onPageChange(Math.min(Math.max(requestedPage, 1), totalPages));
+
+    if (!Number.isFinite(requestedPage)) {
+      return;
     }
+
+    onPageChange(Math.min(Math.max(requestedPage, 1), Math.max(totalPages, 1)));
   }
 
   return (
     <div className="grid items-center gap-3 border-t border-[#E3E7EE] px-4 py-3.5 text-xs text-[#1E293B] lg:grid-cols-[1fr_auto_1fr]">
       <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-start">
         <span>Số hàng hiển thị trên trang:</span>
+
         <label className="relative">
           <select
             value={pageSize}
             onChange={(event) => onPageSizeChange(Number(event.target.value))}
-            className="h-9 cursor-pointer appearance-none border-0 bg-transparent py-0 pl-2 pr-7 font-semibold text-[#3F63F3] outline-none"
+            className="h-9 appearance-none border-0 bg-transparent py-0 pl-2 pr-7 font-semibold text-[#3F63F3] outline-none"
             aria-label="Số hàng hiển thị trên trang"
           >
             {PAGE_SIZE_OPTIONS.map((option) => (
@@ -78,8 +219,10 @@ function PaginationFooter({
               </option>
             ))}
           </select>
+
           <ChevronDown className="pointer-events-none absolute right-1 top-1/2 size-4 -translate-y-1/2 text-[#3F63F3]" />
         </label>
+
         <span>của tổng số {total}</span>
       </div>
 
@@ -95,6 +238,7 @@ function PaginationFooter({
         >
           <ChevronsLeft className="size-4" />
         </Button>
+
         <Button
           type="button"
           variant="ghost"
@@ -106,9 +250,11 @@ function PaginationFooter({
         >
           <ChevronLeft className="size-4" />
         </Button>
+
         <span className="flex size-9 items-center justify-center rounded-full bg-[#3F63F3] font-bold text-white">
           {page}
         </span>
+
         <Button
           type="button"
           variant="ghost"
@@ -120,6 +266,7 @@ function PaginationFooter({
         >
           <ChevronRight className="size-4" />
         </Button>
+
         <Button
           type="button"
           variant="ghost"
@@ -135,11 +282,12 @@ function PaginationFooter({
 
       <label className="flex items-center justify-center gap-3 lg:justify-end">
         <span>Chuyển đến trang:</span>
+
         <input
           key={page}
           type="number"
           min={1}
-          max={totalPages}
+          max={Math.max(totalPages, 1)}
           defaultValue={page}
           onBlur={(event) => commitJumpPage(event.currentTarget.value)}
           onKeyDown={(event) => {
@@ -156,12 +304,13 @@ function PaginationFooter({
 }
 
 export default function StudentLibraryPage() {
-  const [activeTab, setActiveTab] = useState<StudentLibraryTab>("tests");
+  const [activeTab, setActiveTab] = useState<LibraryTab>("tests");
   const [search, setSearch] = useState("");
-  const [scopeFilter, setScopeFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [classFilter, setClassFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const now = useNow();
 
   const classesQuery = useQuery({
     queryKey: ["student", "library", "classes"],
@@ -169,138 +318,165 @@ export default function StudentLibraryPage() {
     staleTime: 60_000,
   });
 
-  const resultsQuery = useQuery({
-    queryKey: ["student", "library", "results"],
-    queryFn: getStudentResults,
-    staleTime: 60_000,
-  });
-
-  const systemExamsQuery = useStudentSystemExams({ limit: 50 });
-
   const classes = classesQuery.data ?? [];
-  const classIds = classes.map((item) => item.id);
 
-  const classExamsQuery = useQuery({
-    queryKey: ["student", "library", "class-exams", classIds],
-    queryFn: async () => {
-      const groups = await Promise.all(
-        classes.map(async (classroom) => ({
+  const classIds = useMemo(
+    () => classes.map((classroom) => classroom.id),
+    [classes],
+  );
+
+  async function fetchAssignmentsByType(
+    assignmentType: ClassExamAssignmentType,
+  ) {
+    const groups = await Promise.all(
+      classes.map(async (classroom) => {
+        const result = await getStudentClassExams(classroom.id, {
+          assignmentType,
+          limit: 100,
+          includeInactive: true,
+          throwOnError: true,
+        });
+
+        return {
           classroom,
-          result: await getStudentClassExams(classroom.id, { limit: 100 }),
-        })),
-      );
-      return groups.flatMap(({ classroom, result }) =>
-        result.items.map((exam) => ({ exam, classroom })),
-      );
-    },
-    enabled: classesQuery.isSuccess && classes.length > 0,
+          exams: result.items,
+        };
+      }),
+    );
+
+    return groups.flatMap(({ classroom, exams }) =>
+      exams.map((exam) => ({
+        exam,
+        classroom,
+      })),
+    );
+  }
+
+  const testsQuery = useQuery({
+    queryKey: ["student", "library", "assigned-tests", classIds],
+    queryFn: () => fetchAssignmentsByType("test"),
+    enabled:
+      activeTab === "tests" && classesQuery.isSuccess && classes.length > 0,
     staleTime: 60_000,
   });
 
-  const resultsMap = useMemo(() => {
-    const map = new Map<string, { score: number; scorePercent: number; isPassed: boolean; submittedAt: string }>();
-    for (const item of resultsQuery.data?.items ?? []) {
-      if (!map.has(item.examId)) {
-        map.set(item.examId, {
-          score: item.score,
-          scorePercent: item.scorePercent,
-          isPassed: item.isPassed,
-          submittedAt: item.submittedAt,
-        });
-      }
-    }
-    return map;
-  }, [resultsQuery.data?.items]);
+  const examsQuery = useQuery({
+    queryKey: ["student", "library", "assigned-exams", classIds],
+    queryFn: () => fetchAssignmentsByType("exam"),
+    enabled:
+      activeTab === "exams" && classesQuery.isSuccess && classes.length > 0,
+    staleTime: 60_000,
+  });
 
-  const keyword = search.trim().toLocaleLowerCase("vi");
+  const keyword = normalizeText(search);
 
-  const testsList = useMemo(() => {
-    return (classExamsQuery.data ?? []).filter(({ exam, classroom }) => {
-      if (
-        keyword &&
-        ![exam.title, exam.description, classroom.name].some((val) =>
-          val.toLocaleLowerCase("vi").includes(keyword),
-        )
-      ) {
-        return false;
-      }
-      if (scopeFilter !== "all" && classroom.id !== scopeFilter) {
-        return false;
-      }
-      const attempt = resultsMap.get(exam.id);
-      if (statusFilter === "completed" && !attempt) return false;
-      if (statusFilter === "uncompleted" && attempt) return false;
-      return true;
-    });
-  }, [classExamsQuery.data, keyword, resultsMap, scopeFilter, statusFilter]);
+  const tests = useMemo(
+    () =>
+      (testsQuery.data ?? []).filter(({ exam, classroom }) => {
+        if (
+          keyword &&
+          ![exam.title, exam.description, classroom.name].some((value) =>
+            normalizeText(value).includes(keyword),
+          )
+        ) {
+          return false;
+        }
 
-  const examsList = useMemo(() => {
-    const items = systemExamsQuery.data?.items ?? [];
-    return items.filter((exam) => {
-      if (
-        keyword &&
-        ![exam.title, exam.description, exam.classroomName ?? ""].some((val) =>
-          val.toLocaleLowerCase("vi").includes(keyword),
-        )
-      ) {
-        return false;
-      }
-      if (scopeFilter !== "all" && String(exam.grade) !== scopeFilter) {
-        return false;
-      }
-      return true;
-    });
-  }, [keyword, scopeFilter, systemExamsQuery.data?.items]);
+        if (classFilter !== "all" && String(classroom.id) !== classFilter) {
+          return false;
+        }
+
+        if (!matchesStatusFilter(exam, statusFilter, now)) {
+          return false;
+        }
+
+        return true;
+      }),
+    [classFilter, keyword, now, statusFilter, testsQuery.data],
+  );
+
+  const assignedExams = useMemo(
+    () =>
+      (examsQuery.data ?? []).filter(({ exam, classroom }) => {
+        if (
+          keyword &&
+          ![exam.title, exam.description, classroom.name].some((value) =>
+            normalizeText(value).includes(keyword),
+          )
+        ) {
+          return false;
+        }
+
+        if (classFilter !== "all" && String(classroom.id) !== classFilter) {
+          return false;
+        }
+
+        if (!matchesStatusFilter(exam, statusFilter, now)) {
+          return false;
+        }
+
+        return true;
+      }),
+    [classFilter, examsQuery.data, keyword, now, statusFilter],
+  );
 
   const isTestsTab = activeTab === "tests";
-  const currentListLength = isTestsTab ? testsList.length : examsList.length;
-  const totalPages = Math.max(1, Math.ceil(currentListLength / pageSize));
 
-  const visibleTests = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return testsList.slice(start, start + pageSize);
-  }, [page, pageSize, testsList]);
+  const activeItems = isTestsTab ? tests : assignedExams;
 
-  const visibleExams = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return examsList.slice(start, start + pageSize);
-  }, [examsList, page, pageSize]);
+  const activeTotal = activeItems.length;
+  const totalPages = Math.max(1, Math.ceil(activeTotal / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const sliceStart = (currentPage - 1) * pageSize;
 
-  const isLoading = isTestsTab
-    ? classesQuery.isLoading || classExamsQuery.isLoading
-    : systemExamsQuery.isLoading;
+  const visibleItems = activeItems.slice(sliceStart, sliceStart + pageSize);
 
-  const isFetching = isTestsTab
-    ? classExamsQuery.isFetching
-    : systemExamsQuery.isFetching;
+  const activeQuery = isTestsTab ? testsQuery : examsQuery;
 
-  function selectTab(tab: StudentLibraryTab) {
+  const isLoading =
+    classesQuery.isLoading || (classes.length > 0 && activeQuery.isLoading);
+
+  const isError = classesQuery.isError || activeQuery.isError;
+
+  const isFetching = classesQuery.isFetching || activeQuery.isFetching;
+
+  function selectTab(tab: LibraryTab) {
     setActiveTab(tab);
     setSearch("");
-    setScopeFilter("all");
+    setClassFilter("all");
     setStatusFilter("all");
     setPage(1);
   }
 
+  function changePage(nextPage: number) {
+    setPage(Math.min(Math.max(nextPage, 1), Math.max(totalPages, 1)));
+  }
+
+  function changePageSize(nextPageSize: number) {
+    setPageSize(nextPageSize);
+    setPage(1);
+  }
+
   function refreshActiveTab() {
+    void classesQuery.refetch();
+
     if (isTestsTab) {
-      void classExamsQuery.refetch();
+      void testsQuery.refetch();
     } else {
-      void systemExamsQuery.refetch();
+      void examsQuery.refetch();
     }
   }
 
   return (
     <div className="space-y-4">
-      {/* Top Tab Bar matching Teacher Giao đề style */}
       <nav
         className="relative flex items-center rounded-[2px] border border-[#DDE2EB] bg-white px-2 shadow-[0_1px_3px_rgba(30,41,59,0.04)]"
-        aria-label="Loại bài tập thư viện"
+        aria-label="Loại đề trong thư viện"
       >
         <button
           type="button"
           onClick={() => selectTab("tests")}
-          className={`relative px-4 py-4 text-sm font-semibold transition-colors ${
+          className={`relative px-4 pb-4 pt-4 text-sm font-semibold transition-colors ${
             isTestsTab
               ? "text-[#E11D48]"
               : "text-[#526079] hover:text-[#1E293B]"
@@ -311,10 +487,11 @@ export default function StudentLibraryPage() {
             <span className="absolute inset-x-0 bottom-0 h-[1.5px] bg-[#E11D48]" />
           ) : null}
         </button>
+
         <button
           type="button"
           onClick={() => selectTab("exams")}
-          className={`relative px-4 py-4 text-sm font-semibold transition-colors ${
+          className={`relative px-4 pb-4 pt-4 text-sm font-semibold transition-colors ${
             !isTestsTab
               ? "text-[#E11D48]"
               : "text-[#526079] hover:text-[#1E293B]"
@@ -327,36 +504,37 @@ export default function StudentLibraryPage() {
         </button>
       </nav>
 
-      {/* Header section with Title and Refresh Button */}
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <h1 className="text-lg font-bold text-[#1E293B]">
-            {isTestsTab ? "Danh sách bài tập kiểm tra" : "Danh sách đề thi hệ thống"}
+            {isTestsTab ? "Danh sách bài tập kiểm tra" : "Danh sách đề thi"}
           </h1>
+
           <p className="mt-1 text-xs text-[#64748B]">
             {isTestsTab
-              ? "Theo dõi các bài kiểm tra được giao theo từng lớp học và mở nhanh trang làm bài."
-              : "Khám phá các đề thi hệ thống để tự ôn luyện nâng cao kiến thức."}
+              ? "Các bài kiểm tra được giao trong những lớp bạn đã tham gia."
+              : "Các đề thi được giao trong những lớp bạn đã tham gia."}
           </p>
         </div>
+
         <Button
           type="button"
-          variant="outline"
-          size="sm"
+          className="h-9 rounded-[4px] bg-[#3F63F3] px-3.5 text-xs font-semibold text-white hover:bg-[#3554D8]"
           onClick={refreshActiveTab}
-          className="h-9 gap-2 text-xs font-semibold text-[#1E293B]"
+          disabled={isFetching}
         >
-          <RefreshCw className={isFetching ? "size-4 animate-spin" : "size-4"} />
+          <RefreshCw
+            className={isFetching ? "size-4 animate-spin" : "size-4"}
+          />
           Làm mới
         </Button>
       </div>
 
-      {/* Main Single Column Card Table matching Teacher Giao đề style */}
       <section className="overflow-hidden rounded-[10px] border border-[#DDE2EB] bg-white shadow-[0_1px_3px_rgba(30,41,59,0.08)]">
-        {/* Search and Filters Bar */}
         <div className="flex flex-col gap-2 border-b border-[#E3E7EE] p-3 md:flex-row md:items-center">
           <div className="relative w-full md:max-w-[320px]">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#94A3B8]" />
+
             <input
               value={search}
               onChange={(event) => {
@@ -369,222 +547,146 @@ export default function StudentLibraryPage() {
           </div>
 
           <select
-            value={scopeFilter}
+            value={classFilter}
             onChange={(event) => {
-              setScopeFilter(event.target.value);
+              setClassFilter(event.target.value);
               setPage(1);
             }}
             className="h-9 w-full rounded-[7px] border border-[#DDE2EB] bg-white px-3 text-xs outline-none focus:border-[#7889FA] md:w-[190px]"
           >
-            <option value="all">
-              {isTestsTab ? "Tất cả lớp học" : "Tất cả khối lớp"}
-            </option>
-            {isTestsTab
-              ? classes.map((classroom) => (
-                  <option key={classroom.id} value={classroom.id}>
-                    {classroom.name}
-                  </option>
-                ))
-              : [10, 11, 12].map((grade) => (
-                  <option key={grade} value={String(grade)}>
-                    Khối {grade}
-                  </option>
-                ))}
+            <option value="all">Tất cả lớp học</option>
+
+            {classes.map((classroom) => (
+              <option key={classroom.id} value={String(classroom.id)}>
+                {classroom.name}
+              </option>
+            ))}
           </select>
 
-          {isTestsTab ? (
-            <select
-              value={statusFilter}
-              onChange={(event) => {
-                setStatusFilter(event.target.value);
-                setPage(1);
-              }}
-              className="h-9 w-full rounded-[7px] border border-[#DDE2EB] bg-white px-3 text-xs outline-none focus:border-[#7889FA] md:w-[170px]"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="uncompleted">Chưa nộp</option>
-              <option value="completed">Đã nộp</option>
-            </select>
-          ) : null}
+          <select
+            value={statusFilter}
+            onChange={(event) => {
+              setStatusFilter(event.target.value as StatusFilter);
+              setPage(1);
+            }}
+            className="h-9 w-full rounded-[7px] border border-[#DDE2EB] bg-white px-3 text-xs outline-none focus:border-[#7889FA] md:w-[170px]"
+          >
+            <option value="all">Tất cả trạng thái</option>
+            <option value="upcoming">Chưa mở</option>
+            <option value="active">Đang diễn ra</option>
+            <option value="closed">Đã hết hạn</option>
+          </select>
         </div>
 
-        {/* Table Content */}
         <div className="overflow-x-auto">
-          {isTestsTab ? (
-            <table className="w-full min-w-[980px] text-left">
-              <thead className="bg-[#F8FAFC] text-xs font-semibold text-[#1E293B]">
+          <table className="w-full min-w-[980px] text-left">
+            <thead className="bg-[#F3F4F6] text-xs font-semibold text-[#111827]">
+              <tr>
+                <th className="px-3.5 py-3.5">
+                  {isTestsTab ? "Bài kiểm tra" : "Đề thi"}
+                </th>
+                <th className="px-3.5 py-3.5">Lớp học</th>
+                <th className="px-3.5 py-3.5">Câu hỏi</th>
+                <th className="px-3.5 py-3.5">Thời lượng</th>
+                <th className="px-3.5 py-3.5">Hạn nộp</th>
+                <th className="px-3.5 py-3.5">Lượt làm</th>
+                <th className="px-3.5 py-3.5">Trạng thái</th>
+                <th className="px-3.5 py-3.5 text-right">Hành động</th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-[#DDE2EB] text-xs text-[#111827]">
+              {isLoading ? (
                 <tr>
-                  <th className="px-3.5 py-3.5">Bài kiểm tra</th>
-                  <th className="px-3.5 py-3.5">Lớp học</th>
-                  <th className="px-3.5 py-3.5">Câu hỏi</th>
-                  <th className="px-3.5 py-3.5">Thời lượng</th>
-                  <th className="px-3.5 py-3.5">Hạn nộp</th>
-                  <th className="px-3.5 py-3.5">Trạng thái nộp</th>
-                  <th className="px-3.5 py-3.5">Trạng thái</th>
-                  <th className="px-3.5 py-3.5 text-right">Hành động</th>
+                  <td
+                    colSpan={8}
+                    className="px-4 py-8 text-center text-[#7C879B]"
+                  >
+                    Đang tải danh sách...
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E3E7EE] text-xs text-[#1E293B]">
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-[#7C879B]">
-                      Đang tải danh sách bài kiểm tra...
-                    </td>
-                  </tr>
-                ) : visibleTests.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-[#7C879B]">
-                      Không tìm thấy bài kiểm tra nào!
-                    </td>
-                  </tr>
-                ) : (
-                  visibleTests.map(({ exam, classroom }) => {
-                    const attempt = resultsMap.get(exam.id);
-                    return (
-                      <tr
-                        key={`${classroom.id}-${exam.id}`}
-                        className="transition-colors hover:bg-[#F8FAFC]"
-                      >
-                        <td className="max-w-72 px-3.5 py-2.5">
-                          <p className="truncate font-bold text-[#1E293B]">
-                            {exam.title}
-                          </p>
-                          <p className="mt-1 truncate text-[10.5px] text-[#7C879B]">
-                            Mã đề #{exam.id}
-                          </p>
-                        </td>
-                        <td className="px-3.5 py-2.5 font-medium text-[#526079]">
-                          {classroom.name}
-                        </td>
-                        <td className="px-3.5 py-2.5 text-[#526079]">
-                          {exam.questionCount} câu
-                        </td>
-                        <td className="px-3.5 py-2.5 text-[#526079]">
-                          {exam.duration} phút
-                        </td>
-                        <td className="px-3.5 py-2.5 text-[#526079]">
-                          {formatDateTime(exam.updatedAt)}
-                        </td>
-                        <td className="px-3.5 py-2.5 font-medium">
-                          {attempt ? (
-                            <span className="font-semibold text-emerald-600">
-                              Đã nộp ({Math.round(attempt.scorePercent)}%)
-                            </span>
-                          ) : (
-                            <span className="text-[#94A3B8]">Chưa nộp</span>
-                          )}
-                        </td>
-                        <td className="px-3.5 py-2.5">
-                          <span className="rounded-[4px] bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                            Đang diễn ra
-                          </span>
-                        </td>
-                        <td className="px-3.5 py-2.5 text-right">
-                          <Link
-                            href={
-                              attempt
-                                ? `/student/exam/${exam.id}/result`
-                                : `/student/exam/${exam.id}`
-                            }
-                            className="inline-flex items-center rounded-[6px] bg-[#3F63F3] px-3 py-1 text-xs font-semibold text-white shadow-xs hover:bg-[#3451D1]"
-                          >
-                            {attempt ? "Xem kết quả" : "Vào thi"}
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          ) : (
-            <table className="w-full min-w-[980px] text-left">
-              <thead className="bg-[#F8FAFC] text-xs font-semibold text-[#1E293B]">
+              ) : isError ? (
                 <tr>
-                  <th className="px-3.5 py-3.5">Đề thi</th>
-                  <th className="px-3.5 py-3.5">Khối / Lớp</th>
-                  <th className="px-3.5 py-3.5">Câu hỏi</th>
-                  <th className="px-3.5 py-3.5">Thời lượng</th>
-                  <th className="px-3.5 py-3.5">Mức độ</th>
-                  <th className="px-3.5 py-3.5">Trạng thái</th>
-                  <th className="px-3.5 py-3.5 text-right">Hành động</th>
+                  <td
+                    colSpan={8}
+                    className="px-4 py-8 text-center text-rose-600"
+                  >
+                    Không thể tải danh sách được giao.
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E3E7EE] text-xs text-[#1E293B]">
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-[#7C879B]">
-                      Đang tải danh sách đề thi...
+              ) : visibleItems.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="px-4 py-8 text-center text-[#1E293B]"
+                  >
+                    {classes.length === 0
+                      ? "Bạn chưa tham gia lớp học nào."
+                      : isTestsTab
+                        ? "Chưa có bài kiểm tra nào được giao."
+                        : "Chưa có đề thi nào được giao."}
+                  </td>
+                </tr>
+              ) : (
+                visibleItems.map(({ exam, classroom }) => (
+                  <tr
+                    key={`${classroom.id}-${exam.id}`}
+                    className="transition-colors hover:bg-[#F8FAFC]"
+                  >
+                    <td className="max-w-72 px-3.5 py-2.5">
+                      <p className="truncate font-bold text-[#1E293B]">
+                        {exam.title}
+                      </p>
+
+                      <p className="mt-1 truncate text-[10.5px] text-[#7C879B]">
+                        Mã đề #{exam.id}
+                      </p>
                     </td>
-                  </tr>
-                ) : visibleExams.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-[#7C879B]">
-                      Không tìm thấy đề thi nào!
+
+                    <td className="px-3.5 py-2.5 font-medium text-[#526079]">
+                      {classroom.name}
                     </td>
-                  </tr>
-                ) : (
-                  visibleExams.map((exam) => (
-                    <tr
-                      key={exam.id}
-                      className="transition-colors hover:bg-[#F8FAFC]"
-                    >
-                      <td className="max-w-72 px-3.5 py-2.5">
-                        <p className="truncate font-bold text-[#1E293B]">
-                          {exam.title}
-                        </p>
-                        <p className="mt-1 truncate text-[10.5px] text-[#7C879B]">
-                          Mã đề #{exam.id}
-                        </p>
-                      </td>
-                      <td className="px-3.5 py-2.5 font-medium text-[#526079]">
-                        {exam.classroomName || `Khối ${exam.grade || "hệ thống"}`}
-                      </td>
-                      <td className="px-3.5 py-2.5 text-[#526079]">
-                        {exam.questionCount} câu
-                      </td>
-                      <td className="px-3.5 py-2.5 text-[#526079]">
+
+                    <td className="px-3.5 py-2.5 text-[#526079]">
+                      {exam.questionCount}
+                    </td>
+
+                    <td className="px-3.5 py-2.5 text-[#526079]">
+                      <span className="inline-flex items-center gap-1">
+                        <Clock3 className="size-3.5" />
                         {exam.duration} phút
-                      </td>
-                      <td className="px-3.5 py-2.5 text-[#526079]">
-                        {exam.difficulty === "easy"
-                          ? "Dễ"
-                          : exam.difficulty === "hard"
-                            ? "Khó"
-                            : "Trung bình"}
-                      </td>
-                      <td className="px-3.5 py-2.5">
-                        <span className="rounded-[4px] bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                          Công khai
-                        </span>
-                      </td>
-                      <td className="px-3.5 py-2.5 text-right">
-                        <Link
-                          href={`/student/exam/${exam.id}`}
-                          className="inline-flex items-center rounded-[6px] bg-[#3F63F3] px-3 py-1 text-xs font-semibold text-white shadow-xs hover:bg-[#3451D1]"
-                        >
-                          Vào thi
-                        </Link>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          )}
+                      </span>
+                    </td>
+
+                    <td className="px-3.5 py-2.5 text-[#526079]">
+                      {formatDateTime(exam.endTime)}
+                    </td>
+
+                    <td className="px-3.5 py-2.5 text-[#526079]">
+                      {exam.attemptCount ?? 0}
+                    </td>
+
+                    <td className="px-3.5 py-2.5">
+                      <ExamStatusBadge exam={exam} now={now} />
+                    </td>
+
+                    <td className="px-3.5 py-2.5 text-right">
+                      <StudentExamAction exam={exam} now={now} />
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
 
-        {/* Standardized Pagination Footer matching Image 2 */}
         <PaginationFooter
-          page={page}
+          page={currentPage}
           pageSize={pageSize}
-          total={currentListLength}
+          total={activeTotal}
           totalPages={totalPages}
-          onPageChange={setPage}
-          onPageSizeChange={(newSize) => {
-            setPageSize(newSize);
-            setPage(1);
-          }}
+          onPageChange={changePage}
+          onPageSizeChange={changePageSize}
         />
       </section>
     </div>

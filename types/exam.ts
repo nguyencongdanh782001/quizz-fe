@@ -18,6 +18,8 @@ export type TeacherExamPublishedFilter = "all" | "published" | "unpublished";
 
 export type TeacherExamActiveFilter = "all" | "active" | "inactive";
 
+export type TeacherExamAssignmentType = "test" | "exam";
+
 export interface TeacherExamOption {
   id: number;
   option_key: string;
@@ -50,6 +52,8 @@ export interface TeacherExam {
   duration_minutes: number;
   start_time: string;
   end_time: string;
+  assignment_type?: TeacherExamAssignmentType;
+  max_attempts?: number | null;
   total_points: number;
   question_count: number;
   attempt_count: number;
@@ -79,6 +83,9 @@ export interface TeacherExamQuery {
   is_active?: boolean;
   sort_by?: TeacherExamSortKey;
   sort_order?: TeacherExamSortOrder;
+  assignment_type?: TeacherExamAssignmentType;
+  limit?: number;
+  offset?: number;
 }
 
 export interface TeacherExamFilterFormValues {

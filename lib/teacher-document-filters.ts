@@ -17,12 +17,31 @@ export const DEFAULT_TEACHER_DOCUMENT_FILTERS: TeacherDocumentFilterState = {
   classroom_id: "",
 };
 
-function getSingleValue(value: string | string[] | undefined): string | undefined {
+function getSingleValue(
+  value: string | string[] | undefined,
+): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function isDocumentScope(value: string | undefined): value is DocumentScope {
-  return value === "system" || value === "classroom";
+/**
+ * Backend có thể trả scope là "class", trong khi frontend đang dùng
+ * "classroom". Chuẩn hóa cả hai về "classroom" để không bị nhận nhầm
+ * thành tài liệu hệ thống.
+ */
+function normalizeDocumentScope(
+  value: string | null | undefined,
+): TeacherDocumentFilterState["scope"] {
+  const normalizedValue = value?.trim().toLowerCase();
+
+  if (normalizedValue === "system") {
+    return "system";
+  }
+
+  if (normalizedValue === "class" || normalizedValue === "classroom") {
+    return "classroom";
+  }
+
+  return "";
 }
 
 function normalizePublishedValue(
@@ -48,14 +67,14 @@ function normalizeClassroomId(value: string | undefined): string {
 export function normalizeTeacherDocumentFilters(
   filters: TeacherDocumentFilterState,
 ): TeacherDocumentFilterState {
+  const scope = normalizeDocumentScope(filters.scope);
+
   return {
     search: filters.search,
-    scope: isDocumentScope(filters.scope) ? filters.scope : "",
+    scope,
     is_published: normalizePublishedValue(filters.is_published),
     classroom_id:
-      filters.scope === "classroom"
-        ? normalizeClassroomId(filters.classroom_id)
-        : "",
+      scope === "classroom" ? normalizeClassroomId(filters.classroom_id) : "",
   };
 }
 
@@ -69,7 +88,7 @@ export function parseTeacherDocumentFilters(
 
   return normalizeTeacherDocumentFilters({
     search,
-    scope: isDocumentScope(scope) ? scope : "",
+    scope: normalizeDocumentScope(scope),
     is_published: normalizePublishedValue(isPublished),
     classroom_id: normalizeClassroomId(classroomId),
   });
@@ -92,9 +111,7 @@ export function toTeacherDocumentQuery(
         ? undefined
         : normalized.is_published === "true",
     classroom_id:
-      normalized.scope === "classroom" && classroomId
-        ? classroomId
-        : undefined,
+      normalized.scope === "classroom" && classroomId ? classroomId : undefined,
   };
 }
 
@@ -134,15 +151,16 @@ export function getDocumentScopeLabel(
 ): string {
   const normalizedScope = scope?.trim().toLowerCase();
 
+  if (normalizedScope === "class" || normalizedScope === "classroom") {
+    return "Giáo viên";
+  }
+
   if (normalizedScope === "system") {
     return "Hệ thống";
   }
 
-  if (normalizedScope === "classroom") {
-    return "Giáo viên";
-  }
-
-  return scope?.trim() || "Hệ thống";
+  // Không mặc định dữ liệu không xác định thành "Hệ thống".
+  return "";
 }
 
 export function getDocumentPublishStatusLabel(

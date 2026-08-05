@@ -1,32 +1,21 @@
 "use client";
 
-/**
- * useInfiniteQuery for the student system exam list.
- *
- * First useInfiniteQuery in this codebase — offset-based pagination.
- * Pattern:
- *   - getNextPageParam: returns the next offset, or undefined when all items loaded.
- *   - queryKey includes params (offset/limit) so React Query caches each page.
- *   - select flattens pages into items + exposes the latest page metadata.
- *
- * Follow the same query-key + wrapper separation as useTeacherSystemExams.
- */
 import { useInfiniteQuery } from "@tanstack/react-query";
 import {
-  getStudentSystemExams,
+  getStudentExploreExams,
   type StudentSystemExamListParams,
   type StudentSystemExamListResult,
 } from "@/lib/student-system-exams";
 import type { Exam } from "@/types/exam.types";
 import { studentExamQueryKeys } from "./student-exam.query-keys";
 
-interface StudentSystemExamsInfiniteData {
+interface StudentExploreExamsInfiniteData {
   pages: StudentSystemExamListResult[];
   items: Exam[];
   total: number;
 }
 
-export function useStudentSystemExams(
+export function useStudentExploreExams(
   params: StudentSystemExamListParams = {},
 ) {
   const limit = params.limit ?? 50;
@@ -36,17 +25,21 @@ export function useStudentSystemExams(
   return useInfiniteQuery<
     StudentSystemExamListResult,
     Error,
-    StudentSystemExamsInfiniteData,
-    ReturnType<typeof studentExamQueryKeys.systemList>,
+    StudentExploreExamsInfiniteData,
+    ReturnType<typeof studentExamQueryKeys.exploreList>,
     number
   >({
-    queryKey: studentExamQueryKeys.systemList({
+    queryKey: studentExamQueryKeys.exploreList({
       ...params,
       limit,
       offset: initialOffset,
     }),
     queryFn: ({ pageParam }) =>
-      getStudentSystemExams({ ...staticParams, limit, offset: pageParam }),
+      getStudentExploreExams({
+        ...staticParams,
+        limit,
+        offset: pageParam,
+      }),
     initialPageParam: initialOffset,
     getNextPageParam: (lastPage) =>
       lastPage.offset + lastPage.limit < lastPage.total

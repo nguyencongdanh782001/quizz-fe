@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { ArrowLeft, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,14 @@ export function TeacherClassDetailScreen({ classId }: { classId: string }) {
 
   useBreadcrumbLabel(classBreadcrumbHref, classBreadcrumbLabel);
 
+  const testsList = useMemo(() => {
+    return exams.filter((exam) => exam.assignmentType === "test");
+  }, [exams]);
+
+  const practiceList = useMemo(() => {
+    return exams.filter((exam) => (exam.assignmentType ?? "exam") === "exam");
+  }, [exams]);
+
   if (isLoadingInitialData) {
     return <LoadingState label="dữ liệu lớp học" />;
   }
@@ -80,14 +89,19 @@ export function TeacherClassDetailScreen({ classId }: { classId: string }) {
 
   const tabs = [
     { id: "students" as const, label: "Học sinh", count: counts.students },
-    { id: "exams" as const, label: "Bài thi", count: counts.exams },
+    { id: "tests" as const, label: "Bài kiểm tra", count: testsList.length },
+    { id: "exams" as const, label: "Bài thi", count: practiceList.length },
     { id: "documents" as const, label: "Tài liệu", count: counts.documents },
   ];
 
   return (
     <div className="space-y-4">
       {/* Class Header Card with Red "Trở về" button on top right */}
-      <ClassHeader cls={cls} />
+      <ClassHeader
+        cls={cls}
+        testCount={testsList.length}
+        examCount={practiceList.length}
+      />
 
       {/* Main Tabs Section */}
       <section className="space-y-4">
@@ -104,13 +118,27 @@ export function TeacherClassDetailScreen({ classId }: { classId: string }) {
           />
         ) : null}
 
-        {activeTab === "exams" ? (
+        {activeTab === "tests" ? (
           <ExamsTab
             classId={classId}
-            exams={exams}
+            exams={testsList}
             isLoading={isLoadingExams}
             error={examsError}
             onRetry={retryActiveTab}
+            title="Danh sách bài kiểm tra"
+            buttonText="Tạo bài kiểm tra"
+          />
+        ) : null}
+
+        {activeTab === "exams" ? (
+          <ExamsTab
+            classId={classId}
+            exams={practiceList}
+            isLoading={isLoadingExams}
+            error={examsError}
+            onRetry={retryActiveTab}
+            title="Danh sách bài thi"
+            buttonText="Tạo bài thi"
           />
         ) : null}
 

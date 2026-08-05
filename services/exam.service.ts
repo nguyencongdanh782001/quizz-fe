@@ -12,6 +12,7 @@ import type {
   TeacherSystemExamListResponse,
 } from "@/lib/api/types";
 import { mapTeacherExam } from "@/lib/teacher-exam-mapper";
+import { pickDefaultExamImage } from "@/lib/exam-default-images";
 import type {
   TeacherExam,
   TeacherExamListResult,
@@ -41,6 +42,18 @@ function toApiParams(
 
   if (query.sort_order) {
     params.sort_order = query.sort_order;
+  }
+
+  if (query.assignment_type) {
+    params.assignment_type = query.assignment_type;
+  }
+
+  if (typeof query.limit === "number") {
+    params.limit = query.limit;
+  }
+
+  if (typeof query.offset === "number") {
+    params.offset = query.offset;
   }
 
   return params;
@@ -113,9 +126,14 @@ export async function updateTeacherSystemExamPublishState(
 export async function createSystemExam(
   data: TeacherCreateExamRequest,
 ): Promise<{ message: string; exam: TeacherExam }> {
+  const finalData: TeacherCreateExamRequest = {
+    ...data,
+    image_url: data.image_url?.trim() || pickDefaultExamImage(),
+  };
+
   const response = await client.post<TeacherCreateSystemExamResponse>(
     "/teacher/system/exams",
-    data,
+    finalData,
   );
 
   return {

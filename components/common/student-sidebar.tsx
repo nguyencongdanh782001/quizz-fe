@@ -8,21 +8,23 @@ import { UserAvatar } from "@/components/common/user-avatar";
 import { useAuth } from "@/hooks/useAuth";
 import {
   BookOpen,
+  ChevronRight,
+  FolderOpen,
   Home,
   Library,
   GraduationCap,
   History,
   LogOut,
-  ChevronRight,
   UserRound,
 } from "lucide-react";
 
 const studentNav = [
   { href: "/student", label: "Trang chủ", icon: Home },
   { href: "/student/exams", label: "Đề thi", icon: BookOpen },
+  { href: "/student/library", label: "Thư viện của tôi", icon: Library },
+  { href: "/student/materials", label: "Khám phá đề thi", icon: FolderOpen },
   { href: "/student/classes", label: "Lớp học", icon: GraduationCap },
   { href: "/student/results", label: "Kết quả", icon: History },
-  { href: "/student/materials", label: "Thư viện tài liệu", icon: Library },
   { href: "/student/profile", label: "Hồ sơ", icon: UserRound },
 ];
 
@@ -62,7 +64,7 @@ export function StudentSidebar() {
                   : "text-on-surface hover:bg-surface-container-low",
               )}
             >
-              <item.icon className="w-5 h-5 flex-shrink-0" />
+              <item.icon className="w-5 h-5 shrink-0" />
               <span>{item.label}</span>
               {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
             </Link>

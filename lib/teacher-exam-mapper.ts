@@ -2,6 +2,7 @@ import type {
   TeacherExamOptionSchema,
   TeacherExamQuestionSchema,
   TeacherExamSummarySchema,
+  ExamAssignmentType,
 } from "@/lib/api/types";
 import type {
   TeacherExam,
@@ -72,6 +73,10 @@ function toBooleanValue(value: unknown, fallback = false): boolean {
   }
 
   return fallback;
+}
+
+function toAssignmentType(value: unknown): ExamAssignmentType {
+  return value === "test" ? "test" : "exam";
 }
 
 function toQuestionType(value: unknown): TeacherExamQuestionType {
@@ -149,6 +154,11 @@ export function mapTeacherExam(exam: TeacherExamDetailPayload): TeacherExam {
     duration_minutes: toNumberValue(exam.duration_minutes),
     start_time: toStringValue(exam.start_time),
     end_time: toStringValue(exam.end_time),
+    assignment_type: toAssignmentType(exam.assignment_type),
+    max_attempts:
+      exam.max_attempts === null || exam.max_attempts === undefined
+        ? null
+        : toNumberValue(exam.max_attempts),
     total_points: toNumberValue(exam.total_points),
     question_count: toNumberValue(exam.question_count),
     attempt_count: toNumberValue(exam.attempt_count),

@@ -20,13 +20,6 @@ import {
 import { cn } from "@/lib/utils";
 import type { Exam } from "@/types/exam.types";
 
-type ExamSource = "teacher" | "system";
-
-const SOURCE_BADGE: Record<ExamSource, { label: string; className: string }> = {
-  system: { label: "Hệ thống", className: "bg-[#EEF2FF] text-[#4F62F2]" },
-  teacher: { label: "Giáo viên", className: "bg-[#ECFDF5] text-[#059669]" },
-};
-
 const TONE_BADGE: Record<ExamOpenInfo["tone"], string> = {
   positive: "bg-emerald-50 text-emerald-700",
   warning: "bg-amber-50 text-amber-700",
@@ -34,55 +27,124 @@ const TONE_BADGE: Record<ExamOpenInfo["tone"], string> = {
   muted: "bg-slate-100 text-slate-600",
 };
 
-function resolveExamSource(exam: Exam): ExamSource {
-  if (exam.source === "teacher" || exam.source === "system") return exam.source;
-  return exam.scope === "system" ? "system" : "teacher";
-}
-
 interface ExamCardProps {
   exam: Exam;
   compact?: boolean;
 }
 
+function getClassificationTag(
+  exam: Exam,
+  prefix: "class" | "subject" | "topic",
+): string | null {
+  const marker = `${prefix}:`;
+  const tag = exam.tags.find((item) => item.startsWith(marker));
+
+  return tag?.slice(marker.length).trim() || null;
+}
+
 export function ExamCard({ exam, compact = false }: ExamCardProps) {
   const now = useNow();
   const openState = getExamOpenState(exam, now);
-  const sourceBadge = SOURCE_BADGE[resolveExamSource(exam)];
-  const secondaryLabel = exam.grade > 0 ? `Lớp ${exam.grade}` : exam.classroomName;
-  const scoreLabel = exam.totalPoints && exam.totalPoints > 0
-    ? `${exam.totalPoints} điểm`
-    : `${exam.passingScore}%`;
+
+  const secondaryLabel =
+    getClassificationTag(exam, "class") ||
+    (exam.grade > 0 ? `Lớp ${exam.grade}` : null) ||
+    exam.classroomName?.trim() ||
+    null;
+
+  const scoreLabel =
+    exam.totalPoints && exam.totalPoints > 0
+      ? `${exam.totalPoints} điểm`
+      : `${exam.passingScore}%`;
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-[8px] border border-[#DDE2EB] bg-white transition-colors hover:border-[#BFC8D8]">
+    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-[8px] border border-[#DDE2EB] bg-white shadow-[0_1px_3px_rgba(30,41,59,0.06)] transition-all hover:-translate-y-0.5 hover:border-[#B8C2FF] hover:shadow-md">
       {exam.thumbnailUrl ? (
-        <div className="h-28 overflow-hidden border-b border-[#E9EDF3] bg-[#F7F8FB]">
-          {/* Exam thumbnails may be hosted by different document providers. */}
+        <div
+          className={cn(
+            "overflow-hidden border-b border-[#E9EDF3] bg-[#F7F8FB]",
+            compact ? "h-24" : "h-28",
+          )}
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={exam.thumbnailUrl} alt={exam.title} className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]" />
+          <img
+            src={exam.thumbnailUrl}
+            alt={exam.title}
+            className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+          />
         </div>
-      ) : null}
+      ) : (
+        <div
+          className={cn(
+            "flex items-center justify-center border-b border-[#E9EDF3] bg-[#F7F8FB] text-[#94A3B8]",
+            compact ? "h-24" : "h-28",
+          )}
+        >
+          <BookOpen className="size-7" />
+        </div>
+      )}
 
-      <div className={cn("flex flex-1 flex-col p-4", compact ? "gap-2.5" : "gap-3")}>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className={cn("rounded-[6px] px-2 py-1 text-[10px] font-semibold", sourceBadge.className)}>
-            {sourceBadge.label}
-          </span>
-          <span className={cn("rounded-[6px] px-2 py-1 text-[10px] font-semibold", TONE_BADGE[openState.tone])}>
+      <div
+        className={cn(
+          "flex flex-1 flex-col",
+          compact ? "gap-2.5 p-3" : "gap-3 p-4",
+        )}
+      >
+        <div className="flex min-h-6 items-center justify-between gap-2">
+          {secondaryLabel ? (
+            <span
+              title={secondaryLabel}
+              className="min-w-0 max-w-[120px] truncate rounded-[4px] bg-[#EEF2FF] px-2 py-1 text-[10px] font-semibold text-[#4050DC]"
+            >
+              {secondaryLabel}
+            </span>
+          ) : (
+            <span />
+          )}
+
+          <span
+            className={cn(
+              "shrink-0 rounded-[4px] px-2 py-1 text-[10px] font-semibold",
+              TONE_BADGE[openState.tone],
+            )}
+          >
             {openState.badgeLabel}
           </span>
         </div>
 
         <div className="min-w-0">
-          {secondaryLabel ? <p className="mb-1 text-[10.5px] font-medium text-[#7C879B]">{secondaryLabel}</p> : null}
-          <h3 className="line-clamp-2 text-sm font-bold leading-5 text-[#1E293B]">{exam.title}</h3>
-          {!compact && exam.description ? <p className="mt-1.5 line-clamp-2 text-[11px] leading-5 text-[#64748B]">{exam.description}</p> : null}
+          <h3
+            title={exam.title}
+            className={cn(
+              "line-clamp-2 font-bold text-[#1E293B]",
+              compact ? "min-h-10 text-xs leading-5" : "text-sm leading-5",
+            )}
+          >
+            {exam.title}
+          </h3>
+
+          {!compact && exam.description ? (
+            <p className="mt-1.5 line-clamp-2 text-[11px] leading-5 text-[#64748B]">
+              {exam.description}
+            </p>
+          ) : null}
         </div>
 
         <div className="grid grid-cols-3 gap-1.5 text-[10px] text-[#526079]">
-          <span className="inline-flex items-center justify-center gap-1 rounded-[6px] bg-[#F7F8FB] px-2 py-2"><BookOpen className="size-3.5 text-[#4F62F2]" />{exam.questionCount} câu</span>
-          <span className="inline-flex items-center justify-center gap-1 rounded-[6px] bg-[#F7F8FB] px-2 py-2"><Clock3 className="size-3.5 text-[#0EA5E9]" />{exam.duration} phút</span>
-          <span className="inline-flex items-center justify-center gap-1 rounded-[6px] bg-[#F7F8FB] px-2 py-2"><Star className="size-3.5 text-[#F59E0B]" />{scoreLabel}</span>
+          <span className="inline-flex min-w-0 items-center justify-center gap-1 rounded-[6px] bg-[#F7F8FB] px-1.5 py-2">
+            <BookOpen className="size-3.5 shrink-0 text-[#4F62F2]" />
+            <span className="truncate">{exam.questionCount} câu</span>
+          </span>
+
+          <span className="inline-flex min-w-0 items-center justify-center gap-1 rounded-[6px] bg-[#F7F8FB] px-1.5 py-2">
+            <Clock3 className="size-3.5 shrink-0 text-[#0EA5E9]" />
+            <span className="truncate">{exam.duration} phút</span>
+          </span>
+
+          <span className="inline-flex min-w-0 items-center justify-center gap-1 rounded-[6px] bg-[#F7F8FB] px-1.5 py-2">
+            <Star className="size-3.5 shrink-0 text-[#F59E0B]" />
+            <span className="truncate">{scoreLabel}</span>
+          </span>
         </div>
 
         {!compact ? <ScheduleBlock info={openState} /> : null}
@@ -92,13 +154,16 @@ export function ExamCard({ exam, compact = false }: ExamCardProps) {
           aria-disabled={!openState.isOpenableNow}
           tabIndex={openState.isOpenableNow ? 0 : -1}
           className={cn(
-            "mt-auto flex h-9 items-center justify-center rounded-[6px] text-xs font-semibold transition-colors",
+            "mt-auto flex items-center justify-center rounded-[6px] text-xs font-semibold transition-colors",
+            compact ? "h-8" : "h-9",
             openState.isOpenableNow
               ? "bg-[#4F62F2] text-white hover:bg-[#4053DD]"
               : "cursor-not-allowed bg-[#EEF0F4] text-[#98A2B3]",
           )}
           onClick={(event) => {
-            if (!openState.isOpenableNow) event.preventDefault();
+            if (!openState.isOpenableNow) {
+              event.preventDefault();
+            }
           }}
         >
           {openState.ctaLabel}
@@ -111,14 +176,46 @@ export function ExamCard({ exam, compact = false }: ExamCardProps) {
 function ScheduleBlock({ info }: { info: ExamOpenInfo }) {
   const hasStart = info.startTimeRaw !== null;
   const hasEnd = info.endTimeRaw !== null;
+
   if (!hasStart && !hasEnd) {
-    return <p className="inline-flex items-center gap-1.5 border-t border-[#E9EDF3] pt-2.5 text-[10.5px] text-[#64748B]"><InfinityIcon className="size-3.5" />Không giới hạn thời gian làm bài.</p>;
+    return (
+      <p className="inline-flex items-center gap-1.5 border-t border-[#E9EDF3] pt-2.5 text-[10.5px] text-[#64748B]">
+        <InfinityIcon className="size-3.5" />
+        Không giới hạn thời gian làm bài.
+      </p>
+    );
   }
+
   return (
     <div className="space-y-1 border-t border-[#E9EDF3] pt-2.5 text-[10.5px] text-[#64748B]">
-      {hasStart ? <p className="flex items-center gap-1.5"><CalendarDays className="size-3.5" />Mở: <strong className="font-semibold text-[#334155]">{formatExamDateTime(info.startTimeRaw)}</strong></p> : null}
-      {hasEnd ? <p className="flex items-center gap-1.5"><Hourglass className="size-3.5" />Đóng: <strong className="font-semibold text-[#334155]">{formatExamDateTime(info.endTimeRaw)}</strong></p> : null}
-      {info.countdownLabel ? <p className="flex items-center gap-1.5 font-semibold text-[#4F62F2]"><Timer className="size-3.5" />{formatRemainingTimeDetailed(info.remainingMs, { compound: true })}</p> : null}
+      {hasStart ? (
+        <p className="flex items-center gap-1.5">
+          <CalendarDays className="size-3.5" />
+          Mở:
+          <strong className="font-semibold text-[#334155]">
+            {formatExamDateTime(info.startTimeRaw)}
+          </strong>
+        </p>
+      ) : null}
+
+      {hasEnd ? (
+        <p className="flex items-center gap-1.5">
+          <Hourglass className="size-3.5" />
+          Đóng:
+          <strong className="font-semibold text-[#334155]">
+            {formatExamDateTime(info.endTimeRaw)}
+          </strong>
+        </p>
+      ) : null}
+
+      {info.countdownLabel ? (
+        <p className="flex items-center gap-1.5 font-semibold text-[#4F62F2]">
+          <Timer className="size-3.5" />
+          {formatRemainingTimeDetailed(info.remainingMs, {
+            compound: true,
+          })}
+        </p>
+      ) : null}
     </div>
   );
 }

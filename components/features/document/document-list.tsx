@@ -61,6 +61,10 @@ export function DocumentList({
   onSortChange,
   selectedDocument,
   onSelectedDocumentChange,
+  emptyTitle,
+  emptyDescription,
+  emptyActionLabel,
+  onEmptyAction,
   className,
 }: DocumentListProps) {
   const [gradeFilter, setGradeFilter] = useState("all");
@@ -202,8 +206,21 @@ export function DocumentList({
           {isLoading ? (
             <DocumentListSkeleton />
           ) : isFilteredEmpty ? (
-            <div className="py-16 text-center text-xs text-[#94A3B8]">
-              Không tìm thấy tài liệu nào.
+            <div className="flex min-h-[220px] flex-col items-center justify-center gap-2 py-16 text-center">
+              <p className="text-sm font-semibold text-[#526079]">{emptyTitle}</p>
+              <p className="max-w-md text-xs leading-5 text-[#94A3B8]">
+                {emptyDescription}
+              </p>
+              {emptyActionLabel && onEmptyAction ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-2 h-9 rounded-[6px] text-xs font-semibold"
+                  onClick={onEmptyAction}
+                >
+                  {emptyActionLabel}
+                </Button>
+              ) : null}
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

@@ -1,4 +1,4 @@
-import { api as studentApi } from '@/lib/api/endpoints/student';
+import { api as studentApi } from "@/lib/api/endpoints/student";
 import type {
   StudentExamDetailResponse,
   StudentAttemptAnswerPayloadItem,
@@ -7,23 +7,156 @@ import type {
   StudentSubmittedAnswerSchema,
   StudentSubmitAttemptResultSchema,
   StudentSystemExamSchema,
-} from '@/lib/api/types';
+  ExamAssignmentType,
+} from "@/lib/api/types";
 import type {
   Exam,
   ExamDifficulty,
   Question,
   QuestionType,
   StudentAnswersByQuestion,
-} from '@/types/exam.types';
+} from "@/types/exam.types";
 import {
   getSelectedOptionIds,
   hasStudentAnswer,
   normalizeStudentAnswer,
   type StudentAnswerStateValue,
-} from '@/lib/student-exam-answers';
+} from "@/lib/student-exam-answers";
 
 interface StudentFetchOptions {
   throwOnError?: boolean;
+  includeInactive?: boolean;
+}
+
+type NamedValue = {
+  name?: string | null;
+};
+
+type StudentExamClassificationFields = {
+  grade?: string | number | null;
+  grade_name?: string | null;
+  class_name?: string | null;
+  level_name?: string | null;
+  subject?: string | NamedValue | null;
+  subject_name?: string | null;
+  topic?: string | NamedValue | null;
+  topic_name?: string | null;
+};
+
+const SUBJECT_NAMES = [
+  "Toán",
+  "Toán học",
+  "Ngữ văn",
+  "Văn",
+  "Tiếng Anh",
+  "Anh",
+  "Vật lý",
+  "Vật lí",
+  "Hóa học",
+  "Hoá học",
+  "Sinh học",
+  "Lịch sử",
+  "Địa lý",
+  "Địa lí",
+  "Tin học",
+  "Công nghệ",
+  "Giáo dục công dân",
+  "GDCD",
+  "Y học",
+  "Dược học",
+] as const;
+
+const NORMALIZED_SUBJECT_NAMES = new Set(
+  SUBJECT_NAMES.map((subject) => subject.trim().toLocaleLowerCase("vi")),
+);
+
+function normalizeClassificationText(value?: string | null): string {
+  return String(value ?? "")
+    .trim()
+    .toLocaleLowerCase("vi");
+}
+
+function getObjectName(value?: string | NamedValue | null): string {
+  if (typeof value === "string") {
+    return value.trim();
+  }
+
+  return value?.name?.trim() ?? "";
+}
+
+function getExamClassification(item: StudentSystemExamSchema): {
+  className: string;
+  subjectName: string;
+  topicName: string;
+} {
+  const classification = item as StudentSystemExamSchema &
+    StudentExamClassificationFields;
+
+  const directClass =
+    classification.class_name?.trim() ||
+    classification.grade_name?.trim() ||
+    classification.level_name?.trim() ||
+    "";
+
+  const directSubject =
+    classification.subject_name?.trim() ||
+    getObjectName(classification.subject);
+
+  const directTopic =
+    classification.topic_name?.trim() || getObjectName(classification.topic);
+
+  const rawGrade = String(classification.grade ?? "").trim();
+
+  const legacyParts = rawGrade
+    .split(" - ")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const subjectIndex = legacyParts.findIndex((part) =>
+    NORMALIZED_SUBJECT_NAMES.has(normalizeClassificationText(part)),
+  );
+
+  const detectedSubject = subjectIndex >= 0 ? legacyParts[subjectIndex] : "";
+
+  const possibleClassParts =
+    subjectIndex >= 0 ? legacyParts.slice(0, subjectIndex) : legacyParts;
+
+  const detectedClass =
+    possibleClassParts.find((part) => /^Lớp\s+\d+$/i.test(part)) ||
+    [...possibleClassParts]
+      .reverse()
+      .find((part) =>
+        /(Mầm non|Tiểu học|THCS|THPT|Trung cấp|Cao đẳng|Đại học)/i.test(part),
+      ) ||
+    (legacyParts.length === 1 ? legacyParts[0] : "") ||
+    "";
+
+  const detectedTopic =
+    subjectIndex >= 0 && subjectIndex < legacyParts.length - 1
+      ? legacyParts.slice(subjectIndex + 1).join(" - ")
+      : "";
+
+  return {
+    className: directClass || detectedClass || rawGrade || "Chưa phân loại",
+    subjectName: directSubject || detectedSubject || "",
+    topicName: directTopic || detectedTopic || "",
+  };
+}
+
+function buildClassificationTags({
+  className,
+  subjectName,
+  topicName,
+}: {
+  className: string;
+  subjectName: string;
+  topicName: string;
+}): string[] {
+  return [
+    className ? `class:${className}` : "",
+    subjectName ? `subject:${subjectName}` : "",
+    topicName ? `topic:${topicName}` : "",
+  ].filter(Boolean);
 }
 
 function inferDifficulty(
@@ -31,14 +164,14 @@ function inferDifficulty(
   questionCount: number,
 ): ExamDifficulty {
   if (durationMinutes >= 60 || questionCount >= 40) {
-    return 'hard';
+    return "hard";
   }
 
   if (durationMinutes <= 20 || questionCount <= 10) {
-    return 'easy';
+    return "easy";
   }
 
-  return 'medium';
+  return "medium";
 }
 
 function inferGrade(classroomName: string | null): number {
@@ -57,36 +190,60 @@ function inferGrade(classroomName: string | null): number {
 }
 
 function mapStudentSystemExam(item: StudentSystemExamSchema): Exam {
+  const normalizedScope = item.scope?.trim().toLowerCase();
   const scope =
-    item.scope === 'classroom' || item.scope === 'class' ? 'classroom' : 'system';
+    normalizedScope === "classroom" || normalizedScope === "class"
+      ? "classroom"
+      : "system";
 
-  // API now provides grade as a string; coerce to number when it parses cleanly,
-  // otherwise fall back to inferGrade from the classroom name.
+  const normalizedSource = item.source?.trim().toLowerCase() ?? "";
+
+  const isTeacherCreated =
+    scope === "classroom" ||
+    normalizedSource === "teacher" ||
+    normalizedSource.startsWith("teacher_") ||
+    normalizedSource.includes("giáo viên");
+
+  const classification = getExamClassification(item);
+
+  const gradeFromClassName = inferGrade(classification.className);
   const parsedGrade = Number(item.grade);
+
   const grade =
-    Number.isFinite(parsedGrade) && parsedGrade >= 1 && parsedGrade <= 12
-      ? parsedGrade
-      : inferGrade(item.classroom_name);
+    gradeFromClassName > 0
+      ? gradeFromClassName
+      : Number.isFinite(parsedGrade) && parsedGrade >= 1 && parsedGrade <= 12
+        ? parsedGrade
+        : inferGrade(item.classroom_name);
 
   return {
     id: String(item.id),
     title: item.title,
     description: item.description,
-    subject: item.classroom_name ?? 'Đề thi hệ thống',
+    subject: classification.subjectName || "Đề thi",
     grade,
     difficulty: inferDifficulty(item.duration_minutes, item.question_count),
     duration: item.duration_minutes,
     passingScore: 0,
     questionCount: item.question_count,
     attemptCount: 0,
-    status: item.is_active ? 'published' : 'archived',
-    createdBy: scope === 'classroom' ? 'teacher' : 'system',
-    createdAt: '',
-    updatedAt: '',
+    status: item.is_active ? "published" : "archived",
+    createdBy: isTeacherCreated ? "teacher" : "system",
+    createdAt: "",
+    updatedAt: "",
     startTime: item.start_time,
     endTime: item.end_time,
+    assignmentType: item.assignment_type ?? "exam",
+    examType: item.assignment_type ?? "exam",
+    maxAttempts: item.max_attempts ?? null,
     thumbnailUrl: item.image_url ?? undefined,
-    tags: item.scope ? [item.scope] : [],
+
+    /**
+     * Không đưa scope vào tags để tránh badge Hệ thống/Giáo viên.
+     * Tags chỉ lưu metadata phân loại phục vụ card và bộ lọc.
+     */
+    tags: buildClassificationTags(classification),
+
     classIds: item.classroom_id ? [String(item.classroom_id)] : [],
     classroomName: item.classroom_name,
     totalPoints: item.total_points,
@@ -98,17 +255,17 @@ function mapStudentSystemExam(item: StudentSystemExamSchema): Exam {
 
 function mapStudentQuestionType(questionType: string): QuestionType {
   switch (questionType) {
-    case 'single_choice':
-      return 'single';
-    case 'multiple_choice':
-      return 'multiple';
-    case 'true_false':
-      return 'true_false';
-    case 'short_answer':
-    case 'text':
-      return 'text';
+    case "single_choice":
+      return "single";
+    case "multiple_choice":
+      return "multiple";
+    case "true_false":
+      return "true_false";
+    case "short_answer":
+    case "text":
+      return "text";
     default:
-      return 'single';
+      return "single";
   }
 }
 
@@ -139,17 +296,19 @@ function mapStudentExamDetailExam(item: StudentExamDetailResponse): Exam {
     id: item.id,
     title: item.title,
     description: item.description,
-    grade: '',
+    grade: "",
     scope: item.scope,
     source: item.source,
     classroom_id: item.classroom_id,
     classroom_name: item.classroom_name,
     duration_minutes: item.duration_minutes,
-    start_time: detail.start_time ?? '',
-    end_time: detail.end_time ?? '',
+    start_time: detail.start_time ?? "",
+    end_time: detail.end_time ?? "",
     total_points: item.total_points,
     question_count: item.question_count,
     is_active: item.is_active,
+    assignment_type: item.assignment_type,
+    max_attempts: item.max_attempts,
   });
 }
 
@@ -201,7 +360,7 @@ export interface StudentSubmitAttemptResultData {
   answers: StudentSubmittedAnswerData[];
 }
 
-const ATTEMPT_RESULT_STORAGE_KEY_PREFIX = 'attempt-result-';
+const ATTEMPT_RESULT_STORAGE_KEY_PREFIX = "attempt-result-";
 
 function mapStudentExamAttempt(
   attempt: StudentExamAttemptSchema,
@@ -234,7 +393,9 @@ function mapSubmittedAnswer(
     selectedOptionText: answer.selected_option_text,
     submittedAnswerText: answer.submitted_answer_text,
     correctOptionId:
-      answer.correct_option_id !== null ? String(answer.correct_option_id) : null,
+      answer.correct_option_id !== null
+        ? String(answer.correct_option_id)
+        : null,
     correctOptionText: answer.correct_option_text,
     acceptedAnswers: answer.accepted_answers,
     isCorrect: answer.is_correct,
@@ -268,7 +429,7 @@ export function getStudentAttemptResultStorageKey(attemptId: string): string {
 export function readCachedStudentAttemptResult(
   attemptId: string,
 ): StudentSubmitAttemptResultData | null {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return null;
   }
 
@@ -280,7 +441,7 @@ export function readCachedStudentAttemptResult(
 }
 
 export function readAllCachedStudentAttemptResults(): StudentSubmitAttemptResultData[] {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return [];
   }
 
@@ -302,7 +463,10 @@ export function readAllCachedStudentAttemptResults(): StudentSubmitAttemptResult
     try {
       results.push(JSON.parse(stored) as StudentSubmitAttemptResultData);
     } catch (error) {
-      console.error(`Failed to parse cached attempt result for key ${key}`, error);
+      console.error(
+        `Failed to parse cached attempt result for key ${key}`,
+        error,
+      );
     }
   }
 
@@ -312,7 +476,7 @@ export function readAllCachedStudentAttemptResults(): StudentSubmitAttemptResult
 export function writeCachedStudentAttemptResult(
   result: StudentSubmitAttemptResultData,
 ): void {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return;
   }
 
@@ -325,6 +489,48 @@ export function writeCachedStudentAttemptResult(
 export interface StudentSystemExamListParams {
   limit?: number;
   offset?: number;
+  assignmentType?: ExamAssignmentType;
+  assignment_type?: ExamAssignmentType;
+  search?: string;
+  grade?: string;
+  sort?: string;
+}
+
+const DEFAULT_EXAM_LIST_LIMIT = 50;
+const MAX_EXAM_LIST_LIMIT = 100;
+
+function normalizeStudentExamListParams(
+  params: StudentSystemExamListParams = {},
+): {
+  limit: number;
+  offset: number;
+  assignment_type?: ExamAssignmentType;
+  search?: string;
+  grade?: string;
+  sort?: string;
+} {
+  const {
+    assignmentType,
+    assignment_type,
+    limit,
+    offset,
+    search,
+    grade,
+    sort,
+  } = params;
+
+  return {
+    // Backend chỉ chấp nhận limit từ 1 đến 100.
+    limit: Math.min(
+      Math.max(limit ?? DEFAULT_EXAM_LIST_LIMIT, 1),
+      MAX_EXAM_LIST_LIMIT,
+    ),
+    offset: Math.max(offset ?? 0, 0),
+    assignment_type: assignment_type ?? assignmentType,
+    search: search?.trim() || undefined,
+    grade: grade?.trim() || undefined,
+    sort,
+  };
 }
 
 export interface StudentSystemExamListResult {
@@ -345,7 +551,9 @@ export async function getStudentSystemExams(
   params: StudentSystemExamListParams = {},
 ): Promise<StudentSystemExamListResult> {
   try {
-    const response = await studentApi.student.system.exams(params);
+    const response = await studentApi.student.system.exams(
+      normalizeStudentExamListParams(params),
+    );
     const data = response.data;
     const items = (data.items ?? [])
       .filter((item) => item.is_active)
@@ -358,7 +566,35 @@ export async function getStudentSystemExams(
       offset: data.offset,
     };
   } catch (error) {
-    console.error('Failed to fetch student system exams', error);
+    console.error("Failed to fetch student system exams", error);
+    return EMPTY_LIST_RESULT;
+  }
+}
+
+/**
+ * Lấy danh sách đề thi công khai (scope=system, is_published=true) từ giáo viên hoặc admin.
+ * Dùng cho trang "Khám phá đề thi" - gọi endpoint /student/exams/explore
+ */
+export async function getStudentExploreExams(
+  params: StudentSystemExamListParams = {},
+): Promise<StudentSystemExamListResult> {
+  try {
+    const response = await studentApi.student.exams.explore(
+      normalizeStudentExamListParams(params),
+    );
+    const data = response.data;
+    const items = (data.items ?? [])
+      .filter((item) => item.is_active)
+      .map(mapStudentSystemExam);
+
+    return {
+      items,
+      total: data.total,
+      limit: data.limit,
+      offset: data.offset,
+    };
+  } catch (error) {
+    console.warn("Failed to fetch explore exams", error);
     return EMPTY_LIST_RESULT;
   }
 }
@@ -367,15 +603,16 @@ export async function getStudentClassExams(
   classId: string,
   params: StudentSystemExamListParams & StudentFetchOptions = {},
 ): Promise<StudentSystemExamListResult> {
-  const { throwOnError, ...pagination } = params;
+  const { throwOnError, includeInactive = false, ...pagination } = params;
+
   try {
     const response = await studentApi.student.classes.exams(
       classId,
-      pagination,
+      normalizeStudentExamListParams(pagination),
     );
     const data = response.data;
     const items = (data.items ?? [])
-      .filter((item) => item.is_active)
+      .filter((item) => includeInactive || item.is_active)
       .map(mapStudentSystemExam);
 
     return {
@@ -430,12 +667,12 @@ function buildAttemptAnswerPayload(
     return [];
   }
 
-  if (question.type === 'text') {
+  if (question.type === "text") {
     return [
       {
         question_id: Number(question.id),
         selected_option_id: null,
-        answer_text: normalizedAnswer.text_answer?.trim() ?? '',
+        answer_text: normalizedAnswer.text_answer?.trim() ?? "",
       },
     ];
   }
@@ -481,7 +718,10 @@ export async function saveStudentAttemptAnswerBatch(
   questions: Question[],
   answersByQuestion: StudentAnswersByQuestion,
 ): Promise<StudentExamAttemptData | null> {
-  const answers = buildStudentAttemptAnswersPayload(questions, answersByQuestion);
+  const answers = buildStudentAttemptAnswersPayload(
+    questions,
+    answersByQuestion,
+  );
 
   if (answers.length === 0) {
     return null;

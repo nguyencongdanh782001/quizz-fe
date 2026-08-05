@@ -2,7 +2,8 @@
 
 import { useFormikContext } from "formik";
 import { Info, X, ChevronDown, Upload, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { InputField } from "@/components/common/form/input-field";
 import { TextareaField } from "@/components/common/form/textarea-field";
 import { DateTimePicker } from "@/components/common/form/date-time-picker";
@@ -80,128 +81,250 @@ function TagCombobox({
 }: TagComboboxProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
+  const [menuPosition, setMenuPosition] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
+
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const updateMenuPosition = useCallback(() => {
+    const trigger = triggerRef.current;
+
+    if (!trigger) return;
+
+    const rect = trigger.getBoundingClientRect();
+
+    setMenuPosition({
+      top: rect.bottom + 4,
+      left: rect.left,
+      width: rect.width,
+    });
+  }, []);
+
+  const openMenu = useCallback(() => {
+    updateMenuPosition();
+    setIsOpen(true);
+  }, [updateMenuPosition]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      const target = event.target as Node;
+
+      const clickedInsideTrigger =
+        containerRef.current?.contains(target) ?? false;
+      const clickedInsideMenu = menuRef.current?.contains(target) ?? false;
+
+      if (!clickedInsideTrigger && !clickedInsideMenu) {
         setIsOpen(false);
       }
     }
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handleViewportChange() {
+      updateMenuPosition();
+    }
+
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, true);
+
+    return () => {
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange, true);
+    };
+  }, [isOpen, updateMenuPosition]);
+
   const filteredOptions = useMemo(() => {
-    if (!inputValue.trim()) return options;
-    return options.filter((opt) =>
-      opt.toLowerCase().includes(inputValue.toLowerCase().trim()),
+    const keyword = inputValue.trim().toLocaleLowerCase("vi");
+
+    if (!keyword) return options;
+
+    return options.filter((option) =>
+      option.toLocaleLowerCase("vi").includes(keyword),
     );
   }, [inputValue, options]);
 
+  const menu =
+    isOpen && menuPosition && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            ref={menuRef}
+            style={{
+              position: "fixed",
+              top: menuPosition.top,
+              left: menuPosition.left,
+              width: menuPosition.width,
+            }}
+            className="z-[9999] max-h-48 overflow-y-auto rounded-[6px] border border-[#CBD5E1] bg-white py-1 shadow-lg [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          >
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => {
+                    onChange(option);
+                    setInputValue("");
+                    setIsOpen(false);
+                  }}
+                  className={cn(
+                    "flex w-full items-center justify-between px-3 py-1.5 text-left text-xs text-[#1E293B] hover:bg-[#F1F5F9]",
+                    value === option && "bg-[#F1F5F9] font-bold text-[#8B5CF6]",
+                  )}
+                >
+                  <span className="truncate">{option}</span>
+                </button>
+              ))
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  const customValue = inputValue.trim();
+
+                  if (!customValue) return;
+
+                  onChange(customValue);
+                  setInputValue("");
+                  setIsOpen(false);
+                }}
+                className="w-full px-3 py-1.5 text-left text-xs font-medium text-[#8B5CF6] hover:bg-[#F1F5F9]"
+              >
+                + Thêm &quot;{inputValue}&quot;
+              </button>
+            )}
+          </div>,
+          document.body,
+        )
+      : null;
+
   return (
-    <div
-      className={cn("space-y-1 relative", isOpen ? "z-40" : "z-10", className)}
-      ref={containerRef}
-    >
-      <label className="text-xs font-bold text-[#1E293B] block">
-        {label} {required && <span className="text-rose-500">*</span>}
+    <div ref={containerRef} className={cn("relative space-y-1", className)}>
+      <label className="block text-xs font-bold text-[#1E293B]">
+        {label} {required ? <span className="text-rose-500">*</span> : null}
       </label>
 
       <div
-        onClick={() => setIsOpen((prev) => !prev)}
+        ref={triggerRef}
+        role="combobox"
+        aria-expanded={isOpen}
+        tabIndex={0}
+        onClick={() => {
+          if (!isOpen) openMenu();
+        }}
+        onKeyDown={(event) => {
+          if (
+            event.key === "Enter" ||
+            event.key === " " ||
+            event.key === "ArrowDown"
+          ) {
+            event.preventDefault();
+            openMenu();
+          }
+
+          if (event.key === "Escape") {
+            setIsOpen(false);
+          }
+        }}
         className={cn(
-          "h-9 min-h-9 w-full flex items-center justify-between gap-1.5 rounded-[6px] border bg-white px-2 py-1 text-xs outline-none transition-colors cursor-pointer",
+          "flex h-9 min-h-9 w-full cursor-pointer items-center justify-between gap-1.5 rounded-[6px] border bg-white px-2 py-1 text-xs outline-none transition-colors",
           errorMessage
             ? "border-rose-500 focus-within:border-rose-500"
             : "border-[#CBD5E1] focus-within:border-[#8B5CF6]",
         )}
       >
-        <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
           {value ? (
-            <span className="inline-flex items-center gap-1 max-w-[88%] rounded bg-[#F1F5F9] px-1.5 py-0.5 text-[11px] font-medium text-[#334155] border border-[#CBD5E1] shrink-0">
+            <span className="inline-flex max-w-[88%] shrink-0 items-center gap-1 rounded border border-[#CBD5E1] bg-[#F1F5F9] px-1.5 py-0.5 text-[11px] font-medium text-[#334155]">
               <span className="truncate">{value}</span>
+
               <button
                 type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
+                aria-label={`Xóa ${label}`}
+                onClick={(event) => {
+                  event.stopPropagation();
                   onChange("");
                   setInputValue("");
+                  setIsOpen(false);
                 }}
-                className="rounded-full p-0.5 text-[#94A3B8] hover:bg-[#E2E8F0] hover:text-[#475569] focus:outline-none shrink-0"
+                className="shrink-0 rounded-full p-0.5 text-[#94A3B8] hover:bg-[#E2E8F0] hover:text-[#475569] focus:outline-none"
               >
                 <X className="size-3" />
               </button>
             </span>
-          ) : null}
-
-          {!value && (
+          ) : (
             <input
               type="text"
               value={inputValue}
-              onChange={(e) => {
-                setInputValue(e.target.value);
-                if (!isOpen) setIsOpen(true);
+              onFocus={openMenu}
+              onClick={(event) => {
+                event.stopPropagation();
+                openMenu();
               }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && inputValue.trim()) {
-                  e.preventDefault();
+              onChange={(event) => {
+                setInputValue(event.target.value);
+
+                if (!isOpen) {
+                  openMenu();
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && inputValue.trim()) {
+                  event.preventDefault();
                   onChange(inputValue.trim());
                   setInputValue("");
+                  setIsOpen(false);
+                }
+
+                if (event.key === "Escape") {
                   setIsOpen(false);
                 }
               }}
               placeholder={placeholder}
-              className="flex-1 min-w-[60px] bg-transparent outline-none text-xs text-[#1E293B] placeholder:text-[#94A3B8]"
+              className="min-w-[60px] flex-1 bg-transparent text-xs text-[#1E293B] outline-none placeholder:text-[#94A3B8]"
             />
           )}
         </div>
 
-        <ChevronDown className="size-3.5 text-[#64748B] shrink-0" />
+        <button
+          type="button"
+          aria-label={isOpen ? "Đóng danh sách" : "Mở danh sách"}
+          onClick={(event) => {
+            event.stopPropagation();
+
+            if (isOpen) {
+              setIsOpen(false);
+            } else {
+              openMenu();
+            }
+          }}
+          className="shrink-0 rounded p-0.5 text-[#64748B] hover:bg-[#F1F5F9]"
+        >
+          <ChevronDown
+            className={cn(
+              "size-3.5 transition-transform",
+              isOpen && "rotate-180",
+            )}
+          />
+        </button>
       </div>
 
-      {errorMessage && (
-        <p className="text-[11px] text-rose-500 font-medium">{errorMessage}</p>
-      )}
+      {errorMessage ? (
+        <p className="text-[11px] font-medium text-rose-500">{errorMessage}</p>
+      ) : null}
 
-      {isOpen && (
-        <div className="absolute left-0 top-full mt-1 w-full rounded-[6px] border border-[#CBD5E1] bg-white py-1 shadow-lg z-50 max-h-48 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          {filteredOptions.length > 0 ? (
-            filteredOptions.map((opt) => (
-              <div
-                key={opt}
-                onClick={() => {
-                  onChange(opt);
-                  setInputValue("");
-                  setIsOpen(false);
-                }}
-                className={cn(
-                  "px-3 py-1.5 text-xs text-[#1E293B] hover:bg-[#F1F5F9] cursor-pointer flex items-center justify-between",
-                  value === opt && "bg-[#F1F5F9] font-bold text-[#8B5CF6]",
-                )}
-              >
-                <span>{opt}</span>
-              </div>
-            ))
-          ) : (
-            <div
-              onClick={() => {
-                if (inputValue.trim()) {
-                  onChange(inputValue.trim());
-                  setInputValue("");
-                  setIsOpen(false);
-                }
-              }}
-              className="px-3 py-1.5 text-xs text-[#8B5CF6] hover:bg-[#F1F5F9] cursor-pointer font-medium"
-            >
-              + Thêm &quot;{inputValue}&quot;
-            </div>
-          )}
-        </div>
-      )}
+      {menu}
     </div>
   );
 }
@@ -235,7 +358,7 @@ export function ExamInfoStep() {
     if (!values.image_url && !imageCleared) {
       void setFieldValue("image_url", PRESET_IMAGES[0]);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -251,32 +374,132 @@ export function ExamInfoStep() {
     }
   }
 
-  const gradeParts = useMemo(() => {
-    const parts = (values.grade || "")
-      .split(" - ")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    return {
-      grade: parts[0] || "",
-      school: parts[1] || "",
-      subject: parts[2] || "",
-      topic: parts[3] || "",
+  type GradeParts = {
+    grade: string;
+    school: string;
+    subject: string;
+    topic: string;
+  };
+
+  function hasOption(options: readonly string[], value: string) {
+    const normalizedValue = value.trim().toLocaleLowerCase("vi");
+
+    return options.some(
+      (option) => option.trim().toLocaleLowerCase("vi") === normalizedValue,
+    );
+  }
+
+  const gradeParts = useMemo<GradeParts>(() => {
+    const rawValue = values.grade?.trim() ?? "";
+
+    if (!rawValue) {
+      return {
+        grade: "",
+        school: "",
+        subject: "",
+        topic: "",
+      };
+    }
+
+    /*
+     * Chuỗi mới có thể chứa ô trống ở giữa, ví dụ:
+     * "Lớp 12 -  - Toán học"
+     *
+     * Khi có ô trống, phải giữ đúng vị trí để Môn học không bị
+     * đọc nhầm thành Trường học.
+     */
+    const positionalParts = rawValue.split(" - ").map((part) => part.trim());
+
+    if (positionalParts.some((part) => part === "")) {
+      return {
+        grade: positionalParts[0] ?? "",
+        school: positionalParts[1] ?? "",
+        subject: positionalParts[2] ?? "",
+        topic: positionalParts[3] ?? "",
+      };
+    }
+
+    /*
+     * Tương thích dữ liệu cũ đã bị rút gọn, ví dụ:
+     * "Lớp 12 - Toán học"
+     *
+     * "Toán học" phải được nhận diện là Môn học, không phải Trường học.
+     */
+    const legacyParts = positionalParts.filter(Boolean);
+    const nextParts: GradeParts = {
+      grade: legacyParts[0] ?? "",
+      school: "",
+      subject: "",
+      topic: "",
     };
+
+    for (const part of legacyParts.slice(1)) {
+      const isSchool = hasOption(SCHOOL_OPTIONS, part);
+      const isSubject = hasOption(SUBJECT_OPTIONS, part);
+      const isTopic = hasOption(TOPIC_OPTIONS, part);
+      const isOther = part.toLocaleLowerCase("vi") === "khác";
+
+      if (!nextParts.school && isSchool && !isOther) {
+        nextParts.school = part;
+        continue;
+      }
+
+      if (!nextParts.subject && isSubject && !isOther) {
+        nextParts.subject = part;
+        continue;
+      }
+
+      if (!nextParts.topic && isTopic && !isOther) {
+        nextParts.topic = part;
+        continue;
+      }
+
+      if (!nextParts.school) {
+        nextParts.school = part;
+      } else if (!nextParts.subject) {
+        nextParts.subject = part;
+      } else if (!nextParts.topic) {
+        nextParts.topic = part;
+      }
+    }
+
+    return nextParts;
   }, [values.grade]);
 
-  function updateGradePart(
-    key: "grade" | "school" | "subject" | "topic",
-    val: string,
-  ) {
-    const nextParts = { ...gradeParts, [key]: val };
-    const partsList = [
+  function updateGradeParts(patch: Partial<GradeParts>) {
+    const nextParts: GradeParts = {
+      ...gradeParts,
+      ...patch,
+    };
+
+    const slots = [
       nextParts.grade.trim(),
       nextParts.school.trim(),
       nextParts.subject.trim(),
       nextParts.topic.trim(),
-    ].filter(Boolean);
+    ];
 
-    setFieldValue("grade", partsList.join(" - "));
+    /*
+     * Chỉ bỏ các ô trống ở cuối. Ô trống ở giữa phải được giữ lại,
+     * nếu không Môn học sẽ lại nhảy sang Trường học.
+     */
+    let lastFilledIndex = slots.length - 1;
+
+    while (lastFilledIndex >= 0 && !slots[lastFilledIndex]) {
+      lastFilledIndex -= 1;
+    }
+
+    const serializedValue =
+      lastFilledIndex >= 0
+        ? slots.slice(0, lastFilledIndex + 1).join(" - ")
+        : "";
+
+    void setFieldValue("grade", serializedValue);
+    void setFieldTouched("grade", true, false);
+  }
+
+  function updateGradePart(key: keyof GradeParts, value: string) {
+    updateGradeParts({ [key]: value });
   }
 
   return (
@@ -418,7 +641,12 @@ export function ExamInfoStep() {
             <TagCombobox
               label="Môn học"
               value={gradeParts.subject}
-              onChange={(val) => updateGradePart("subject", val)}
+              onChange={(val) =>
+                updateGradeParts({
+                  subject: val,
+                  topic: "",
+                })
+              }
               placeholder="Chọn Môn học"
               options={SUBJECT_OPTIONS}
             />

@@ -43,9 +43,8 @@ export default function StudentMaterialDetailPage({
   const [isLoadingDocument, setIsLoadingDocument] = useState(true);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const documentBreadcrumbHref = `/student/materials/${id}`;
-  const documentBreadcrumbLabel = document?.title?.trim() || (
-    isLoadingDocument ? null : "Chi tiết tài liệu"
-  );
+  const documentBreadcrumbLabel =
+    document?.title?.trim() || (isLoadingDocument ? null : "Chi tiết tài liệu");
 
   useBreadcrumbLabel(documentBreadcrumbHref, documentBreadcrumbLabel);
 
@@ -130,15 +129,26 @@ export default function StudentMaterialDetailPage({
         <PageHero
           eyebrow="Chi tiết tài liệu"
           title={document.title}
-          description={document.description || "Tài liệu học tập dành cho học sinh."}
+          description={
+            document.description || "Tài liệu học tập dành cho học sinh."
+          }
           icon={BookOpenText}
           actions={
             <>
-              <Button type="button" variant="outline" size="lg" onClick={() => setIsViewerOpen(true)}>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                onClick={() => setIsViewerOpen(true)}
+              >
                 <Maximize2 className="size-4" />
                 Mở toàn màn hình
               </Button>
-              <DocumentDownloadButton document={document} label="Tải xuống" size="lg" />
+              <DocumentDownloadButton
+                document={document}
+                label="Tải xuống"
+                size="lg"
+              />
             </>
           }
           metrics={[
@@ -191,13 +201,34 @@ export default function StudentMaterialDetailPage({
 
             <div className="space-y-3 text-sm text-muted-foreground">
               <DetailRow label="Tiêu đề" value={document.title} />
-              <DetailRow label="Mô tả" value={document.description || "Chưa có mô tả"} />
-              <DetailRow label="Tên file" value={document.fileName || "Chưa có"} />
-              <DetailRow label="Loại file" value={formatDocumentTypeLabel(document)} />
-              <DetailRow label="Dung lượng" value={formatFileSize(document.fileSize)} />
-              <DetailRow label="Ngày đăng" value={formatDocumentDateTime(document.createdAt)} />
-              <DetailRow label="Lớp học" value={document.classroomName || "Tài liệu hệ thống"} />
-              <DetailRow label="Người đăng" value={document.uploadedByName || "Chưa rõ"} />
+              <DetailRow
+                label="Mô tả"
+                value={document.description || "Chưa có mô tả"}
+              />
+              <DetailRow
+                label="Tên file"
+                value={document.fileName || "Chưa có"}
+              />
+              <DetailRow
+                label="Loại file"
+                value={formatDocumentTypeLabel(document)}
+              />
+              <DetailRow
+                label="Dung lượng"
+                value={formatFileSize(document.fileSize)}
+              />
+              <DetailRow
+                label="Ngày đăng"
+                value={formatDocumentDateTime(document.createdAt)}
+              />
+              <DetailRow
+                label="Lớp học"
+                value={document.classroomName || "Tài liệu hệ thống"}
+              />
+              <DetailRow
+                label="Người đăng"
+                value={document.uploadedByName || "Chưa rõ"}
+              />
             </div>
           </SurfacePanel>
         </div>
