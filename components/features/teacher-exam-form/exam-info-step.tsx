@@ -69,6 +69,10 @@ interface TagComboboxProps {
   className?: string;
 }
 
+function normalizeCustomOption(value: string): string {
+  return value.trim().replace(/\s+/g, " ");
+}
+
 function TagCombobox({
   label,
   required,
@@ -191,7 +195,7 @@ function TagCombobox({
               <button
                 type="button"
                 onClick={() => {
-                  const customValue = inputValue.trim();
+                  const customValue = normalizeCustomOption(inputValue);
 
                   if (!customValue) return;
 
@@ -224,6 +228,17 @@ function TagCombobox({
           if (!isOpen) openMenu();
         }}
         onKeyDown={(event) => {
+          const target = event.target;
+
+          const isTypingElement =
+            target instanceof HTMLInputElement ||
+            target instanceof HTMLTextAreaElement ||
+            (target instanceof HTMLElement && target.isContentEditable);
+
+          if (isTypingElement) {
+            return;
+          }
+
           if (
             event.key === "Enter" ||
             event.key === " " ||
@@ -280,9 +295,17 @@ function TagCombobox({
                 }
               }}
               onKeyDown={(event) => {
-                if (event.key === "Enter" && inputValue.trim()) {
+                if (event.key === "Enter") {
+                  const customValue = normalizeCustomOption(inputValue);
+
+                  if (!customValue) {
+                    return;
+                  }
+
                   event.preventDefault();
-                  onChange(inputValue.trim());
+                  event.stopPropagation();
+
+                  onChange(customValue);
                   setInputValue("");
                   setIsOpen(false);
                 }

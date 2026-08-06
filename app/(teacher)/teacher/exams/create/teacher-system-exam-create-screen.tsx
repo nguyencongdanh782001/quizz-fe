@@ -125,6 +125,7 @@ export function TeacherSystemExamCreateScreen({
   const [isImportDialogOpen, setIsImportDialogOpen] =
     useState(initialImportOpen);
   const [toast, setToast] = useState<ScreenToastState | null>(null);
+  const [cancelRequestKey, setCancelRequestKey] = useState(0);
   const redirectTimeoutRef = useRef<number | null>(null);
   const normalizedEditId = editId?.trim() ? editId.trim() : null;
   const isEditMode = normalizedEditId !== null;
@@ -153,6 +154,17 @@ export function TeacherSystemExamCreateScreen({
       ...nextToast,
       open: true,
     });
+  }
+
+  function handleBackClick() {
+    const formIsMounted = !isEditMode || Boolean(detailQuery.data);
+
+    if (formIsMounted) {
+      setCancelRequestKey((current) => current + 1);
+      return;
+    }
+
+    router.push("/teacher/exams");
   }
 
   async function handleSubmit(values: TeacherExamFormValues) {
@@ -271,13 +283,14 @@ export function TeacherSystemExamCreateScreen({
                 : "Hoàn thiện đề thi theo từng bước rõ ràng: nhập thông tin chung, xây dựng câu hỏi, sau đó xem lại toàn bộ nội dung trước khi lưu."}
             </p>
           </div>
-          <Link
-            href="/teacher/exams"
+          <button
+            type="button"
+            onClick={handleBackClick}
             className="flex shrink-0 items-center gap-1.5 rounded-[6px] bg-[#EF4444] px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#DC2626]"
           >
             <ArrowLeft className="size-3.5" />
             Trở về
-          </Link>
+          </button>
         </div>
 
         {isEditMode && detailQuery.isLoading ? (
@@ -310,6 +323,7 @@ export function TeacherSystemExamCreateScreen({
                 ? EXAM_FLOW_MESSAGES.loading.update
                 : EXAM_FLOW_MESSAGES.loading.save
             }
+            cancelRequestKey={cancelRequestKey}
           />
         ) : null}
       </div>

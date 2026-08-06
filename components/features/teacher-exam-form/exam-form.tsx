@@ -20,8 +20,9 @@ import {
   LoaderCircle,
   Save,
   Sparkles,
+  TriangleAlert,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EXAM_FLOW_MESSAGES } from "@/components/exams/exam-flow-messages";
 import {
   AlertDialog,
@@ -166,11 +167,11 @@ function hasInfoStepErrors(
 ): boolean {
   return Boolean(
     errors.title ||
-      errors.grade ||
-      errors.image_url ||
-      errors.duration_minutes ||
-      errors.start_time ||
-      errors.end_time,
+    errors.grade ||
+    errors.image_url ||
+    errors.duration_minutes ||
+    errors.start_time ||
+    errors.end_time,
   );
 }
 
@@ -207,6 +208,7 @@ function ExamFormBody({
   submitError,
   submitContextLabel,
   confirmCancelOnFirstStep,
+  cancelRequestKey,
 }: {
   cancelHref: string;
   isSubmitting: boolean;
@@ -215,6 +217,7 @@ function ExamFormBody({
   submitError?: string | null;
   submitContextLabel: string;
   confirmCancelOnFirstStep: boolean;
+  cancelRequestKey?: number;
 }) {
   const router = useRouter();
   const {
@@ -229,6 +232,11 @@ function ExamFormBody({
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [maxVisitedStepIndex, setMaxVisitedStepIndex] = useState(2);
   const [openCancelModal, setOpenCancelModal] = useState(false);
+  const [pendingNavigationHref, setPendingNavigationHref] = useState<
+    string | null
+  >(null);
+  const [navigationAllowed, setNavigationAllowed] = useState(false);
+  const handledCancelRequestKeyRef = useRef(cancelRequestKey);
   const currentStep = EXAM_STEPS[currentStepIndex];
   const questionCount = values.questions.length;
   const completedQuestionCount = getCompletedQuestionCount(values);
@@ -513,20 +521,66 @@ function ExamFormBody({
     }
   }
 
-  function handleCancelClick() {
-    if (confirmCancelOnFirstStep || (currentStepIndex === 0 && dirty)) {
-      setOpenCancelModal(true);
-      return;
-    }
+  const requestNavigation = useCallback(
+    (href: string) => {
+      if (!dirty && !confirmCancelOnFirstStep) {
+        setNavigationAllowed(true);
 
-    router.push(cancelHref);
+        window.setTimeout(() => {
+          router.push(href);
+        }, 0);
+
+        return;
+      }
+
+      setPendingNavigationHref(href);
+      setOpenCancelModal(true);
+    },
+    [confirmCancelOnFirstStep, dirty, router],
+  );
+
+  function handleCancelClick() {
+    requestNavigation(cancelHref);
+  }
+
+  function handleCancelModalChange(open: boolean) {
+    setOpenCancelModal(open);
+
+    if (!open) {
+      setPendingNavigationHref(null);
+    }
   }
 
   function handleConfirmCancel() {
+    const destination = pendingNavigationHref ?? cancelHref;
+
+    /*
+     * Gỡ guard trước khi điều hướng để không hiện thêm hộp thoại mặc định.
+     * resetForm() chỉ làm sạch trạng thái Formik sau khi người dùng xác nhận.
+     */
+    setNavigationAllowed(true);
     resetForm();
     setOpenCancelModal(false);
-    router.push(cancelHref);
+    setPendingNavigationHref(null);
+
+    window.setTimeout(() => {
+      router.push(destination);
+    }, 0);
   }
+
+  useEffect(() => {
+    if (
+      cancelRequestKey === undefined ||
+      cancelRequestKey === handledCancelRequestKeyRef.current
+    ) {
+      return;
+    }
+
+    handledCancelRequestKeyRef.current = cancelRequestKey;
+    handleCancelClick();
+    // Chỉ xử lý khi màn hình cha phát một yêu cầu trở về mới.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cancelRequestKey]);
 
   function renderCurrentStep() {
     if (currentStep.id === "info") {
@@ -534,7 +588,7 @@ function ExamFormBody({
     }
 
     if (currentStep.id === "questions") {
-      return <QuestionBuilderStep />;
+      return <QuestionBuilderStep hideFooter={openCancelModal} />;
     }
 
     return <ReviewStep />;
@@ -547,7 +601,13 @@ function ExamFormBody({
 
   return (
     <>
-      <Form className="pb-10 space-y-4">
+      <UnsavedChangesGuard
+        enabled={!navigationAllowed && (dirty || confirmCancelOnFirstStep)}
+        message={EXAM_FLOW_MESSAGES.confirmations.leavePage}
+        onNavigationRequest={requestNavigation}
+      />
+
+      <Form className="space-y-4 pb-10">
         <ExamStepLayout
           steps={EXAM_STEPS}
           currentStepIndex={currentStepIndex}
@@ -626,26 +686,49 @@ function ExamFormBody({
             </div>
           }
         >
-          <div className="w-full">
-            {renderCurrentStep()}
-          </div>
+          <div className="w-full">{renderCurrentStep()}</div>
         </ExamStepLayout>
       </Form>
 
-      <AlertDialog open={openCancelModal} onOpenChange={setOpenCancelModal}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Xác nhận hủy tạo đề thi</AlertDialogTitle>
-            <AlertDialogDescription>
-              Bạn có thay đổi chưa được lưu.
-              <br />
-              Bạn có chắc chắn muốn hủy tạo đề thi không?
+      <AlertDialog
+        open={openCancelModal}
+        onOpenChange={handleCancelModalChange}
+      >
+        <AlertDialogContent className="w-[calc(100%-32px)] max-w-[360px] rounded-[6px] border border-[#E2E8F0] p-5 shadow-2xl">
+          <AlertDialogHeader className="space-y-0 text-left">
+            <div className="mb-3 flex size-9 items-center justify-center rounded-[6px] bg-amber-50 text-amber-600">
+              <TriangleAlert className="size-4" />
+            </div>
+
+            <AlertDialogTitle className="text-base font-bold leading-6 text-[#0F172A]">
+              Rời khỏi trang tạo đề?
+            </AlertDialogTitle>
+
+            <AlertDialogDescription className="mt-2 text-xs leading-5 text-[#64748B]">
+              Các thay đổi chưa lưu sẽ bị mất khi bạn chuyển sang trang khác.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Tiếp tục chỉnh sửa</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmCancel}>
-              Xác nhận hủy
+
+          <div className="mt-4 rounded-[6px] border border-amber-200 bg-amber-50 px-3 py-2.5">
+            <p className="text-xs font-semibold text-amber-800">
+              Bước {currentStepIndex + 1}: {currentStep.title}
+            </p>
+            <p className="mt-1 text-[11px] leading-4 text-amber-700">
+              Tiếp tục chỉnh sửa để hoàn thiện đề, hoặc rời khỏi trang để bỏ
+              thay đổi chưa lưu.
+            </p>
+          </div>
+
+          <AlertDialogFooter className="mt-5 gap-2 sm:justify-end sm:space-x-0">
+            <AlertDialogCancel className="mt-0 h-9 rounded-[6px] border-[#CBD5E1] px-3.5 text-xs font-bold text-[#334155]">
+              Tiếp tục chỉnh sửa
+            </AlertDialogCancel>
+
+            <AlertDialogAction
+              onClick={handleConfirmCancel}
+              className="h-9 rounded-[6px] bg-[#EF4444] px-3.5 text-xs font-bold text-white hover:bg-[#DC2626]"
+            >
+              Rời khỏi trang
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -664,6 +747,7 @@ export function ExamForm({
   submitError,
   submitContextLabel = "lớp học",
   confirmCancelOnFirstStep = false,
+  cancelRequestKey,
 }: {
   initialValues: TeacherExamFormValues;
   onSubmit: (values: TeacherExamFormValues) => Promise<void>;
@@ -674,6 +758,7 @@ export function ExamForm({
   submitError?: string | null;
   submitContextLabel?: string;
   confirmCancelOnFirstStep?: boolean;
+  cancelRequestKey?: number;
 }) {
   return (
     <Formik<TeacherExamFormValues>
@@ -685,9 +770,6 @@ export function ExamForm({
       }}
     >
       <>
-        <UnsavedChangesGuard
-          message={EXAM_FLOW_MESSAGES.confirmations.leavePage}
-        />
         <ExamFormBody
           cancelHref={cancelHref}
           isSubmitting={isSubmitting}
@@ -696,6 +778,7 @@ export function ExamForm({
           submitError={submitError}
           submitContextLabel={submitContextLabel}
           confirmCancelOnFirstStep={confirmCancelOnFirstStep}
+          cancelRequestKey={cancelRequestKey}
         />
       </>
     </Formik>

@@ -74,6 +74,21 @@ export async function getTeacherSystemExams(
   };
 }
 
+export async function getTeacherExploreExams(
+  query: TeacherExamQuery = {},
+): Promise<TeacherExamListResult> {
+  const response = await client.get<TeacherSystemExamListResponse>(
+    "/teacher/exams/explore",
+    {
+      params: toApiParams(query),
+    },
+  );
+
+  return {
+    items: (response.data.items ?? []).map(mapTeacherExam),
+  };
+}
+
 export async function getTeacherSystemExamDetail(
   examId: number | string,
 ): Promise<TeacherExam> {
