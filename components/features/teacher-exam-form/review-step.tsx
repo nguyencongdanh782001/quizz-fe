@@ -88,15 +88,21 @@ function RichTextPreview({
   );
 }
 
-export function ReviewStep() {
-  const { values, isSubmitting, submitForm, validateForm } =
-    useFormikContext<TeacherExamFormValues>();
+export function ReviewStep({
+  onRequestSubmit,
+  submitLabel = "Lưu đề thi",
+  submittingLabel = "Đang lưu đề thi...",
+}: {
+  onRequestSubmit: () => Promise<void> | void;
+  submitLabel?: string;
+  submittingLabel?: string;
+}) {
+  const { values, isSubmitting } = useFormikContext<TeacherExamFormValues>();
   const questionCount = values.questions.length;
   const totalPoints = getTeacherExamTotalPoints(questionCount);
 
   async function handleSaveExam() {
-    await validateForm();
-    await submitForm();
+    await onRequestSubmit();
   }
 
   return (
@@ -381,7 +387,7 @@ export function ReviewStep() {
             ) : (
               <Save className="size-4" />
             )}
-            <span>{isSubmitting ? "Đang lưu đề thi..." : "Lưu đề thi"}</span>
+            <span>{isSubmitting ? submittingLabel : submitLabel}</span>
           </Button>
         </div>
 

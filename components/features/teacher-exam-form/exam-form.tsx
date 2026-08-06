@@ -92,6 +92,70 @@ function countErrorMessages(value: unknown): number {
   return 0;
 }
 
+function getFirstErrorMessage(value: unknown): string | null {
+  if (typeof value === "string" && value.trim()) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const message = getFirstErrorMessage(item);
+
+      if (message) {
+        return message;
+      }
+    }
+
+    return null;
+  }
+
+  if (value && typeof value === "object") {
+    for (const item of Object.values(value)) {
+      const message = getFirstErrorMessage(item);
+
+      if (message) {
+        return message;
+      }
+    }
+  }
+
+  return null;
+}
+
+function getFirstQuestionErrorIndex(
+  errors: FormikErrors<TeacherExamFormValues>,
+): number | null {
+  const questionErrors = errors.questions;
+
+  if (!questionErrors) {
+    return null;
+  }
+
+  if (Array.isArray(questionErrors)) {
+    const errorIndex = questionErrors.findIndex(
+      (questionError) => countErrorMessages(questionError) > 0,
+    );
+
+    return errorIndex >= 0 ? errorIndex : 0;
+  }
+
+  return 0;
+}
+
+function getQuestionValidationMessage(
+  errors: FormikErrors<TeacherExamFormValues>,
+  questionIndex: number,
+): string {
+  const questionErrors = Array.isArray(errors.questions)
+    ? errors.questions[questionIndex]
+    : errors.questions;
+  const detail = getFirstErrorMessage(questionErrors);
+
+  return detail
+    ? `Câu ${questionIndex + 1}: ${detail}`
+    : `Câu ${questionIndex + 1} chưa hoàn thiện. Vui lòng bổ sung nội dung câu hỏi và đáp án.`;
+}
+
 function getCompletedQuestionCount(values: TeacherExamFormValues): number {
   return values.questions.filter((question) => {
     const questionType = normalizeTeacherExamQuestionType(
@@ -104,6 +168,10 @@ function getCompletedQuestionCount(values: TeacherExamFormValues): number {
     }
 
     if (questionType === "text") {
+      return true;
+    }
+
+    if (questionType === "fill_in_blank" || questionType === "short_answer") {
       return normalizeAcceptedAnswers(question.accepted_answers).length > 0;
     }
 
@@ -168,6 +236,8 @@ function hasInfoStepErrors(
   return Boolean(
     errors.title ||
     errors.grade ||
+    errors.scope ||
+    errors.classroom_id ||
     errors.image_url ||
     errors.duration_minutes ||
     errors.start_time ||
@@ -203,6 +273,8 @@ function scrollCreateExamContentToTop() {
 function ExamFormBody({
   cancelHref,
   isSubmitting,
+  isSavingDraft,
+  onSaveDraft,
   submitLabel,
   submittingLabel,
   submitError,
@@ -212,6 +284,8 @@ function ExamFormBody({
 }: {
   cancelHref: string;
   isSubmitting: boolean;
+  isSavingDraft: boolean;
+  onSaveDraft?: (values: TeacherExamFormValues) => Promise<void>;
   submitLabel: string;
   submittingLabel: string;
   submitError?: string | null;
@@ -227,6 +301,7 @@ function ExamFormBody({
     isValid,
     resetForm,
     setTouched,
+    submitForm,
     validateForm,
   } = useFormikContext<TeacherExamFormValues>();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -236,6 +311,12 @@ function ExamFormBody({
     string | null
   >(null);
   const [navigationAllowed, setNavigationAllowed] = useState(false);
+  const [validationNotice, setValidationNotice] = useState<string | null>(null);
+  const [requestedQuestionIndex, setRequestedQuestionIndex] = useState<
+    number | null
+  >(null);
+  const [requestedQuestionRequestKey, setRequestedQuestionRequestKey] =
+    useState(0);
   const handledCancelRequestKeyRef = useRef(cancelRequestKey);
   const currentStep = EXAM_STEPS[currentStepIndex];
   const questionCount = values.questions.length;
@@ -498,11 +579,41 @@ function ExamFormBody({
     const validationErrors = await validateForm();
 
     if (hasBlockingErrorsForStep(currentStep.id, validationErrors)) {
-      void setTouched(createTouchedStateForStep(values, currentStep.id), false);
-      scrollCreateExamContentToTop();
+      await setTouched(
+        createTouchedStateForStep(values, currentStep.id),
+        false,
+      );
+
+      if (hasInfoStepErrors(validationErrors)) {
+        setValidationNotice(
+          getFirstErrorMessage({
+            title: validationErrors.title,
+            grade: validationErrors.grade,
+            scope: validationErrors.scope,
+            classroom_id: validationErrors.classroom_id,
+            image_url: validationErrors.image_url,
+            duration_minutes: validationErrors.duration_minutes,
+            start_time: validationErrors.start_time,
+            end_time: validationErrors.end_time,
+          }) ?? "Vui lòng hoàn thiện thông tin cơ bản của đề thi.",
+        );
+        setCurrentStepIndex(0);
+      } else {
+        const questionIndex = getFirstQuestionErrorIndex(validationErrors) ?? 0;
+
+        setRequestedQuestionIndex(questionIndex);
+        setRequestedQuestionRequestKey((current) => current + 1);
+        setValidationNotice(
+          getQuestionValidationMessage(validationErrors, questionIndex),
+        );
+        setCurrentStepIndex(1);
+      }
+
+      window.setTimeout(scrollCreateExamContentToTop, 0);
       return;
     }
 
+    setValidationNotice(null);
     setCurrentStepIndex((previousIndex) =>
       Math.min(previousIndex + 1, EXAM_STEPS.length - 1),
     );
@@ -511,12 +622,70 @@ function ExamFormBody({
     );
   }
 
+  async function handleFinalSubmit() {
+    if (isSubmitting) {
+      return;
+    }
+
+    const validationErrors = await validateForm();
+
+    if (countErrorMessages(validationErrors) === 0) {
+      setValidationNotice(null);
+      await submitForm();
+      return;
+    }
+
+    await setTouched(createTouchedStateForStep(values, "review"), false);
+
+    if (hasInfoStepErrors(validationErrors)) {
+      setValidationNotice(
+        getFirstErrorMessage({
+          title: validationErrors.title,
+          grade: validationErrors.grade,
+          scope: validationErrors.scope,
+          classroom_id: validationErrors.classroom_id,
+          image_url: validationErrors.image_url,
+          duration_minutes: validationErrors.duration_minutes,
+          start_time: validationErrors.start_time,
+          end_time: validationErrors.end_time,
+        }) ?? "Vui lòng hoàn thiện thông tin cơ bản trước khi lưu đề thi.",
+      );
+      setCurrentStepIndex(0);
+      setMaxVisitedStepIndex((current) => Math.max(current, 2));
+      window.setTimeout(scrollCreateExamContentToTop, 0);
+      return;
+    }
+
+    const questionIndex = getFirstQuestionErrorIndex(validationErrors);
+
+    if (questionIndex !== null) {
+      setRequestedQuestionIndex(questionIndex);
+      setRequestedQuestionRequestKey((current) => current + 1);
+      setValidationNotice(
+        getQuestionValidationMessage(validationErrors, questionIndex),
+      );
+      setCurrentStepIndex(1);
+      setMaxVisitedStepIndex((current) => Math.max(current, 2));
+      window.setTimeout(scrollCreateExamContentToTop, 0);
+      return;
+    }
+
+    setValidationNotice(
+      getFirstErrorMessage(validationErrors) ??
+        "Đề thi chưa hoàn thiện. Vui lòng kiểm tra lại các thông tin bắt buộc.",
+    );
+    setCurrentStepIndex(0);
+    window.setTimeout(scrollCreateExamContentToTop, 0);
+  }
+
   function handlePreviousStep() {
+    setValidationNotice(null);
     setCurrentStepIndex((previousIndex) => Math.max(previousIndex - 1, 0));
   }
 
   function handleStepSelect(stepIndex: number) {
     if (stepIndex <= maxVisitedStepIndex) {
+      setValidationNotice(null);
       setCurrentStepIndex(stepIndex);
     }
   }
@@ -588,10 +757,25 @@ function ExamFormBody({
     }
 
     if (currentStep.id === "questions") {
-      return <QuestionBuilderStep hideFooter={openCancelModal} />;
+      return (
+        <QuestionBuilderStep
+          hideFooter={openCancelModal}
+          isSavingDraft={isSavingDraft}
+          onSaveDraft={onSaveDraft}
+          requestedQuestionIndex={requestedQuestionIndex}
+          requestedQuestionRequestKey={requestedQuestionRequestKey}
+          validationMessage={validationNotice}
+        />
+      );
     }
 
-    return <ReviewStep />;
+    return (
+      <ReviewStep
+        onRequestSubmit={handleFinalSubmit}
+        submitLabel={submitLabel}
+        submittingLabel={submittingLabel}
+      />
+    );
   }
 
   const nextButtonLabel =
@@ -658,9 +842,10 @@ function ExamFormBody({
                 )}
 
                 <Button
-                  type="submit"
+                  type="button"
                   size="lg"
-                  disabled={isSubmitting || !isValid}
+                  disabled={isSubmitting}
+                  onClick={() => void handleFinalSubmit()}
                   className={`${currentStep.id !== "review" ? "hidden" : ""}`}
                 >
                   {isSubmitting ? (
@@ -686,7 +871,20 @@ function ExamFormBody({
             </div>
           }
         >
-          <div className="w-full">{renderCurrentStep()}</div>
+          <div className="w-full space-y-3">
+            {validationNotice ? (
+              <div
+                role="alert"
+                aria-live="assertive"
+                className="flex items-start gap-2 rounded-[6px] border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-semibold leading-5 text-rose-700"
+              >
+                <CircleAlert className="mt-0.5 size-4 shrink-0" />
+                <span>{validationNotice}</span>
+              </div>
+            ) : null}
+
+            {renderCurrentStep()}
+          </div>
         </ExamStepLayout>
       </Form>
 
@@ -740,8 +938,10 @@ function ExamFormBody({
 export function ExamForm({
   initialValues,
   onSubmit,
+  onSaveDraft,
   cancelHref,
   isSubmitting,
+  isSavingDraft = false,
   submitLabel = EXAM_FLOW_MESSAGES.buttons.save,
   submittingLabel = EXAM_FLOW_MESSAGES.loading.save,
   submitError,
@@ -751,8 +951,10 @@ export function ExamForm({
 }: {
   initialValues: TeacherExamFormValues;
   onSubmit: (values: TeacherExamFormValues) => Promise<void>;
+  onSaveDraft?: (values: TeacherExamFormValues) => Promise<void>;
   cancelHref: string;
   isSubmitting: boolean;
+  isSavingDraft?: boolean;
   submitLabel?: string;
   submittingLabel?: string;
   submitError?: string | null;
@@ -773,6 +975,8 @@ export function ExamForm({
         <ExamFormBody
           cancelHref={cancelHref}
           isSubmitting={isSubmitting}
+          isSavingDraft={isSavingDraft}
+          onSaveDraft={onSaveDraft}
           submitLabel={submitLabel}
           submittingLabel={submittingLabel}
           submitError={submitError}

@@ -185,11 +185,24 @@ function formatDateOnly(dateString: string | null | undefined): string {
   return `${day}/${month}/${year}`;
 }
 
+function isDraftExam(isPublished: boolean, isActive: boolean): boolean {
+  return !isPublished && !isActive;
+}
+
 function renderVisibilityBadge(
   is_published: boolean,
   is_active: boolean,
   scope?: string | null,
 ) {
+  if (isDraftExam(is_published, is_active)) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-[4px] border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+        <FileX2 className="size-3" />
+        Bản nháp
+      </span>
+    );
+  }
+
   if (!is_published) {
     return (
       <span className="inline-flex items-center gap-1 rounded-[4px] border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
@@ -565,6 +578,11 @@ export function ExamList() {
                   ) : (
                     visibleItems.map((exam) => {
                       const { level, subject } = parseGradeParts(exam.grade);
+                      const isDraft = isDraftExam(
+                        exam.is_published,
+                        exam.is_active,
+                      );
+
                       return (
                         <tr
                           key={exam.id}
@@ -584,8 +602,16 @@ export function ExamList() {
                             </div>
                           </td>
                           <td className="px-3.5 py-2.5">
-                            <div className="max-w-xs font-bold text-[#1E293B] line-clamp-2 break-words">
-                              {exam.title}
+                            <div className="flex max-w-xs flex-wrap items-center gap-1.5">
+                              <span className="line-clamp-2 break-words font-bold text-[#1E293B]">
+                                {exam.title}
+                              </span>
+
+                              {isDraft ? (
+                                <span className="inline-flex shrink-0 items-center rounded-[4px] border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
+                                  Nháp
+                                </span>
+                              ) : null}
                             </div>
                           </td>
                           <td className="px-3.5 py-2.5 text-[#526079]">
