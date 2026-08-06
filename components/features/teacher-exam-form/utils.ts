@@ -432,6 +432,8 @@ function buildExamPayload(
     is_active: values.is_active,
     total_points: DEFAULT_TEACHER_EXAM_TOTAL_POINTS,
     point_mode: DEFAULT_TEACHER_EXAM_POINT_MODE,
+    assignment_type: "exam",
+    max_attempts: null,
     questions: questions.map((question, index) =>
       mapQuestion(
         question,

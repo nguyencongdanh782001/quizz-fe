@@ -4,12 +4,22 @@ const studentExamRootQueryKey = ["student-exams"] as const;
 
 export const studentExamQueryKeys = {
   all: studentExamRootQueryKey,
+
   system: () => [...studentExamRootQueryKey, "system"] as const,
-  systemTotal: () =>
-    [...studentExamRootQueryKey, "system", "total"] as const,
+
+  systemTotal: () => [...studentExamRootQueryKey, "system", "total"] as const,
+
   systemList: (params: StudentSystemExamListParams = {}) =>
     [...studentExamRootQueryKey, "system", "list", params] as const,
+
+  // Thêm hai dòng khai báo cho API khám phá đề thi
+  explore: () => [...studentExamRootQueryKey, "explore"] as const,
+
+  exploreList: (params: StudentSystemExamListParams = {}) =>
+    [...studentExamRootQueryKey, "explore", "list", params] as const,
+
   classes: () => [...studentExamRootQueryKey, "classes"] as const,
+
   classList: (
     classId: string | number,
     params: StudentSystemExamListParams = {},

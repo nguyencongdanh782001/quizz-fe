@@ -9,6 +9,7 @@ import type {
   TeacherCreateExamRequest,
   TeacherUpdateClassExamRequest,
   TeacherUpdateClassRequest,
+  ExamAssignmentType,
 } from '@/lib/api/types';
 import { mapTeacherExam } from '@/lib/teacher-exam-mapper';
 import type { ClassInfo, ClassStudent } from '@/types/class.types';
@@ -16,6 +17,27 @@ import type { Document } from '@/types/document.types';
 import type { TeacherExam } from '@/types/exam';
 import type { Exam, ExamDifficulty } from '@/types/exam.types';
 
+export interface TeacherClassExamListParams {
+  limit?: number;
+  offset?: number;
+  assignmentType?: ExamAssignmentType;
+  assignment_type?: ExamAssignmentType;
+}
+
+function normalizeTeacherClassExamParams(
+  params: TeacherClassExamListParams = {},
+): Record<string, string | number> | undefined {
+  const assignmentType = params.assignment_type ?? params.assignmentType;
+  const out: Record<string, string | number> = {};
+  if (typeof params.limit === "number") out.limit = params.limit;
+  if (typeof params.offset === "number") out.offset = params.offset;
+  if (assignmentType) out.assignment_type = assignmentType;
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+function toExamAssignmentType(value: unknown): ExamAssignmentType {
+  return value === "test" ? "test" : "exam";
+}
 export interface UpdateTeacherClassroomResult {
   message: string;
   classroom: ClassInfo;
@@ -158,6 +180,9 @@ function mapTeacherClassExam(item: TeacherClassExamSchema): Exam {
     createdBy: 'teacher',
     createdAt: item.created_at,
     updatedAt: item.updated_at,
+    assignmentType: toExamAssignmentType(item.assignment_type),
+    examType: toExamAssignmentType(item.assignment_type),
+    maxAttempts: item.max_attempts ?? null,
     thumbnailUrl: item.image_url ?? undefined,
     tags: [item.scope, item.is_published ? 'published' : 'draft'].filter(Boolean),
     classIds: item.classroom_id ? [String(item.classroom_id)] : [],
@@ -231,8 +256,12 @@ export async function createTeacherClassDocument(
 
 export async function getTeacherClassExams(
   classId: string,
+  params: TeacherClassExamListParams = {},
 ): Promise<Exam[]> {
-  const response = await teacherApi.teacher.classes.exams(classId);
+  const response = await teacherApi.teacher.classes.exams(
+    classId,
+    normalizeTeacherClassExamParams(params),
+  );
   return (response.data.items ?? []).map(mapTeacherClassExam);
 }
 

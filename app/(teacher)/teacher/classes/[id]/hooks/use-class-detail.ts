@@ -21,7 +21,7 @@ import type { ApiError, TeacherUpdateClassRequest } from "@/lib/api/types";
 import type { ClassStudent, ClassInfo } from "@/types/class.types";
 import { teacherClassDetailQueryKeys } from "../query-keys";
 
-export type TeacherClassTab = "students" | "exams" | "documents";
+export type TeacherClassTab = "students" | "tests" | "exams" | "documents";
 export type RemoveStudentResult =
   | {
       status: "success";
@@ -76,7 +76,7 @@ export function useClassDetail(classId: string) {
   const examsQuery = useQuery({
     queryKey: teacherClassDetailQueryKeys.exams(classId),
     queryFn: async () => getTeacherClassExams(classId),
-    enabled: activeTab === "exams",
+    enabled: activeTab === "exams" || activeTab === "tests",
   });
   const documentsQuery = useQuery({
     queryKey: teacherClassDetailQueryKeys.documents(classId),
@@ -160,6 +160,7 @@ export function useClassDetail(classId: string) {
       case "students":
         await studentsQuery.refetch();
         return;
+      case "tests":
       case "exams":
         await examsQuery.refetch();
         return;
@@ -255,7 +256,7 @@ export function useClassDetail(classId: string) {
   const isLoadingStudents =
     studentsQuery.isPending && studentsQuery.data === undefined;
   const isLoadingExams =
-    activeTab === "exams" &&
+    (activeTab === "exams" || activeTab === "tests") &&
     examsQuery.isPending &&
     examsQuery.data === undefined;
   const isLoadingDocuments =

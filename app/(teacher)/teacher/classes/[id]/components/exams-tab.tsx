@@ -29,12 +29,16 @@ export function ExamsTab({
   isLoading,
   error,
   onRetry,
+  title = "Danh sách bài thi",
+  buttonText = "Tạo bài thi",
 }: {
   classId: string;
   exams: Exam[];
   isLoading: boolean;
   error: string | null;
   onRetry: () => void | Promise<void>;
+  title?: string;
+  buttonText?: string;
 }) {
   const [toast, setToast] = useState<ExamToastState | null>(null);
 
@@ -53,13 +57,13 @@ export function ExamsTab({
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="font-display text-lg font-semibold text-[#1E293B]">
-              Danh sách bài kiểm tra
+              {title}
             </h2>
           </div>
           <Button asChild>
-            <Link href={`/teacher/classes/${classId}/exams/create`}>
+            <Link href="/teacher/exams">
               <Plus className="h-4 w-4" />
-              Tạo bài thi
+              {buttonText}
             </Link>
           </Button>
         </div>

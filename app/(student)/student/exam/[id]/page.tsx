@@ -96,7 +96,7 @@ export default function ExamDetailPage({
     return (
       <div className="space-y-6">
         <Link
-          href="/student/exams"
+          href="/student/library"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-on-surface"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -146,7 +146,7 @@ export default function ExamDetailPage({
   return (
     <div className="space-y-8">
       <Link
-        href="/student/exams"
+        href="/student/library"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-on-surface"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -204,7 +204,7 @@ export default function ExamDetailPage({
                 </p>
               )}
               <Link
-                href="/student/exams"
+                href="/student/library"
                 className="inline-flex items-center justify-center gap-2 rounded-[8px] border border-outline/20 px-5 py-3 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low"
               >
                 Danh sách đề thi

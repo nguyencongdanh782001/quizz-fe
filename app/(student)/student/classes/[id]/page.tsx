@@ -1,58 +1,34 @@
 "use client";
 
-import { use, useEffect, useRef, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { ExternalLink } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { ClassDetailHeader } from "@/components/features/class-detail/class-detail-header";
+import { ClassDetailTabs } from "@/components/features/class-detail/class-detail-tabs";
 import {
-  AlertCircle,
-  ArrowLeft,
-  BookOpen,
-  CalendarDays,
-  CheckCircle,
-  Clock,
-  FileCheck,
-  Files,
-  Hash,
-  History,
-  Trophy,
-} from "lucide-react";
+  ClassExamList,
+  type ClassExamAvailability,
+  type ClassExamTableItem,
+} from "@/components/features/class-detail/class-exam-list";
+import {
+  ClassDocumentList,
+  type ClassDocumentListItem,
+} from "@/components/features/class-detail/class-document-list";
+import { ClassEmptyState } from "@/components/features/class-detail/class-empty-state";
+import { ClassLoadingState } from "@/components/features/class-detail/class-loading-state";
+
 import { getStudentClassById } from "@/lib/student-classes";
 import { getStudentClassDocuments } from "@/lib/student-system-documents";
 import { useStudentClassExams } from "@/hooks/queries/use-student-class-exams";
-import {
-  createEmptyStudentSystemResults,
-  getStudentClassResults,
-  type StudentSystemResultListData,
-} from "@/lib/student-system-results";
-import { DocumentList } from "@/components/features/document/document-list";
-import { DocumentToastProvider } from "@/components/features/document/document-toast";
-import { ExamCard } from "@/components/features/exam/exam-card";
 import { useBreadcrumbLabel } from "@/components/shared/breadcrumb-labels";
-import { Button } from "@/components/ui/button";
+import { useNow } from "@/hooks/use-now";
+
 import type { ClassInfo } from "@/types/class.types";
 import type { Document } from "@/types/document.types";
-import { cn } from "@/lib/utils";
-import type { StudentDocumentSortOption } from "@/lib/student-system-documents";
 
-type ClassTab = "exams" | "results" | "documents";
-
-const DATE_TIME_FORMATTER = new Intl.DateTimeFormat("vi-VN", {
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-});
-
-function formatDate(iso: string): string {
-  return DATE_TIME_FORMATTER.format(new Date(iso));
-}
-
-function formatPercent(value: number): string {
-  const roundedValue = Math.round(value * 10) / 10;
-  return Number.isInteger(roundedValue)
-    ? `${roundedValue}%`
-    : `${roundedValue.toFixed(1)}%`;
-}
+type ClassTab = "tests" | "exams" | "documents";
 
 function getErrorMessage(error: unknown, fallback: string): string {
   if (
@@ -68,68 +44,105 @@ function getErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-export default function ClassDetailPage({
+function parseExamTime(value?: string | null): number | null {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value).getTime();
+
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getExamStatus(
+  exam: {
+    isActive?: boolean;
+    startTime?: string | null;
+    endTime?: string | null;
+  },
+  now: Date,
+): {
+  availability: ClassExamAvailability;
+  label: string;
+  tone: "success" | "warning" | "danger";
+} {
+  if (exam.isActive === false) {
+    return {
+      availability: "closed",
+      label: "Đã hết hạn",
+      tone: "danger",
+    };
+  }
+
+  const nowTime = now.getTime();
+  const startTime = parseExamTime(exam.startTime);
+  const endTime = parseExamTime(exam.endTime);
+
+  if (startTime !== null && nowTime < startTime) {
+    return {
+      availability: "upcoming",
+      label: "Sắp mở",
+      tone: "warning",
+    };
+  }
+
+  if (endTime !== null && nowTime >= endTime) {
+    return {
+      availability: "closed",
+      label: "Đã hết hạn",
+      tone: "danger",
+    };
+  }
+
+  return {
+    availability: "active",
+    label: "Đang diễn ra",
+    tone: "success",
+  };
+}
+
+export default function StudentClassDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const [cls, setCls] = useState<ClassInfo | null>(null);
-  const [activeTab, setActiveTab] = useState<ClassTab>("exams");
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [documentSearch, setDocumentSearch] = useState("");
-  const [documentSort, setDocumentSort] =
-    useState<StudentDocumentSortOption>("recent");
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(
-    null,
-  );
-  const [resultsData, setResultsData] = useState<StudentSystemResultListData>(
-    () => createEmptyStudentSystemResults(),
-  );
-  const [isLoadingClass, setIsLoadingClass] = useState(true);
-  const [isLoadingResults, setIsLoadingResults] = useState(true);
-  const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
-  const [resultsError, setResultsError] = useState<string | null>(null);
-  const [documentsError, setDocumentsError] = useState<string | null>(null);
-  const [tabRequestKey, setTabRequestKey] = useState(0);
+  const now = useNow();
 
-  const {
-    data: examsData,
-    isLoading: isLoadingExams,
-    isError: examsIsError,
-    error: examsErrorObj,
-    refetch: refetchExams,
-    fetchNextPage: fetchNextExamsPage,
-    hasNextPage: hasNextExamsPage,
-    isFetchingNextPage: isFetchingNextExamsPage,
-  } = useStudentClassExams(
+  const [cls, setCls] = useState<ClassInfo | null>(null);
+  const [activeTab, setActiveTab] = useState<ClassTab>("tests");
+  const [documents, setDocuments] = useState<Document[]>([]);
+
+  const [isLoadingClass, setIsLoadingClass] = useState(true);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
+
+  const [documentsError, setDocumentsError] = useState<string | null>(null);
+
+  const [documentRequestKey, setDocumentRequestKey] = useState(0);
+
+  const testsQuery = useStudentClassExams(
     id,
-    {},
+    { assignmentType: "test" },
     {
-      enabled: activeTab === "exams",
+      enabled: true,
       throwOnError: false,
     },
   );
-  const exams = examsData?.items ?? [];
-  const examsTotal = examsData?.total ?? 0;
-  const examSentinelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const node = examSentinelRef.current;
-    if (!node || !hasNextExamsPage || isFetchingNextExamsPage) return;
+  const examsQuery = useStudentClassExams(
+    id,
+    { assignmentType: "exam" },
+    {
+      enabled: true,
+      throwOnError: false,
+    },
+  );
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          void fetchNextExamsPage();
-        }
-      },
-      { rootMargin: "200px" },
-    );
+  const tests = testsQuery.data?.items ?? [];
+  const exams = examsQuery.data?.items ?? [];
 
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [hasNextExamsPage, isFetchingNextExamsPage, fetchNextExamsPage]);
+  const testsTotal = testsQuery.data?.total ?? 0;
+  const examsTotal = examsQuery.data?.total ?? 0;
 
   const classBreadcrumbHref = `/student/classes/${id}`;
   const classBreadcrumbLabel =
@@ -144,11 +157,9 @@ export default function ClassDetailPage({
       try {
         const foundClass = await getStudentClassById(id);
 
-        if (!isMounted) {
-          return;
+        if (isMounted) {
+          setCls(foundClass);
         }
-
-        setCls(foundClass);
       } finally {
         if (isMounted) {
           setIsLoadingClass(false);
@@ -164,496 +175,268 @@ export default function ClassDetailPage({
   }, [id]);
 
   useEffect(() => {
+    if (activeTab !== "documents") {
+      return;
+    }
+
     let isMounted = true;
 
-    async function loadActiveTabData() {
-      switch (activeTab) {
-        case "results": {
-          setIsLoadingResults(true);
-          setResultsError(null);
-          setResultsData(createEmptyStudentSystemResults());
+    async function loadDocuments() {
+      setIsLoadingDocuments(true);
+      setDocumentsError(null);
 
-          try {
-            const nextResults = await getStudentClassResults(id);
+      try {
+        const nextDocuments = await getStudentClassDocuments(id, {
+          throwOnError: true,
+        });
 
-            if (!isMounted) {
-              return;
-            }
-
-            setResultsData(nextResults);
-          } catch (error) {
-            console.error(`Failed to fetch results for class ${id}`, error);
-
-            if (!isMounted) {
-              return;
-            }
-
-            setResultsData(createEmptyStudentSystemResults());
-            setResultsError(
-              getErrorMessage(
-                error,
-                "Không thể tải kết quả của lớp. Vui lòng thử lại.",
-              ),
-            );
-          } finally {
-            if (isMounted) {
-              setIsLoadingResults(false);
-            }
-          }
-
-          return;
+        if (isMounted) {
+          setDocuments(nextDocuments);
         }
+      } catch (error) {
+        console.error(`Failed to fetch documents for class ${id}`, error);
 
-        case "documents": {
-          setIsLoadingDocuments(true);
-          setDocumentsError(null);
+        if (isMounted) {
           setDocuments([]);
-
-          try {
-            const items = await getStudentClassDocuments(id, {
-              throwOnError: true,
-            });
-
-            if (!isMounted) {
-              return;
-            }
-
-            setDocuments(items);
-          } catch (error) {
-            console.error(`Failed to fetch documents for class ${id}`, error);
-
-            if (!isMounted) {
-              return;
-            }
-
-            setDocuments([]);
-            setDocumentsError(
-              getErrorMessage(
-                error,
-                "Không thể tải tài liệu của lớp. Vui lòng thử lại.",
-              ),
-            );
-          } finally {
-            if (isMounted) {
-              setIsLoadingDocuments(false);
-            }
-          }
-
-          return;
+          setDocumentsError(
+            getErrorMessage(
+              error,
+              "Không thể tải tài liệu của lớp. Vui lòng thử lại.",
+            ),
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingDocuments(false);
         }
       }
     }
 
-    void loadActiveTabData();
+    void loadDocuments();
 
     return () => {
       isMounted = false;
     };
-  }, [activeTab, id, tabRequestKey]);
+  }, [activeTab, documentRequestKey, id]);
 
-  const classResults = resultsData.items;
-  const resultSummary = resultsData.summary;
+  const tabs = [
+    {
+      id: "tests" as const,
+      label: "Bài kiểm tra",
+      count: testsTotal,
+    },
+    {
+      id: "exams" as const,
+      label: "Bài thi",
+      count: examsTotal,
+    },
+    {
+      id: "documents" as const,
+      label: "Tài liệu",
+      count: isLoadingDocuments ? (cls?.documentCount ?? 0) : documents.length,
+    },
+  ];
 
-  function retryActiveTab() {
-    setTabRequestKey((current) => current + 1);
+  function mapExamItems(source: typeof tests): ClassExamTableItem[] {
+    return source.map((exam) => {
+      const extendedExam = exam as typeof exam & {
+        durationMinutes?: number;
+        passingScore?: number;
+      };
+
+      const status = getExamStatus(exam, now);
+
+      return {
+        id: exam.id,
+        title: exam.title,
+        description: exam.description,
+        durationMinutes: exam.duration ?? extendedExam.durationMinutes ?? 0,
+        maximumScore: String(
+          exam.totalPoints ?? extendedExam.passingScore ?? 0,
+        ),
+        statusLabel: status.label,
+        statusTone: status.tone,
+        availability: status.availability,
+      };
+    });
   }
 
+  const testItems = useMemo(() => mapExamItems(tests), [tests, now]);
+
+  const examItems = useMemo(() => mapExamItems(exams), [exams, now]);
+
+  const documentItems = useMemo<ClassDocumentListItem[]>(
+    () =>
+      documents.map((document) => {
+        const extendedDocument = document as Document & {
+          createdAt?: string;
+          scope?: string;
+          classroomName?: string | null;
+        };
+
+        return {
+          id: document.id,
+          title: document.title,
+          description: document.description,
+          createdAt: extendedDocument.createdAt,
+          scopeLabel:
+            extendedDocument.scope === "system" ? "Hệ thống" : "Lớp học",
+          statusLabel: "Đã chia sẻ",
+          classroomName: extendedDocument.classroomName ?? cls?.name ?? null,
+          href: `/student/materials/${document.id}` + `?classId=${id}`,
+        };
+      }),
+    [cls?.name, documents, id],
+  );
+
   if (isLoadingClass) {
-    return (
-      <div className="text-center py-20 text-muted-foreground">
-        Đang tải lớp học...
-      </div>
-    );
+    return <ClassLoadingState label="dữ liệu lớp học" />;
   }
 
   if (!cls) {
     return (
-      <div className="text-center py-20 text-muted-foreground">
-        <p className="font-medium">Không tìm thấy lớp học</p>
-        <Link
-          href="/student/classes"
-          className="text-primary text-sm mt-2 inline-block"
-        >
-          ← Quay lại danh sách lớp
-        </Link>
-      </div>
+      <ClassEmptyState
+        title="Không tìm thấy lớp học"
+        description="Lớp này có thể đã bị xóa hoặc bạn không còn quyền truy cập."
+        action={
+          <Button asChild>
+            <Link href="/student/classes">Về trang lớp học</Link>
+          </Button>
+        }
+      />
     );
   }
-  const joinedAtLabel = cls.joinedAt
-    ? new Intl.DateTimeFormat("vi-VN", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }).format(new Date(cls.joinedAt))
-    : null;
-  const examCount = isLoadingExams ? cls.examCount : examsTotal;
-  const resultCount = isLoadingResults ? 0 : resultSummary.totalCompletedExams;
-  const documentCount = isLoadingDocuments
-    ? (cls.documentCount ?? 0)
-    : documents.length;
-  const tabs: Array<{ id: ClassTab; label: string; count: number }> = [
-    { id: "exams", label: "Đề thi", count: examCount },
-    { id: "results", label: "Kết quả", count: resultCount },
-    { id: "documents", label: "Tài liệu", count: documentCount },
-  ];
+
+  const activeExamQuery = activeTab === "tests" ? testsQuery : examsQuery;
+
+  const activeItems = activeTab === "tests" ? testItems : examItems;
+
+  const activeTitle =
+    activeTab === "tests" ? "Danh sách bài kiểm tra" : "Danh sách bài thi";
+
+  const activeItemLabel = activeTab === "tests" ? "Bài kiểm tra" : "Bài thi";
 
   return (
-    <DocumentToastProvider>
-      <div className="space-y-8">
-        <Link
-          href="/student/classes"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-on-surface transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Quay lại lớp học
-        </Link>
+    <div className="space-y-4">
+      <ClassDetailHeader
+        title={cls.name}
+        imageUrl={cls.imageUrl}
+        classCode={cls.joinCode || cls.inviteCode}
+        metrics={[
+          {
+            label: "Bài kiểm tra",
+            value: testsTotal,
+            tone: "green",
+          },
+          {
+            label: "Đề thi ôn tập",
+            value: examsTotal,
+            tone: "purple",
+          },
+          {
+            label: "Tài liệu",
+            value: isLoadingDocuments
+              ? (cls.documentCount ?? 0)
+              : documents.length,
+            tone: "blue",
+          },
+        ]}
+      />
 
-        <div className="bg-surface-container-lowest rounded-[8px] overflow-hidden">
-          <div className="h-2" style={{ backgroundColor: cls.coverColor }} />
-          <div className="p-6 md:p-8">
-            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="font-display font-bold text-2xl text-on-surface">
-                    {cls.name}
-                  </h1>
-                  {cls.grade > 0 && (
-                    <span className="text-sm text-muted-foreground font-medium">
-                      Lớp {cls.grade}
-                    </span>
-                  )}
-                </div>
-                <p className="text-muted-foreground mb-4">{cls.description}</p>
+      <section className="space-y-4">
+        <ClassDetailTabs
+          activeTab={activeTab}
+          tabs={tabs}
+          onChange={setActiveTab}
+        />
 
-                <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1.5">
-                    <FileCheck className="w-4 h-4" />
-                    {examCount} bài thi
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <Files className="w-4 h-4" />
-                    {documentCount} tài liệu
-                  </span>
-                  {joinedAtLabel && (
-                    <span className="flex items-center gap-1.5">
-                      <CalendarDays className="w-4 h-4" />
-                      Tham gia {joinedAtLabel}
-                    </span>
-                  )}
-                </div>
-              </div>
+        {activeTab === "tests" || activeTab === "exams" ? (
+          <ClassExamList
+            title={activeTitle}
+            itemLabel={activeItemLabel}
+            searchPlaceholder={
+              activeTab === "tests" ? "Tìm bài kiểm tra..." : "Tìm bài thi..."
+            }
+            items={activeItems}
+            isLoading={activeExamQuery.isLoading}
+            error={
+              activeExamQuery.isError
+                ? getErrorMessage(
+                    activeExamQuery.error,
+                    `Không thể tải ${activeItemLabel.toLocaleLowerCase("vi")}.`,
+                  )
+                : null
+            }
+            onRetry={() => {
+              void activeExamQuery.refetch();
+            }}
+            renderAction={(item) => {
+              if (item.availability === "active") {
+                return (
+                  <Button
+                    asChild
+                    size="sm"
+                    className="h-8 w-[96px] rounded-[4px] bg-[#4169F7] px-3 text-xs font-semibold text-white hover:bg-[#3451D1]"
+                  >
+                    <Link href={`/student/exam/${item.id}`}>Làm bài</Link>
+                  </Button>
+                );
+              }
 
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold"
-                  style={{ backgroundColor: cls.coverColor }}
+              if (item.availability === "upcoming") {
+                return (
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled
+                    className="h-8 w-[96px] rounded-[4px] border border-amber-200 bg-amber-50 px-2 text-xs font-semibold text-amber-700 opacity-100"
+                  >
+                    Chưa mở
+                  </Button>
+                );
+              }
+
+              return (
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled
+                  className="h-8 w-[96px] rounded-[4px] border border-rose-200 bg-rose-50 px-2 text-xs font-semibold text-rose-700 opacity-100"
                 >
-                  {cls.name.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-on-surface">
-                    Mã vào lớp
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {cls.joinCode ?? cls.inviteCode}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+                  Hết hạn
+                </Button>
+              );
+            }}
+          />
+        ) : null}
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="bg-surface-container-lowest rounded-[6px] p-5">
-            <h2 className="font-display font-semibold text-lg text-on-surface mb-3">
-              Thông tin lớp
-            </h2>
-            <div className="space-y-3 text-sm text-muted-foreground">
-              <p className="flex items-center gap-2">
-                <Hash className="w-4 h-4" />
-                ID lớp: {cls.id}
-              </p>
-              <p className="flex items-center gap-2">
-                <BookOpen className="w-4 h-4" />
-                {examCount} bài thi đang liên kết với lớp này
-              </p>
-              <p className="flex items-center gap-2">
-                <Files className="w-4 h-4" />
-                {documentCount} tài liệu đã được giao
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-surface-container-lowest rounded-[6px] p-5">
-            <h2 className="font-display font-semibold text-lg text-on-surface mb-3">
-              Ghi chú
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Mỗi lần chuyển tab, hệ thống sẽ tải mới dữ liệu tương ứng từ máy
-              chủ để học sinh luôn xem được thông tin cập nhật nhất.
-            </p>
-          </div>
-        </div>
-
-        <section className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 rounded-[8px] bg-surface-container-low p-1">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  "cursor-pointer rounded-[6px] px-4 py-3 text-sm font-medium transition-colors",
-                  activeTab === tab.id
-                    ? "bg-surface-container-lowest text-on-surface shadow-[0_1px_3px_rgba(30,41,59,0.05)]"
-                    : "text-muted-foreground hover:bg-surface-container-lowest/70 hover:text-on-surface",
-                )}
+        {activeTab === "documents" ? (
+          <ClassDocumentList
+            items={documentItems}
+            isLoading={isLoadingDocuments}
+            error={documentsError}
+            onRetry={() => setDocumentRequestKey((current) => current + 1)}
+            renderAction={(item) => (
+              <Button
+                asChild
+                variant="ghost"
+                size="icon"
+                className="rounded-[4px]"
               >
-                <span>{tab.label}</span>
-                <span className="ml-2 text-xs opacity-80">({tab.count})</span>
-              </button>
-            ))}
-          </div>
-
-          {activeTab === "exams" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="font-display font-semibold text-lg text-on-surface">
-                  Đề thi
-                </h2>
-                <span className="text-sm text-muted-foreground">
-                  {examCount} đề thi
-                </span>
-              </div>
-
-              {isLoadingExams ? (
-                <div className="rounded-[6px] bg-surface-container-lowest p-5 text-sm text-muted-foreground">
-                  Đang tải đề thi của lớp...
-                </div>
-              ) : examsIsError ? (
-                <div className="rounded-[6px] border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                      <div>
-                        <p className="font-medium">Không thể tải đề thi</p>
-                        <p className="mt-1">
-                          {getErrorMessage(
-                            examsErrorObj,
-                            "Không thể tải danh sách đề thi. Vui lòng thử lại.",
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        retryActiveTab();
-                        void refetchExams();
-                      }}
-                      className="border-red-200 bg-white text-red-700 hover:bg-red-100 hover:text-red-800 dark:border-red-800/30 dark:bg-red-950/30 dark:text-red-200 dark:hover:bg-red-950/50"
-                    >
-                      Thử lại
-                    </Button>
-                  </div>
-                </div>
-              ) : exams.length === 0 ? (
-                <div className="rounded-[6px] bg-surface-container-lowest p-5 text-sm text-muted-foreground">
-                  Chưa có đề thi nào cho lớp này.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {exams.map((exam) => (
-                      <ExamCard key={exam.id} exam={exam} />
-                    ))}
-                  </div>
-                  <div ref={examSentinelRef} className="h-10" aria-hidden />
-                  <p className="text-center text-sm text-muted-foreground">
-                    {isFetchingNextExamsPage
-                      ? "Đang tải thêm..."
-                      : !hasNextExamsPage
-                        ? `Đã hiển thị tất cả ${examsTotal} đề thi.`
-                        : null}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === "results" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="font-display font-semibold text-lg text-on-surface">
-                  Kết quả
-                </h2>
-                <span className="text-sm text-muted-foreground">
-                  {isLoadingResults ? "Đang tải..." : `${resultCount} lượt nộp`}
-                </span>
-              </div>
-
-              {isLoadingResults ? (
-                <div className="rounded-[6px] bg-surface-container-lowest p-5 text-sm text-muted-foreground">
-                  Đang tải kết quả của lớp...
-                </div>
-              ) : resultsError ? (
-                <div className="rounded-[6px] border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                      <div>
-                        <p className="font-medium">Không thể tải kết quả</p>
-                        <p className="mt-1">{resultsError}</p>
-                      </div>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={retryActiveTab}
-                      className="border-red-200 bg-white text-red-700 hover:bg-red-100 hover:text-red-800 dark:border-red-800/30 dark:bg-red-950/30 dark:text-red-200 dark:hover:bg-red-950/50"
-                    >
-                      Thử lại
-                    </Button>
-                  </div>
-                </div>
-              ) : classResults.length === 0 ? (
-                <div className="rounded-[6px] bg-surface-container-lowest p-5 text-sm text-muted-foreground">
-                  Chưa có kết quả nào cho lớp này.
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <div className="rounded-[6px] bg-surface-container-lowest p-4">
-                      <p className="text-xs text-muted-foreground">
-                        Đã hoàn thành
-                      </p>
-                      <p className="mt-1 font-display text-2xl font-bold text-on-surface">
-                        {resultSummary.totalCompletedExams}
-                      </p>
-                    </div>
-                    <div className="rounded-[6px] bg-surface-container-lowest p-4">
-                      <p className="text-xs text-muted-foreground">Đã đạt</p>
-                      <p className="mt-1 font-display text-2xl font-bold text-on-surface">
-                        {resultSummary.passedExams}
-                      </p>
-                    </div>
-                    <div className="rounded-[6px] bg-surface-container-lowest p-4">
-                      <p className="text-xs text-muted-foreground">
-                        Điểm trung bình
-                      </p>
-                      <p className="mt-1 font-display text-2xl font-bold text-on-surface">
-                        {formatPercent(resultSummary.averageScorePercent)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    {classResults.map((result) => (
-                      <div
-                        key={result.attemptId}
-                        className="rounded-[6px] border border-outline/10 bg-surface-container-lowest p-4"
-                      >
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                          <div className="min-w-0">
-                            <p className="font-medium text-on-surface">
-                              {result.examTitle}
-                            </p>
-                            <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3.5 h-3.5" />
-                                {formatDate(result.submittedAt)}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <CheckCircle className="w-3.5 h-3.5" />
-                                {result.correctAnswersCount}/
-                                {result.totalQuestions} câu đúng
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Trophy className="w-3.5 h-3.5" />
-                                {result.score}/{result.totalPoints} điểm
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-3 sm:shrink-0">
-                            <div className="rounded-[6px] bg-primary/10 px-3 py-2 text-center">
-                              <p className="text-lg font-display font-bold text-primary">
-                                {formatPercent(result.scorePercent)}
-                              </p>
-                            </div>
-                            <Link
-                              href={`/student/exam/${result.examId}/result?attemptId=${result.attemptId}`}
-                              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
-                            >
-                              <History className="w-4 h-4" />
-                              Xem chi tiết
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === "documents" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="font-display font-semibold text-lg text-on-surface">
-                  Tài liệu
-                </h2>
-                <span className="text-sm text-muted-foreground">
-                  {documentCount} tài liệu
-                </span>
-              </div>
-
-              {documentsError ? (
-                <div className="rounded-[6px] border border-red-200/60 bg-red-50/80 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-950/20 dark:text-red-300">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                      <div>
-                        <p className="font-medium">Không thể tải tài liệu</p>
-                        <p className="mt-1">{documentsError}</p>
-                      </div>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={retryActiveTab}
-                      className="border-red-200 bg-white text-red-700 hover:bg-red-100 hover:text-red-800 dark:border-red-800/30 dark:bg-red-950/30 dark:text-red-200 dark:hover:bg-red-950/50"
-                    >
-                      Thử lại
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <DocumentList
-                  documents={documents.map((document) => ({
-                    ...document,
-                    url: `/student/materials/${document.id}?classId=${cls.id}`,
-                  }))}
-                  isLoading={isLoadingDocuments}
-                  search={documentSearch}
-                  sortBy={documentSort}
-                  onSearchChange={setDocumentSearch}
-                  onSortChange={setDocumentSort}
-                  selectedDocument={selectedDocument}
-                  onSelectedDocumentChange={setSelectedDocument}
-                  emptyTitle="Chưa có tài liệu nào cho lớp này"
-                  emptyDescription="Khi giáo viên đăng học liệu cho lớp, tài liệu sẽ xuất hiện ở đây để bạn xem trước hoặc tải xuống."
-                />
-              )}
-            </div>
-          )}
-        </section>
-      </div>
-    </DocumentToastProvider>
+                <Link
+                  href={
+                    item.href ??
+                    `/student/materials/${item.id}` + `?classId=${id}`
+                  }
+                  aria-label={`Mở tài liệu ${item.title}`}
+                >
+                  <ExternalLink className="size-4" />
+                </Link>
+              </Button>
+            )}
+          />
+        ) : null}
+      </section>
+    </div>
   );
 }

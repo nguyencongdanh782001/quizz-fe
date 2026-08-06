@@ -43,7 +43,10 @@ import {
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DeleteExamDialog } from "@/components/exams/DeleteExamDialog";
 import { ExamContextMenu } from "@/components/exams/ExamContextMenu";
-import { AssignExamDialog, type AssignmentType } from "@/components/exams/AssignExamDialog";
+import {
+  AssignExamDialog,
+  type AssignmentType,
+} from "@/components/exams/AssignExamDialog";
 import { useDeleteExam } from "@/hooks/queries/useDeleteExam";
 import { useTeacherExams } from "@/hooks/queries/useTeacherExams";
 import { APP_MESSAGES } from "@/lib/app-messages";
@@ -92,19 +95,83 @@ const filterSchema = Yup.object({
     .required(),
 });
 
+const KNOWN_SUBJECTS = new Set(
+  [
+    "Toán học",
+    "Toán",
+    "Tiếng Anh",
+    "Vật lý",
+    "Hóa học",
+    "Tin học",
+    "Ngữ văn",
+    "Sinh học",
+    "Lịch sử",
+    "Địa lý",
+    "Địa lí",
+    "Công nghệ",
+    "Giáo dục công dân",
+    "GDCD",
+    "Khác",
+  ].map((subject) => subject.toLocaleLowerCase("vi")),
+);
+
 function parseGradeParts(grade: string | null | undefined): {
   level: string;
   school: string;
   subject: string;
 } {
-  if (!grade || !grade.trim()) {
-    return { level: "Chưa phân loại", school: "--", subject: "--" };
+  const rawGrade = grade?.trim() ?? "";
+
+  if (!rawGrade) {
+    return {
+      level: "Chưa phân loại",
+      school: "--",
+      subject: "--",
+    };
   }
-  const parts = grade.split(" - ").map((s) => s.trim()).filter(Boolean);
+
+  /*
+   * Dữ liệu mới có thể được lưu theo đúng bốn vị trí:
+   * "Lớp 12 -  - Toán học - "
+   *
+   * Không được filter(Boolean), vì làm mất vị trí Trường học đang trống
+   * và khiến Môn học bị đọc nhầm.
+   */
+  const positionalParts = rawGrade.split(" - ").map((part) => part.trim());
+
+  if (positionalParts.some((part) => part === "")) {
+    return {
+      level: positionalParts[0] || "Chưa phân loại",
+      school: positionalParts[1] || "--",
+      subject: positionalParts[2] || "--",
+    };
+  }
+
+  /*
+   * Hỗ trợ dữ liệu cũ dạng:
+   * "Lớp 12 - Toán học"
+   *
+   * Phần thứ hai là Môn học, không phải Trường học.
+   */
+  if (
+    positionalParts.length === 2 &&
+    KNOWN_SUBJECTS.has(positionalParts[1].toLocaleLowerCase("vi"))
+  ) {
+    return {
+      level: positionalParts[0] || "Chưa phân loại",
+      school: "--",
+      subject: positionalParts[1] || "--",
+    };
+  }
+
+  /*
+   * Dữ liệu đầy đủ dạng:
+   * "Khác - Đại học Y Dược - Sinh học - Khác"
+   */
   return {
-    level: parts[0] || "Chưa phân loại",
-    school: parts[1] || "--",
-    subject: parts[2] || "--",
+    level: positionalParts[0] || "Chưa phân loại",
+    school: positionalParts[1] || "--",
+    subject: positionalParts[2] || "--",
   };
 }
 
@@ -442,7 +509,8 @@ export function ExamList() {
 
               {isRefreshing && (
                 <span className="ml-auto text-xs font-medium text-[#4F62F2] flex items-center gap-1">
-                  <LoaderCircle className="size-3 animate-spin" /> Đang đồng bộ...
+                  <LoaderCircle className="size-3 animate-spin" /> Đang đồng
+                  bộ...
                 </span>
               )}
             </div>
@@ -456,7 +524,9 @@ export function ExamList() {
                     <th className="min-w-52 px-3.5 py-3.5">Tên đề thi</th>
                     <th className="min-w-32 px-3.5 py-3.5">Trình độ</th>
                     <th className="min-w-32 px-3.5 py-3.5">Môn học</th>
-                    <th className="w-24 px-3.5 py-3.5 text-center">Số câu hỏi</th>
+                    <th className="w-24 px-3.5 py-3.5 text-center">
+                      Số câu hỏi
+                    </th>
                     <th className="w-24 px-3.5 py-3.5 text-center">Lượt làm</th>
                     <th className="min-w-28 px-3.5 py-3.5">Ngày tạo</th>
                     <th className="min-w-32 px-3.5 py-3.5">Trạng thái</th>
@@ -466,20 +536,29 @@ export function ExamList() {
                 <tbody className="divide-y divide-[#DDE2EB] text-xs text-[#111827]">
                   {isLoading ? (
                     <tr>
-                      <td colSpan={9} className="h-28 text-center text-[#64748B]">
+                      <td
+                        colSpan={9}
+                        className="h-28 text-center text-[#64748B]"
+                      >
                         <LoaderCircle className="mr-2 inline size-4 animate-spin" />
                         Đang tải danh sách đề thi...
                       </td>
                     </tr>
                   ) : error ? (
                     <tr>
-                      <td colSpan={9} className="h-28 text-center text-red-600 font-medium">
+                      <td
+                        colSpan={9}
+                        className="h-28 text-center text-red-600 font-medium"
+                      >
                         Không thể tải danh sách đề thi. Vui lòng thử lại.
                       </td>
                     </tr>
                   ) : visibleItems.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="h-28 text-center text-[#64748B]">
+                      <td
+                        colSpan={9}
+                        className="h-28 text-center text-[#64748B]"
+                      >
                         Không tìm thấy dữ liệu nào!
                       </td>
                     </tr>
@@ -545,7 +624,10 @@ export function ExamList() {
                                     <ChevronDown className="size-3 ml-0.5" />
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-48 rounded-[8px] border-[#DDE2EB] p-1 shadow-lg">
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="w-48 rounded-[8px] border-[#DDE2EB] p-1 shadow-lg"
+                                >
                                   <DropdownMenuItem
                                     onClick={() => {
                                       setAssignExam(exam);
@@ -646,8 +728,15 @@ export function ExamList() {
                   variant="ghost"
                   size="icon"
                   className="size-8 text-[#64748B] hover:text-[#1E293B]"
-                  disabled={currentPage === pagination.total_pages || pagination.total_pages === 0}
-                  onClick={() => setCurrentPage(Math.min(pagination.total_pages, currentPage + 1))}
+                  disabled={
+                    currentPage === pagination.total_pages ||
+                    pagination.total_pages === 0
+                  }
+                  onClick={() =>
+                    setCurrentPage(
+                      Math.min(pagination.total_pages, currentPage + 1),
+                    )
+                  }
                   aria-label="Trang sau"
                 >
                   <ChevronRight className="size-4" />
@@ -657,7 +746,10 @@ export function ExamList() {
                   variant="ghost"
                   size="icon"
                   className="size-8 text-[#64748B] hover:text-[#1E293B]"
-                  disabled={currentPage === pagination.total_pages || pagination.total_pages === 0}
+                  disabled={
+                    currentPage === pagination.total_pages ||
+                    pagination.total_pages === 0
+                  }
                   onClick={() => setCurrentPage(pagination.total_pages)}
                   aria-label="Trang cuối"
                 >
@@ -676,7 +768,9 @@ export function ExamList() {
                   onBlur={(event) => {
                     const nextPage = Number(event.currentTarget.value);
                     if (Number.isFinite(nextPage)) {
-                      setCurrentPage(Math.min(Math.max(nextPage, 1), pagination.total_pages));
+                      setCurrentPage(
+                        Math.min(Math.max(nextPage, 1), pagination.total_pages),
+                      );
                     }
                   }}
                   className="h-10 w-24 rounded-[7px] border border-[#DDE2EB] px-3 outline-none focus:border-[#4F62F2]"
@@ -712,19 +806,19 @@ export function ExamList() {
         {/* Toast Viewport */}
         <ToastViewport />
         <AssignExamDialog
-        open={isAssignDialogOpen}
-        onOpenChange={setIsAssignDialogOpen}
-        exam={assignExam}
-        type={assignType}
-        onSuccess={(msg) =>
-          addToast({
-            title: msg,
-            variant: "default",
-          })
-        }
-      />
+          open={isAssignDialogOpen}
+          onOpenChange={setIsAssignDialogOpen}
+          exam={assignExam}
+          type={assignType}
+          onSuccess={(msg) =>
+            addToast({
+              title: msg,
+              variant: "default",
+            })
+          }
+        />
 
-      {toasts.map((toast) => (
+        {toasts.map((toast) => (
           <Toast
             key={toast.id}
             open={toast.open}

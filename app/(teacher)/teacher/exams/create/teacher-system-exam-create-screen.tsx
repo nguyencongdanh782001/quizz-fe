@@ -3,11 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  RefreshCw,
-  TriangleAlert,
-} from "lucide-react";
+import { ArrowLeft, RefreshCw, TriangleAlert } from "lucide-react";
 import { EXAM_FLOW_MESSAGES } from "@/components/exams/exam-flow-messages";
 import { ExamImportDialog } from "@/components/features/teacher-exam-form/exam-import-dialog";
 import { ExamForm } from "@/components/features/teacher-exam-form/exam-form";
@@ -18,6 +14,7 @@ import {
   mapTeacherExamFormToPayload,
   mapTeacherExamFormToUpdatePayload,
 } from "@/components/features/teacher-exam-form/utils";
+import { pickDefaultExamImage } from "@/lib/exam-default-images";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -48,6 +45,19 @@ function scrollTeacherContentToTop() {
   if (mainElement instanceof HTMLElement) {
     mainElement.scrollTo({ top: 0, behavior: "smooth" });
   }
+}
+
+type ExamPayloadWithImage = {
+  image_url?: string | null;
+};
+
+function ensureExamImage<T extends ExamPayloadWithImage>(payload: T): T {
+  const selectedImageUrl = payload.image_url?.trim();
+
+  return {
+    ...payload,
+    image_url: selectedImageUrl || pickDefaultExamImage(),
+  };
 }
 
 function ExamEditorLoadingState() {
@@ -88,7 +98,12 @@ function ExamEditorErrorState({ onRetry }: { onRetry: () => void }) {
           <RefreshCw className="mr-2 size-4" />
           Tải lại dữ liệu
         </Button>
-        <Button asChild type="button" size="lg" className="bg-gradient-to-r from-[#4867F8] to-[#C62CF2] text-white shadow-sm hover:opacity-95">
+        <Button
+          asChild
+          type="button"
+          size="lg"
+          className="bg-gradient-to-r from-[#4867F8] to-[#C62CF2] text-white shadow-sm hover:opacity-95"
+        >
           <Link href="/teacher/exams">{EXAM_FLOW_MESSAGES.buttons.back}</Link>
         </Button>
       </div>
@@ -107,7 +122,8 @@ export function TeacherSystemExamCreateScreen({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(initialImportOpen);
+  const [isImportDialogOpen, setIsImportDialogOpen] =
+    useState(initialImportOpen);
   const [toast, setToast] = useState<ScreenToastState | null>(null);
   const redirectTimeoutRef = useRef<number | null>(null);
   const normalizedEditId = editId?.trim() ? editId.trim() : null;
@@ -145,13 +161,20 @@ export function TeacherSystemExamCreateScreen({
 
     try {
       if (isEditMode && normalizedEditId) {
+        const payload = ensureExamImage(
+          mapTeacherExamFormToUpdatePayload(values),
+        );
+
         await updateMutation.mutateAsync({
           examId: normalizedEditId,
-          payload: mapTeacherExamFormToUpdatePayload(values),
+          payload,
         });
       } else {
         setIsCreating(true);
-        await createSystemExam(mapTeacherExamFormToPayload(values));
+
+        const payload = ensureExamImage(mapTeacherExamFormToPayload(values));
+
+        await createSystemExam(payload);
       }
 
       if (redirectTimeoutRef.current !== null) {
@@ -198,7 +221,9 @@ export function TeacherSystemExamCreateScreen({
     setIsImporting(true);
 
     try {
-      await createSystemExam(mapTeacherExamFormToPayload(values));
+      const payload = ensureExamImage(mapTeacherExamFormToPayload(values));
+
+      await createSystemExam(payload);
 
       if (redirectTimeoutRef.current !== null) {
         window.clearTimeout(redirectTimeoutRef.current);

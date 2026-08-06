@@ -407,6 +407,8 @@ export interface RootResponse {
   message: string;
 }
 
+export type ExamAssignmentType = 'test' | 'exam';
+
 export interface StudentSystemExamSchema {
   id: number;
   title: string;
@@ -421,6 +423,8 @@ export interface StudentSystemExamSchema {
   duration_minutes: number;
   start_time: string;
   end_time: string;
+  assignment_type?: ExamAssignmentType;
+  max_attempts?: number | null;
   total_points: number;
   question_count: number;
   is_active: boolean;
@@ -472,6 +476,8 @@ export interface StudentSystemResultSchema {
   score_percent: number;
   correct_answers_count: number;
   total_questions: number;
+  assignment_type?: ExamAssignmentType;
+  max_attempts?: number | null;
   is_passed: boolean;
   started_at: string;
   submitted_at: string;
@@ -632,6 +638,8 @@ export interface TeacherExamSummarySchema {
   duration_minutes: number;
   start_time: string;
   end_time: string;
+  assignment_type?: ExamAssignmentType;
+  max_attempts?: number | null;
   total_points: number;
   question_count: number;
   attempt_count: number;
@@ -693,6 +701,8 @@ export interface TeacherExamResultListItemSchema {
   score_percent: number;
   correct_answers_count: number;
   total_questions: number;
+  assignment_type?: ExamAssignmentType;
+  max_attempts?: number | null;
   is_passed: boolean;
   started_at: string;
   submitted_at: string;
@@ -738,6 +748,8 @@ export interface TeacherExamAttemptResultSchema {
   score_percent: number;
   correct_answers_count: number;
   total_questions: number;
+  assignment_type?: ExamAssignmentType;
+  max_attempts?: number | null;
   started_at: string;
   submitted_at: string;
   answers: TeacherExamAttemptAnswerSchema[];
@@ -787,6 +799,8 @@ export interface TeacherCreateExamRequest {
   is_active: boolean;
   total_points: number;
   point_mode: TeacherExamPointMode;
+  assignment_type?: ExamAssignmentType;
+  max_attempts?: number | null;
   questions: TeacherCreateExamQuestionRequest[];
 }
 
@@ -805,6 +819,8 @@ export interface TeacherUpdateExamRequest {
   is_active?: boolean;
   total_points?: number;
   point_mode?: TeacherExamPointMode;
+  assignment_type?: ExamAssignmentType;
+  max_attempts?: number | null;
   questions?: TeacherCreateExamQuestionRequest[];
 }
 
@@ -865,6 +881,10 @@ export interface StudentExamDetailResponse {
   classroom_id: number;
   classroom_name: string | null;
   duration_minutes: number;
+  start_time?: string;
+  end_time?: string;
+  assignment_type?: ExamAssignmentType;
+  max_attempts?: number | null;
   total_points: number;
   question_count: number;
   is_active: boolean;
@@ -929,6 +949,8 @@ export interface StudentSubmitAttemptResultSchema {
   total_points: number;
   correct_answers_count: number;
   total_questions: number;
+  assignment_type?: ExamAssignmentType;
+  max_attempts?: number | null;
   started_at: string;
   submitted_at: string;
   answers: StudentSubmittedAnswerSchema[];

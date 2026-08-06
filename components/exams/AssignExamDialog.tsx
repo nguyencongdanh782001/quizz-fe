@@ -16,7 +16,7 @@ import { createTeacherClassExam } from "@/lib/teacher-classes";
 import { getTeacherSystemExamDetail } from "@/services/exam.service";
 import type { TeacherExam } from "@/types/exam";
 
-export type AssignmentType = "test" | "practice";
+export type AssignmentType = "test" | "exam" | "practice";
 
 interface AssignExamDialogProps {
   open: boolean;
@@ -53,11 +53,13 @@ export function AssignExamDialog({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const assignmentType = type === "practice" ? "exam" : type;
+  const isTest = assignmentType === "test";
 
   useEffect(() => {
     if (open && exam) {
       setAssignmentTitle(
-        type === "test"
+        assignmentType === "test"
           ? `Bài kiểm tra: ${exam.title}`
           : `Đề thi: ${exam.title}`,
       );
@@ -68,11 +70,10 @@ export function AssignExamDialog({
       setAllowRetake(false);
       setErrorMessage(null);
     }
-  }, [open, exam, type]);
+  }, [assignmentType, open, exam]);
 
   if (!open || !exam) return null;
 
-  const isTest = type === "test";
   const titleText = isTest
     ? "Cấu hình giao bài tập kiểm tra"
     : "Cấu hình giao đề thi";
@@ -85,6 +86,18 @@ export function AssignExamDialog({
     }
     if (!assignmentTitle.trim()) {
       setErrorMessage("Vui lòng nhập tên bài tập!");
+      return;
+    }
+    if (isTest && (!startTime || !endTime)) {
+      setErrorMessage("Vui lòng chọn thời gian mở và kết thúc bài kiểm tra!");
+      return;
+    }
+    if (
+      startTime &&
+      endTime &&
+      new Date(endTime).getTime() <= new Date(startTime).getTime()
+    ) {
+      setErrorMessage("Thời gian kết thúc phải sau thời gian mở bài!");
       return;
     }
 
@@ -110,12 +123,14 @@ export function AssignExamDialog({
         grade: exam.grade?.trim() || "Lớp 12",
         image_url: exam.image_url ?? "",
         duration_minutes: durationMinutes,
-        start_time: startTime || undefined,
-        end_time: endTime || undefined,
+        start_time: isTest ? startTime || undefined : undefined,
+        end_time: isTest ? endTime || undefined : undefined,
         is_published: true,
         is_active: true,
         total_points: 10,
         point_mode: "auto",
+        assignment_type: assignmentType,
+        max_attempts: isTest && !allowRetake ? 1 : null,
         questions: fullQuestions.map((q, idx) => ({
           prompt: q.prompt || `Câu hỏi ${idx + 1}`,
           question_type: q.question_type || "single_choice",

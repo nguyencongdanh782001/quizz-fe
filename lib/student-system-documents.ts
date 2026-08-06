@@ -57,7 +57,9 @@ function getFileNameFromUrl(url?: string | null): string | null {
 }
 
 function getDocumentFileName(item: StudentSystemDocumentSchema): string {
-  return item.file_name?.trim() || getFileNameFromUrl(item.file_url) || item.title;
+  return (
+    item.file_name?.trim() || getFileNameFromUrl(item.file_url) || item.title
+  );
 }
 
 function getExtension(value: string): string {
@@ -84,10 +86,7 @@ function detectDocumentType(item: StudentSystemDocumentSchema): DocumentType {
     return "image";
   }
 
-  if (
-    contentType.startsWith("text/") ||
-    TEXT_FILE_EXTENSIONS.has(extension)
-  ) {
+  if (contentType.startsWith("text/") || TEXT_FILE_EXTENSIONS.has(extension)) {
     return "text";
   }
 
@@ -139,6 +138,48 @@ function getDocumentRequestHeaders(): HeadersInit {
     : {};
 }
 
+/**
+ * Chỉ gửi cookie và Authorization tới frontend hiện tại hoặc API backend.
+ *
+ * Không gửi credentials tới Cloudinary/CDN bên ngoài vì response dùng
+ * Access-Control-Allow-Origin: *; fetch với credentials="include" sẽ bị
+ * trình duyệt chặn bởi CORS dù URL mở trực tiếp vẫn trả 200.
+ */
+function shouldAuthenticateAssetRequest(url: string): boolean {
+  try {
+    const fallbackOrigin =
+      typeof window !== "undefined"
+        ? window.location.origin
+        : "http://localhost";
+
+    const assetOrigin = new URL(url, fallbackOrigin).origin;
+    const allowedOrigins = new Set<string>();
+
+    if (typeof window !== "undefined") {
+      allowedOrigins.add(window.location.origin);
+    }
+
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
+
+    if (apiBaseUrl) {
+      allowedOrigins.add(new URL(apiBaseUrl, fallbackOrigin).origin);
+    }
+
+    return allowedOrigins.has(assetOrigin);
+  } catch {
+    return false;
+  }
+}
+
+function getDocumentAssetRequestInit(url: string): RequestInit {
+  const shouldAuthenticate = shouldAuthenticateAssetRequest(url);
+
+  return {
+    credentials: shouldAuthenticate ? "include" : "omit",
+    headers: shouldAuthenticate ? getDocumentRequestHeaders() : undefined,
+  };
+}
+
 export function resolveDocumentAssetUrl(url?: string | null): string | null {
   if (!url) {
     return null;
@@ -147,49 +188,71 @@ export function resolveDocumentAssetUrl(url?: string | null): string | null {
   try {
     const baseUrl =
       process.env.NEXT_PUBLIC_API_URL ??
-      (typeof window !== "undefined" ? window.location.origin : "http://localhost");
+      (typeof window !== "undefined"
+        ? window.location.origin
+        : "http://localhost");
 
-    return new URL(
-      url,
-      baseUrl,
-    ).toString();
+    return new URL(url, baseUrl).toString();
   } catch {
     return url;
   }
 }
 
-function formatPublisher(item: StudentSystemDocumentSchema): string {
-  if (item.scope === "classroom") {
+function formatPublisher(scope: Document["scope"]): string {
+  if (scope === "classroom") {
     return "Giáo viên";
   }
 
   return "Hệ thống";
 }
 
-function mapStudentDocument(item: StudentSystemDocumentSchema): Document {
+function mapStudentDocument(
+  item: StudentSystemDocumentSchema,
+  fallbackClassId?: string | number | null,
+): Document {
+  const documentId = String(item.id);
+  const classroomId =
+    item.classroom_id != null
+      ? String(item.classroom_id)
+      : fallbackClassId != null
+        ? String(fallbackClassId)
+        : null;
+  const normalizedScope = item.scope?.trim().toLowerCase();
+  const scope: NonNullable<Document["scope"]> =
+    normalizedScope === "class" ||
+    normalizedScope === "classroom" ||
+    classroomId
+      ? "classroom"
+      : "system";
   const fileName = getDocumentFileName(item);
   const fileType = detectDocumentType(item);
+  const url =
+    scope === "classroom" && classroomId
+      ? `/student/materials/${documentId}?classId=${encodeURIComponent(classroomId)}`
+      : `/student/materials/${documentId}`;
 
   return {
-    id: String(item.id),
+    id: documentId,
     title: item.title,
     description: item.summary,
     type: fileType,
-    url: `/student/materials/${item.id}`,
+    url,
     fileName,
     fileUrl: item.file_url ?? null,
     fileContentType: item.file_content_type ?? null,
-    subject: item.classroom_name ?? "Tài liệu hệ thống",
+    subject:
+      item.classroom_name ??
+      (scope === "classroom" ? "Tài liệu lớp học" : "Tài liệu hệ thống"),
     grade: inferGrade(item.classroom_name),
-    uploadedBy: item.scope,
-    uploadedByName: formatPublisher(item),
+    uploadedBy: scope,
+    uploadedByName: formatPublisher(scope),
     createdAt: item.created_at,
     fileSize: item.file_size_bytes ?? undefined,
     downloadCount: 0,
-    tags: item.scope ? [item.scope] : [],
+    tags: [scope],
     content: item.content,
-    scope: item.scope === "classroom" ? "classroom" : "system",
-    classroomId: item.classroom_id ? String(item.classroom_id) : null,
+    scope,
+    classroomId,
     classroomName: item.classroom_name,
     actionLabel: "Xem tài liệu",
   };
@@ -259,7 +322,9 @@ export function formatDocumentTypeLabel(document: Document): string {
   }
 }
 
-export function getDocumentPreviewKind(document: Document): "pdf" | "image" | "text" | "other" {
+export function getDocumentPreviewKind(
+  document: Document,
+): "pdf" | "image" | "text" | "other" {
   if (document.type === "pdf") {
     return "pdf";
   }
@@ -286,10 +351,7 @@ export async function fetchDocumentText(document: Document): Promise<string> {
     return "";
   }
 
-  const response = await fetch(assetUrl, {
-    credentials: "include",
-    headers: getDocumentRequestHeaders(),
-  });
+  const response = await fetch(assetUrl, getDocumentAssetRequestInit(assetUrl));
 
   if (!response.ok) {
     throw new Error("Không thể tải nội dung tài liệu.");
@@ -298,7 +360,79 @@ export async function fetchDocumentText(document: Document): Promise<string> {
   return response.text();
 }
 
-export async function downloadStudentDocument(document: Document): Promise<void> {
+function sanitizeDownloadFileName(value: string): string {
+  let decodedValue = value;
+
+  try {
+    decodedValue = decodeURIComponent(value);
+  } catch {
+    // Giữ nguyên tên nếu chuỗi không phải URI hợp lệ.
+  }
+
+  return (
+    decodedValue
+      .trim()
+      .replace(/[<>:"/\\|?*\u0000-\u001F]+/g, "-")
+      .replace(/\s+/g, " ")
+      .replace(/[. ]+$/g, "") || "tai-lieu"
+  );
+}
+
+function getExtensionFromContentType(contentType: string): string {
+  const normalizedType = contentType.split(";")[0].trim().toLowerCase();
+
+  const extensionByContentType: Record<string, string> = {
+    "application/pdf": "pdf",
+    "application/msword": "doc",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+      "docx",
+    "application/vnd.ms-excel": "xls",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+    "application/vnd.ms-powerpoint": "ppt",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+      "pptx",
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/gif": "gif",
+    "image/webp": "webp",
+    "text/plain": "txt",
+    "text/csv": "csv",
+  };
+
+  return extensionByContentType[normalizedType] ?? "";
+}
+
+function getDownloadFileName(
+  document: Document,
+  assetUrl: string | null,
+  blob: Blob,
+): string {
+  const sourceName =
+    document.fileName?.trim() ||
+    document.title.trim() ||
+    getFileNameFromUrl(assetUrl) ||
+    "tai-lieu";
+
+  const safeName = sanitizeDownloadFileName(sourceName);
+
+  if (getExtension(safeName)) {
+    return safeName;
+  }
+
+  const extensionFromUrl = assetUrl
+    ? getExtension(getFileNameFromUrl(assetUrl) ?? "")
+    : "";
+  const extension =
+    extensionFromUrl ||
+    getExtensionFromContentType(blob.type) ||
+    getExtension(document.fileContentType ?? "");
+
+  return extension ? `${safeName}.${extension}` : safeName;
+}
+
+export async function downloadStudentDocument(
+  document: Document,
+): Promise<void> {
   const assetUrl = resolveDocumentAssetUrl(document.fileUrl);
 
   if (!assetUrl && !document.content?.trim()) {
@@ -306,37 +440,62 @@ export async function downloadStudentDocument(document: Document): Promise<void>
   }
 
   if (!assetUrl) {
-    const fallbackName = document.fileName || `${document.title}.txt`;
     const blob = new Blob([document.content ?? document.description ?? ""], {
-      type: "text/plain;charset=utf-8",
+      type: document.fileContentType || "text/plain;charset=utf-8",
     });
-    triggerBrowserDownload(blob, fallbackName);
+
+    triggerBrowserDownload(blob, getDownloadFileName(document, null, blob));
     return;
   }
 
-  const response = await fetch(assetUrl, {
-    credentials: "include",
-    headers: getDocumentRequestHeaders(),
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(assetUrl, getDocumentAssetRequestInit(assetUrl));
+  } catch (error) {
+    console.error("Failed to fetch document asset", {
+      assetUrl,
+      error,
+    });
+
+    throw new Error(
+      "Không thể kết nối tới nơi lưu trữ tài liệu. Vui lòng thử lại.",
+    );
+  }
 
   if (!response.ok) {
-    throw new Error("Không thể tải tài liệu. Vui lòng thử lại.");
+    throw new Error(`Không thể tải tài liệu (mã lỗi ${response.status}).`);
   }
 
   const blob = await response.blob();
-  triggerBrowserDownload(blob, document.fileName || assetUrl);
+
+  if (blob.size === 0) {
+    throw new Error("Tệp tải xuống không có dữ liệu.");
+  }
+
+  triggerBrowserDownload(blob, getDownloadFileName(document, assetUrl, blob));
 }
 
 function triggerBrowserDownload(blob: Blob, fileName: string): void {
+  if (typeof window === "undefined") {
+    throw new Error("Chức năng tải xuống chỉ khả dụng trên trình duyệt.");
+  }
+
   const objectUrl = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
+  const anchor = window.document.createElement("a");
+
   anchor.href = objectUrl;
   anchor.download = fileName;
-  anchor.rel = "noreferrer";
-  document.body.appendChild(anchor);
+  anchor.rel = "noopener noreferrer";
+  anchor.style.display = "none";
+
+  window.document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+
+  window.setTimeout(() => {
+    URL.revokeObjectURL(objectUrl);
+  }, 1000);
 }
 
 export function matchesStudentDocumentSearch(
@@ -416,7 +575,9 @@ export async function getStudentClassDocuments(
 ): Promise<Document[]> {
   try {
     const response = await studentApi.student.classes.documents(classId);
-    return (response.data.items ?? []).map(mapStudentDocument);
+    return (response.data.items ?? []).map((item) =>
+      mapStudentDocument(item, classId),
+    );
   } catch (error) {
     console.error(`Failed to fetch class documents for ${classId}`, error);
     if (options.throwOnError) {

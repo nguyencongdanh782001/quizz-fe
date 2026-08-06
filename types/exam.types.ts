@@ -1,6 +1,12 @@
-export type QuestionType = 'single' | 'multiple' | 'multiple_choice' | 'true_false' | 'text';
-export type ExamDifficulty = 'easy' | 'medium' | 'hard';
-export type ExamStatus = 'draft' | 'published' | 'archived';
+export type QuestionType =
+  | "single"
+  | "multiple"
+  | "multiple_choice"
+  | "true_false"
+  | "text";
+export type ExamDifficulty = "easy" | "medium" | "hard";
+export type ExamStatus = "draft" | "published" | "archived";
+export type ExamAssignmentType = "test" | "exam";
 
 export interface AnswerOption {
   id: string;
@@ -55,6 +61,9 @@ export interface Exam {
   source?: "teacher" | "system";
   isPublished?: boolean;
   isActive?: boolean;
+  assignmentType?: ExamAssignmentType;
+  examType?: ExamAssignmentType;
+  maxAttempts?: number | null;
 }
 
 export interface ExamAttempt {
