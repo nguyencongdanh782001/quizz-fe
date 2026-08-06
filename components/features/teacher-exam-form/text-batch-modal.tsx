@@ -48,7 +48,41 @@ const TAB_3_SAMPLE = `[FILL]Background, in relation to computers, on the screen,
 
 [FILL] [Generally], only multitasking operating systems are able to support background processing.`;
 
-const TAB_4_SAMPLE = `[READ-5] Read the following passage and mark the letter A, B, C, or D on your answer sheet to indicate the correct answer to each of the questions.<br/>We get great pleasure from reading. The more advanced a man is, the greater delight he will find in reading. The ordinary man may think that subjects like philosophy or science are very difficult and that if philosophers and scientists read these subjects, it is not for pleasure. But this is not true. The mathematician finds the same pleasure in his mathematics as the school boy in an adventure story. For both, it is a play of the imagination, a mental recreation and exercise.`;
+const TAB_4_SAMPLE = `[READ-5]
+Read the following passage and choose the best answer for each question.<br />
+Reading is one of the most useful habits a person can develop. It not only provides knowledge but also improves concentration, vocabulary, and imagination. People who read regularly are often able to express their ideas more clearly because they are exposed to different writing styles and ways of thinking.<br />
+Books can also help readers understand cultures and experiences that are different from their own. Through stories, readers can visit distant places, learn about historical events, and see the world from another person's perspective. Reading does not always require expensive materials because many books and articles are now available online or at public libraries.<br />
+To build a reading habit, people should start with topics they enjoy and set aside a small amount of time each day. Even fifteen minutes of daily reading can produce significant benefits over time.
+
+What is the main idea of the passage?
+A. Reading is an expensive activity.
+*B. Reading provides many benefits and can become a useful daily habit.
+C. People should only read historical books.
+D. Online articles are better than printed books.
+
+According to the passage, why can regular readers express their ideas more clearly?
+A. They speak to many people every day.
+B. They memorize every book they read.
+*C. They are exposed to different writing styles and ways of thinking.
+D. They always study difficult vocabulary.
+
+The word “perspective” in the passage is closest in meaning to:
+A. Habit
+*B. Point of view
+C. Location
+D. Memory
+
+Which statement is TRUE according to the passage?
+A. Reading requires expensive books.
+B. People must read for several hours every day.
+C. Reading only improves vocabulary.
+*D. Many reading materials are available online or at public libraries.
+
+What does the writer suggest for developing a reading habit?
+A. Begin with difficult academic books.
+B. Read only when preparing for an examination.
+*C. Choose enjoyable topics and read for a short time each day.
+D. Finish one book every day.`;
 
 function parseQuestionsFromRawText(rawText: string): ParsedQuestion[] {
   if (!rawText.trim()) return [];
@@ -59,6 +93,10 @@ function parseQuestionsFromRawText(rawText: string): ParsedQuestion[] {
   let currentOptions: ParsedOption[] = [];
   let questionCounter = 0;
 
+  // Reading passage state
+  let currentPassageText: string | null = null;
+  let remainingPassageQuestions = 0;
+
   function finalizeQuestion() {
     const promptText = currentPromptLines
       .join("\n")
@@ -66,6 +104,17 @@ function parseQuestionsFromRawText(rawText: string): ParsedQuestion[] {
       .trim();
 
     if (promptText) {
+      // Check if this is a reading passage marker [READ-n]
+      const readMatch = promptText.match(/^\s*\[READ-(\d+)\]/i);
+      if (readMatch) {
+        remainingPassageQuestions = parseInt(readMatch[1], 10);
+        currentPassageText = promptText.replace(/^\s*\[READ-\d+\]\s*/i, "").trim();
+        // Clear buffer and do NOT push a question since this is just the passage
+        currentPromptLines = [];
+        currentOptions = [];
+        return;
+      }
+
       questionCounter++;
       let typeText = "Một đáp án";
       const correctCount = currentOptions.filter((o) => o.isCorrect).length;
@@ -73,9 +122,22 @@ function parseQuestionsFromRawText(rawText: string): ParsedQuestion[] {
         typeText = "Nhiều đáp án";
       }
 
+      let finalPrompt = promptText;
+      // Prepend the passage if this question is a child question
+      if (currentPassageText && remainingPassageQuestions > 0) {
+        remainingPassageQuestions--;
+        typeText = "Đọc hiểu";
+        finalPrompt = `<div class="reading-passage mb-4 p-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-[8px] text-[13px] text-[#334155] leading-relaxed font-normal">
+  <strong>[Đoạn văn đọc hiểu]</strong><br />
+  ${currentPassageText.replace(/\n/g, "<br />")}
+</div>
+
+${promptText}`;
+      }
+
       questions.push({
         id: questionCounter,
-        prompt: promptText,
+        prompt: finalPrompt,
         typeText,
         options: [...currentOptions],
       });
@@ -146,7 +208,9 @@ export function TextBatchModal({
   );
 
   const activeQuestion =
-    parsedQuestions[Math.min(selectedIndex, Math.max(0, parsedQuestions.length - 1))];
+    parsedQuestions[
+      Math.min(selectedIndex, Math.max(0, parsedQuestions.length - 1))
+    ];
 
   if (!open) return null;
 
@@ -295,7 +359,9 @@ export function TextBatchModal({
                         <p className="font-bold text-[#1E293B]">
                           Câu {activeQuestion.id} ({activeQuestion.typeText})
                         </p>
-                        <p className="text-[#334155]">{activeQuestion.prompt}</p>
+                        <p className="text-[#334155]">
+                          {activeQuestion.prompt}
+                        </p>
                         {activeQuestion.options.length > 0 && (
                           <div className="space-y-1 pt-1">
                             {activeQuestion.options.map((opt) => (
@@ -311,7 +377,9 @@ export function TextBatchModal({
                                 <span
                                   className={cn(
                                     "flex size-4 items-center justify-center rounded-full text-[9px] font-bold text-white",
-                                    opt.isCorrect ? "bg-emerald-500" : "bg-slate-300",
+                                    opt.isCorrect
+                                      ? "bg-emerald-500"
+                                      : "bg-slate-300",
                                   )}
                                 >
                                   {opt.key}
@@ -448,15 +516,24 @@ export function TextBatchModal({
               {guideActiveTab === "tab3" && (
                 <div className="space-y-0.5 text-[11px] text-[#334155] leading-relaxed rounded-[6px] bg-[#F8FAFC] p-2.5 border border-[#E2E8F0]">
                   <p className="font-bold text-[#1E293B]">Quy tắc điền từ</p>
-                  <p>- Thêm <strong className="text-[#1E293B]">[FILL]</strong> đằng trước câu hỏi.</p>
-                  <p>- Ô trống điền từ: <strong className="text-[#1E293B]">[đáp án đúng 1]</strong></p>
+                  <p>
+                    - Thêm <strong className="text-[#1E293B]">[FILL]</strong>{" "}
+                    đằng trước câu hỏi.
+                  </p>
+                  <p>
+                    - Ô trống điền từ:{" "}
+                    <strong className="text-[#1E293B]">[đáp án đúng 1]</strong>
+                  </p>
                 </div>
               )}
 
               {guideActiveTab === "tab4" && (
                 <div className="space-y-0.5 text-[11px] text-[#334155] leading-relaxed rounded-[6px] bg-[#F8FAFC] p-2.5 border border-[#E2E8F0]">
                   <p className="font-bold text-[#1E293B]">Quy tắc đọc hiểu</p>
-                  <p>- Thêm <strong className="text-[#1E293B]">[READ-n]</strong> đằng trước câu hỏi bài đọc.</p>
+                  <p>
+                    - Thêm <strong className="text-[#1E293B]">[READ-n]</strong>{" "}
+                    đằng trước câu hỏi bài đọc.
+                  </p>
                 </div>
               )}
 
