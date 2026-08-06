@@ -37,4 +37,5 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 # quizz-fe
 
-deploy
+v0.0.1
+v0.0.2
