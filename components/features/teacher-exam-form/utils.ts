@@ -22,6 +22,7 @@ import {
 
 const OPTION_KEYS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const POINT_PRECISION = 6;
+const POINT_DISPLAY_PRECISION = 2;
 
 export function getTeacherExamQuestionPoints(
   questionIndex: number,
@@ -39,9 +40,7 @@ export function getTeacherExamQuestionPoints(
 
   if (questionIndex === questionCount - 1) {
     return Number(
-      (totalPoints - basePoints * (questionCount - 1)).toFixed(
-        POINT_PRECISION,
-      ),
+      (totalPoints - basePoints * (questionCount - 1)).toFixed(POINT_PRECISION),
     );
   }
 
@@ -54,7 +53,7 @@ export function getTeacherExamTotalPoints(questionCount: number): number {
 
 export function formatTeacherExamPoints(points: number): string {
   return new Intl.NumberFormat("vi-VN", {
-    maximumFractionDigits: POINT_PRECISION,
+    maximumFractionDigits: POINT_DISPLAY_PRECISION,
   }).format(points);
 }
 
@@ -64,7 +63,9 @@ function createFormId(prefix: string): string {
     .slice(-4)}`;
 }
 
-export function createEmptyOption(isCorrect = false) {
+export function createEmptyOption(
+  isCorrect = false,
+): TeacherExamOptionFormValues {
   return {
     client_id: createFormId("option"),
     option_key: "",
@@ -82,20 +83,73 @@ export function normalizeAcceptedAnswers(acceptedAnswers: string[]): string[] {
   return acceptedAnswers.map((answer) => answer.trim()).filter(Boolean);
 }
 
+export function richTextToPlainText(value: string): string {
+  return value
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|h[1-6]|li|blockquote|pre|tr)>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\u200B/g, "")
+    .trim();
+}
+
+export function hasRichTextContent(value: string | null | undefined): boolean {
+  return richTextToPlainText(value ?? "").length > 0;
+}
+
+export function sanitizeRichTextHtml(value: string): string {
+  return value
+    .replace(
+      /<(script|style|iframe|object|embed|form)[^>]*>[\s\S]*?<\/\1>/gi,
+      "",
+    )
+    .replace(/<(script|style|iframe|object|embed|form)[^>]*\/?>/gi, "")
+    .replace(/\son[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+    .replace(/\s(href|src)\s*=\s*(["'])\s*javascript:[\s\S]*?\2/gi, ' $1="#"')
+    .trim();
+}
+
+export function isAcceptedAnswerQuestionType(
+  questionType: TeacherExamQuestionType,
+): questionType is Extract<
+  TeacherExamQuestionType,
+  "fill_in_blank" | "short_answer"
+> {
+  return questionType === "fill_in_blank" || questionType === "short_answer";
+}
+
+export function isEssayQuestionType(
+  questionType: TeacherExamQuestionType,
+): questionType is Extract<TeacherExamQuestionType, "text"> {
+  return questionType === "text";
+}
+
+/**
+ * Nhóm câu hỏi không sử dụng danh sách lựa chọn.
+ * Giữ helper này để tương thích với các component đang import từ trước.
+ */
 export function isTextQuestionType(
   questionType: TeacherExamQuestionType,
 ): questionType is Extract<
   TeacherExamQuestionType,
-  "short_answer" | "text"
+  "fill_in_blank" | "short_answer" | "text"
 > {
-  return questionType === "short_answer" || questionType === "text";
+  return (
+    isAcceptedAnswerQuestionType(questionType) ||
+    isEssayQuestionType(questionType)
+  );
 }
 
 export function isChoiceQuestionType(
   questionType: TeacherExamQuestionType,
-): questionType is Exclude<
+): questionType is Extract<
   TeacherExamQuestionType,
-  "short_answer" | "text"
+  "single_choice" | "multiple_choice" | "true_false"
 > {
   return (
     questionType === "single_choice" ||
@@ -104,9 +158,9 @@ export function isChoiceQuestionType(
   );
 }
 
-type ChoiceQuestionType = Exclude<
+type ChoiceQuestionType = Extract<
   TeacherExamQuestionType,
-  "short_answer" | "text"
+  "single_choice" | "multiple_choice" | "true_false"
 >;
 
 function createTrueFalseOptions(
@@ -128,9 +182,9 @@ function normalizeTrueFalseOptions(
   options: TeacherExamOptionFormValues[],
 ): TeacherExamOptionFormValues[] {
   const correctOption = options.find((option) => option.is_correct);
-  const normalizedCorrectText = correctOption?.option_text
-    .trim()
-    .toLocaleLowerCase("vi-VN");
+  const normalizedCorrectText = richTextToPlainText(
+    correctOption?.option_text ?? "",
+  ).toLocaleLowerCase("vi-VN");
   const falseIsCorrect =
     normalizedCorrectText === "sai" ||
     normalizedCorrectText === "false" ||
@@ -157,8 +211,6 @@ function createDefaultChoiceOptions(
       )
     : reindexTeacherExamOptions(defaultOptions);
 }
-
-
 
 export function reindexTeacherExamOptions(
   options: TeacherExamOptionFormValues[],
@@ -211,18 +263,30 @@ export function applyTeacherExamQuestionType(
   question: TeacherExamQuestionFormValues,
   nextQuestionType: TeacherExamQuestionType,
 ): TeacherExamQuestionFormValues {
-  if (isTextQuestionType(nextQuestionType)) {
+  if (isAcceptedAnswerQuestionType(nextQuestionType)) {
+    const acceptedAnswers =
+      question.accepted_answers.length > 0 ? question.accepted_answers : [""];
+
     return {
       ...question,
       question_type: nextQuestionType,
       options: [],
-      accepted_answers: [""],
+      accepted_answers: acceptedAnswers,
     };
   }
 
-  const nextOptions = isTextQuestionType(question.question_type)
-    ? createDefaultChoiceOptions(nextQuestionType)
-    : normalizeChoiceOptions(nextQuestionType, question.options);
+  if (isEssayQuestionType(nextQuestionType)) {
+    return {
+      ...question,
+      question_type: nextQuestionType,
+      options: [],
+      accepted_answers: [],
+    };
+  }
+
+  const nextOptions = isChoiceQuestionType(question.question_type)
+    ? normalizeChoiceOptions(nextQuestionType, question.options)
+    : createDefaultChoiceOptions(nextQuestionType);
 
   return {
     ...question,
@@ -246,10 +310,12 @@ export function createEmptyQuestion(
     image_url: "",
     order_index: orderIndex,
     points: 1,
-    accepted_answers: isTextQuestionType(normalizedQuestionType) ? [""] : [],
-    options: isTextQuestionType(normalizedQuestionType)
-      ? []
-      : createDefaultChoiceOptions(normalizedQuestionType),
+    accepted_answers: isAcceptedAnswerQuestionType(normalizedQuestionType)
+      ? [""]
+      : [],
+    options: isChoiceQuestionType(normalizedQuestionType)
+      ? createDefaultChoiceOptions(normalizedQuestionType)
+      : [],
   };
 }
 
@@ -276,8 +342,13 @@ function normalizeText(value: string): string {
 
 function formatApiIsoToInput(value: string): string {
   const trimmed = value.trim();
-  if (!trimmed) return "";
+
+  if (!trimmed) {
+    return "";
+  }
+
   const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(trimmed);
+
   return match ? `${match[1]}T${match[2]}` : trimmed;
 }
 
@@ -285,12 +356,19 @@ export function normalizeTeacherExamQuestionType(
   questionType: string | null | undefined,
 ): TeacherExamQuestionType {
   if (
-    questionType === "text" ||
+    questionType === "single_choice" ||
     questionType === "multiple_choice" ||
     questionType === "true_false" ||
-    questionType === "short_answer"
+    questionType === "fill_in_blank" ||
+    questionType === "short_answer" ||
+    questionType === "text"
   ) {
     return questionType;
+  }
+
+  // Luồng AI dùng "essay"; payload đề chính dùng "text".
+  if (questionType === "essay") {
+    return "text";
   }
 
   return DEFAULT_TEACHER_EXAM_QUESTION_TYPE;
@@ -306,12 +384,15 @@ export function reindexTeacherExamQuestions(
 
     return {
       ...question,
+      question_type: questionType,
       order_index: index + 1,
       options: isChoiceQuestionType(questionType)
         ? reindexTeacherExamOptions(question.options)
         : [],
-      accepted_answers: isTextQuestionType(questionType)
-        ? question.accepted_answers
+      accepted_answers: isAcceptedAnswerQuestionType(questionType)
+        ? question.accepted_answers.length > 0
+          ? question.accepted_answers
+          : [""]
         : [],
     };
   });
@@ -330,20 +411,22 @@ function mapQuestion(
 
   return {
     question_type: questionType,
-    prompt: question.prompt.trim(),
-    explanation: normalizeText(question.explanation),
+    prompt: sanitizeRichTextHtml(question.prompt),
+    explanation: sanitizeRichTextHtml(question.explanation),
     image_url: normalizeText(question.image_url),
     order_index: index + 1,
     points,
     options: isChoiceQuestionType(questionType)
       ? options.map((option, optionIndex) => ({
           option_key: option.option_key || createOptionKey(optionIndex),
-          option_text: option.option_text.trim(),
+          option_text: sanitizeRichTextHtml(option.option_text),
           image_url: normalizeText(option.image_url),
           is_correct: option.is_correct,
         }))
       : [],
-    accepted_answers: isTextQuestionType(questionType) ? acceptedAnswers : [],
+    accepted_answers: isAcceptedAnswerQuestionType(questionType)
+      ? acceptedAnswers
+      : [],
   };
 }
 
@@ -361,10 +444,13 @@ export function mapTeacherExamDetailToFormValues(
           id: option.id,
           client_id: createFormId("option"),
           option_key: option.option_key || createOptionKey(optionIndex),
-          option_text: option.option_text.trim(),
+          option_text: option.option_text,
           image_url: option.image_url ?? "",
           is_correct: option.is_correct,
         }));
+        const normalizedAcceptedAnswers = normalizeAcceptedAnswers(
+          question.accepted_answers,
+        );
 
         return {
           id: question.id,
@@ -383,9 +469,9 @@ export function mapTeacherExamDetailToFormValues(
                   : createDefaultChoiceOptions(questionType),
               )
             : [],
-          accepted_answers: isTextQuestionType(questionType)
-            ? normalizeAcceptedAnswers(question.accepted_answers).length > 0
-              ? normalizeAcceptedAnswers(question.accepted_answers)
+          accepted_answers: isAcceptedAnswerQuestionType(questionType)
+            ? normalizedAcceptedAnswers.length > 0
+              ? normalizedAcceptedAnswers
               : [""]
             : [],
         };
@@ -411,9 +497,6 @@ export function mapTeacherExamDetailToFormValues(
 function buildExamPayload(
   values: TeacherExamFormValues,
 ): TeacherCreateExamRequest {
-  // Pass wall-clock strings straight through. Wrapping in `Date` would
-  // cause axios to re-serialize via `.toISOString()`, shifting by browser
-  // TZ and corrupting the value the backend stores.
   const startTime = values.start_time.trim();
   const endTime = values.end_time.trim();
   const questions = reindexTeacherExamQuestions(values.questions);
@@ -458,6 +541,12 @@ export function mapTeacherExamFormToUpdatePayload(
   };
 }
 
+function richTextRequired(message: string) {
+  return Yup.string().test("rich-text-required", message, (value) =>
+    hasRichTextContent(value),
+  );
+}
+
 export const teacherExamFormSchema = Yup.object({
   title: Yup.string()
     .trim()
@@ -468,28 +557,25 @@ export const teacherExamFormSchema = Yup.object({
     .required(EXAM_FLOW_MESSAGES.validation.gradeRequired),
   scope: Yup.string().trim().required(),
   classroom_id: Yup.number().nullable(),
-  image_url: Yup.string()
-    .optional()
-    .nullable(),
+  image_url: Yup.string().optional().nullable(),
   duration_minutes: Yup.number()
     .typeError("Thời lượng phải là số")
     .moreThan(0, EXAM_FLOW_MESSAGES.validation.durationGreaterThanZero)
     .required("Thời lượng là bắt buộc"),
   start_time: Yup.string(),
-  end_time: Yup.string()
-    .test(
-      "end-after-start",
-      EXAM_FLOW_MESSAGES.validation.endTimeAfterStart,
-      function validateEndAfterStart(value) {
-        const startTime = this.parent.start_time;
+  end_time: Yup.string().test(
+    "end-after-start",
+    EXAM_FLOW_MESSAGES.validation.endTimeAfterStart,
+    function validateEndAfterStart(value) {
+      const startTime = this.parent.start_time;
 
-        if (!value || !startTime) {
-          return true;
-        }
+      if (!value || !startTime) {
+        return true;
+      }
 
-        return new Date(value).getTime() > new Date(startTime).getTime();
-      },
-    ),
+      return new Date(value).getTime() > new Date(startTime).getTime();
+    },
+  ),
   is_published: Yup.boolean().required(),
   is_active: Yup.boolean().required(),
   questions: Yup.array()
@@ -505,13 +591,11 @@ export const teacherExamFormSchema = Yup.object({
           )
           .oneOf([...TEACHER_EXAM_QUESTION_TYPES], "Loại câu hỏi không hợp lệ")
           .required("Loại câu hỏi là bắt buộc"),
-        prompt: Yup.string()
-          .trim()
-          .required(EXAM_FLOW_MESSAGES.validation.questionPromptRequired),
+        prompt: richTextRequired(
+          EXAM_FLOW_MESSAGES.validation.questionPromptRequired,
+        ),
         explanation: Yup.string(),
-        image_url: Yup.string()
-          .optional()
-          .nullable(),
+        image_url: Yup.string().optional().nullable(),
         order_index: Yup.number().min(1).required(),
         points: Yup.number()
           .typeError("Điểm phải là số")
@@ -521,7 +605,8 @@ export const teacherExamFormSchema = Yup.object({
           .of(Yup.string().trim().required("Đáp án không được để trống"))
           .when("question_type", {
             is: (questionType: TeacherExamQuestionType) =>
-              questionType === "short_answer" || questionType === "text",
+              questionType === "fill_in_blank" ||
+              questionType === "short_answer",
             then: (schema) =>
               schema.min(1, EXAM_FLOW_MESSAGES.validation.minAcceptedAnswers),
             otherwise: (schema) => schema.max(0).default([]),
@@ -538,12 +623,8 @@ export const teacherExamFormSchema = Yup.object({
                   option_key: Yup.string()
                     .trim()
                     .required("Ký hiệu đáp án là bắt buộc"),
-                  option_text: Yup.string()
-                    .trim()
-                    .required("Nội dung đáp án là bắt buộc"),
-                  image_url: Yup.string()
-                    .optional()
-                    .nullable(),
+                  option_text: richTextRequired("Nội dung đáp án là bắt buộc"),
+                  image_url: Yup.string().optional().nullable(),
                   is_correct: Yup.boolean().required(),
                 }),
               )
@@ -586,17 +667,9 @@ export const teacherExamFormSchema = Yup.object({
               .test(
                 "choice-min-correct-options",
                 EXAM_FLOW_MESSAGES.validation.minCorrectOptions,
-                function validateChoiceOptions(options) {
-                  const questionType = normalizeTeacherExamQuestionType(
-                    this.parent.question_type,
-                  );
-                  const correctOptionCount =
-                    options?.filter((option) => option.is_correct).length ?? 0;
-
-                  return isTextQuestionType(questionType)
-                    ? true
-                    : correctOptionCount >= 1;
-                },
+                (options) =>
+                  (options?.filter((option) => option.is_correct).length ??
+                    0) >= 1,
               ),
           otherwise: (schema) => schema.max(0).default([]),
         }),

@@ -1,4 +1,4 @@
-// ─── Schemas from OpenAPI spec ──────────────────────────────────────────────
+
 
 export interface UserProfileSchema {
   date_of_birth: string;
