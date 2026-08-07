@@ -7,6 +7,7 @@ import {
   ChevronDown,
   CircleAlert,
   FileText,
+  LoaderCircle,
   Plus,
   Save,
   Trash2,
@@ -38,7 +39,6 @@ const QUESTION_TYPE_OPTIONS: Array<{
   { value: "true_false", label: "Đúng / sai" },
   { value: "fill_in_blank", label: "Điền vào chỗ trống" },
   { value: "short_answer", label: "Trả lời ngắn" },
-  { value: "text", label: "Tự luận (chấm thủ công)" },
 ];
 
 interface RichTextEditorProps {
@@ -849,10 +849,21 @@ function RichTextEditor({
 
 export function QuestionBuilderStep({
   hideFooter = false,
+  isSavingDraft = false,
+  onSaveDraft,
+  requestedQuestionIndex,
+  requestedQuestionRequestKey = 0,
+  validationMessage,
 }: {
   hideFooter?: boolean;
+  isSavingDraft?: boolean;
+  onSaveDraft?: (values: TeacherExamFormValues) => Promise<void>;
+  requestedQuestionIndex?: number | null;
+  requestedQuestionRequestKey?: number;
+  validationMessage?: string | null;
 }) {
-  const { values, setFieldValue } = useFormikContext<TeacherExamFormValues>();
+  const { values, resetForm, setFieldValue } =
+    useFormikContext<TeacherExamFormValues>();
   const rootRef = useRef<HTMLDivElement>(null);
   const [footerLeft, setFooterLeft] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState(() =>
@@ -861,7 +872,7 @@ export function QuestionBuilderStep({
   const [isTextModalOpen, setIsTextModalOpen] = useState(false);
   const [saveNotice, setSaveNotice] = useState<{
     message: string;
-    tone: "success" | "draft";
+    tone: "success" | "draft" | "error";
   } | null>(null);
   const [optionNotice, setOptionNotice] = useState<{
     questionClientId: string;
@@ -874,6 +885,52 @@ export function QuestionBuilderStep({
     id: string;
     index: number;
   } | null>(null);
+
+  useEffect(() => {
+    if (
+      requestedQuestionIndex === undefined ||
+      requestedQuestionIndex === null ||
+      values.questions.length === 0
+    ) {
+      return;
+    }
+
+    const nextIndex = Math.min(
+      Math.max(0, requestedQuestionIndex),
+      values.questions.length - 1,
+    );
+
+    let animationFrameId: number | null = null;
+
+    const timeoutId = window.setTimeout(() => {
+      setSelectedIndex(nextIndex);
+
+      animationFrameId = window.requestAnimationFrame(() => {
+        rootRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+
+        const questionEditor = rootRef.current?.querySelector<HTMLElement>(
+          `[aria-label="Nội dung câu hỏi ${nextIndex + 1}"]`,
+        );
+
+        questionEditor?.focus();
+      });
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+
+      if (animationFrameId !== null) {
+        window.cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [
+    requestedQuestionIndex,
+    requestedQuestionRequestKey,
+    values.questions.length,
+  ]);
 
   const safeIndex = Math.min(
     Math.max(0, selectedIndex),
@@ -996,7 +1053,7 @@ export function QuestionBuilderStep({
 
   function showSaveNotice(
     message: string,
-    tone: "success" | "draft" = "success",
+    tone: "success" | "draft" | "error" = "success",
   ) {
     if (saveNoticeTimeoutRef.current !== null) {
       window.clearTimeout(saveNoticeTimeoutRef.current);
@@ -1028,22 +1085,74 @@ export function QuestionBuilderStep({
   }
 
   function handleSaveQuestion() {
-    showSaveNotice(`Đã lưu câu hỏi ${safeIndex + 1} thành công`, "success");
+    showSaveNotice(`Đã lưu câu hỏi ${safeIndex + 1} trong biểu mẫu`, "success");
   }
 
-  function handleSaveDraft() {
-    showSaveNotice(`Đã lưu nháp câu hỏi ${safeIndex + 1}`, "draft");
+  async function persistDraft(): Promise<void> {
+    if (!onSaveDraft) {
+      throw new Error("Chức năng lưu nháp chưa được cấu hình.");
+    }
+
+    await onSaveDraft(values);
+
+    /*
+     * Đánh dấu toàn bộ dữ liệu hiện tại là trạng thái đã lưu.
+     * Sau khi lưu nháp thành công, người dùng có thể rời trang mà không bị
+     * cảnh báo mất thay đổi. Các chỉnh sửa phát sinh sau đó vẫn làm form dirty.
+     */
+    resetForm({ values });
   }
 
-  function handleSaveAndCreateNext() {
+  async function handleSaveDraft() {
+    if (isSavingDraft) {
+      return;
+    }
+
+    try {
+      await persistDraft();
+      showSaveNotice("Đã lưu đề thi dưới dạng bản nháp", "draft");
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message.trim()
+          ? error.message
+          : "Không thể lưu bản nháp. Vui lòng thử lại.";
+
+      showSaveNotice(message, "error");
+    }
+  }
+
+  async function handleSaveAndCreateNext() {
+    if (isSavingDraft) {
+      return;
+    }
+
     const savedQuestionNumber = safeIndex + 1;
     const nextQuestionNumber = values.questions.length + 1;
 
-    handleAddQuestion();
-    showSaveNotice(
-      `Đã lưu câu ${savedQuestionNumber}, đang tạo câu ${nextQuestionNumber}`,
-      "success",
-    );
+    try {
+      await persistDraft();
+
+      const nextQuestion = createEmptyQuestion(
+        undefined,
+        values.questions.length + 1,
+      );
+      const updatedQuestions = [...values.questions, nextQuestion];
+
+      await setFieldValue("questions", updatedQuestions);
+      setSelectedIndex(updatedQuestions.length - 1);
+
+      showSaveNotice(
+        `Đã lưu nháp câu ${savedQuestionNumber}, đang tạo câu ${nextQuestionNumber}`,
+        "success",
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message.trim()
+          ? error.message
+          : "Không thể lưu bản nháp. Vui lòng thử lại.";
+
+      showSaveNotice(message, "error");
+    }
   }
 
   function handleAddQuestion() {
@@ -1299,15 +1408,30 @@ export function QuestionBuilderStep({
                         "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold",
                         saveNotice.tone === "success"
                           ? "bg-emerald-50 text-emerald-700"
-                          : "bg-blue-50 text-blue-700",
+                          : saveNotice.tone === "draft"
+                            ? "bg-blue-50 text-blue-700"
+                            : "bg-rose-50 text-rose-700",
                       )}
                     >
                       {saveNotice.tone === "success" ? (
                         <CheckCircle2 className="size-3.5" />
-                      ) : (
+                      ) : saveNotice.tone === "draft" ? (
                         <Save className="size-3.5" />
+                      ) : (
+                        <CircleAlert className="size-3.5" />
                       )}
                       {saveNotice.message}
+                    </span>
+                  ) : null}
+
+                  {validationMessage ? (
+                    <span
+                      role="alert"
+                      aria-live="assertive"
+                      className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700"
+                    >
+                      <CircleAlert className="size-3.5 shrink-0" />
+                      <span>{validationMessage}</span>
                     </span>
                   ) : null}
                 </div>
@@ -1579,18 +1703,28 @@ export function QuestionBuilderStep({
 
               <button
                 type="button"
-                onClick={handleSaveDraft}
-                className="h-9 cursor-pointer rounded-[6px] border border-[#CBD5E1] bg-white px-5 text-xs font-bold text-[#334155] shadow-sm transition-colors hover:bg-[#F8FAFC]"
+                onClick={() => void handleSaveDraft()}
+                disabled={isSavingDraft}
+                className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-[6px] border border-[#CBD5E1] bg-white px-5 text-xs font-bold text-[#334155] shadow-sm transition-colors hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Lưu nháp
+                {isSavingDraft ? (
+                  <LoaderCircle className="size-3.5 animate-spin" />
+                ) : (
+                  <Save className="size-3.5" />
+                )}
+                {isSavingDraft ? "Đang lưu..." : "Lưu nháp"}
               </button>
 
               <button
                 type="button"
-                onClick={handleSaveAndCreateNext}
-                className="h-9 cursor-pointer rounded-[6px] bg-gradient-to-r from-[#4867F8] to-[#C62CF2] px-5 text-xs font-bold text-white shadow-sm transition-opacity hover:opacity-95"
+                onClick={() => void handleSaveAndCreateNext()}
+                disabled={isSavingDraft}
+                className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-[6px] bg-gradient-to-r from-[#4867F8] to-[#C62CF2] px-5 text-xs font-bold text-white shadow-sm transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Lưu nháp và tiếp tục tạo mới
+                {isSavingDraft ? (
+                  <LoaderCircle className="size-3.5 animate-spin" />
+                ) : null}
+                {isSavingDraft ? "Đang lưu..." : "Lưu nháp và tiếp tục tạo mới"}
               </button>
             </div>
           </div>

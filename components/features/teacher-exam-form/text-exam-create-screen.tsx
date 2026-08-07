@@ -64,7 +64,41 @@ const TAB_3_SAMPLE = `[FILL] Bộ nhớ tạm của máy tính được gọi l�
 
 [FILL] Thủ đô của Việt Nam là [Hà Nội | Ha Noi].`;
 
-const TAB_4_SAMPLE = `[READ-5] Read the following passage and mark the letter A, B, C, or D on your answer sheet to indicate the correct answer to each of the questions.<br/>We get great pleasure from reading. The more advanced a man is, the greater delight he will find in reading. The ordinary man may think that subjects like philosophy or science are very difficult and that if philosophers and scientists read these subjects, it is not for pleasure. But this is not true. The mathematician finds the same pleasure in his mathematics as the school boy in an adventure story. For both, it is a play of the imagination, a mental recreation and exercise.<br/>The pleasure derived from this activity is common to all kinds of reading. But different types of books give us different types of pleasure. First in order of popularity is novel-reading. Novels contain pictures of`;
+const TAB_4_SAMPLE = `[READ-5]
+Read the following passage and choose the best answer for each question.<br />
+Reading is one of the most useful habits a person can develop. It not only provides knowledge but also improves concentration, vocabulary, and imagination. People who read regularly are often able to express their ideas more clearly because they are exposed to different writing styles and ways of thinking.<br />
+Books can also help readers understand cultures and experiences that are different from their own. Through stories, readers can visit distant places, learn about historical events, and see the world from another person's perspective. Reading does not always require expensive materials because many books and articles are now available online or at public libraries.<br />
+To build a reading habit, people should start with topics they enjoy and set aside a small amount of time each day. Even fifteen minutes of daily reading can produce significant benefits over time.
+
+What is the main idea of the passage?
+A. Reading is an expensive activity.
+*B. Reading provides many benefits and can become a useful daily habit.
+C. People should only read historical books.
+D. Online articles are better than printed books.
+
+According to the passage, why can regular readers express their ideas more clearly?
+A. They speak to many people every day.
+B. They memorize every book they read.
+*C. They are exposed to different writing styles and ways of thinking.
+D. They always study difficult vocabulary.
+
+The word “perspective” in the passage is closest in meaning to:
+A. Habit
+*B. Point of view
+C. Location
+D. Memory
+
+Which statement is TRUE according to the passage?
+A. Reading requires expensive books.
+B. People must read for several hours every day.
+C. Reading only improves vocabulary.
+*D. Many reading materials are available online or at public libraries.
+
+What does the writer suggest for developing a reading habit?
+A. Begin with difficult academic books.
+B. Read only when preparing for an examination.
+*C. Choose enjoyable topics and read for a short time each day.
+D. Finish one book every day.`;
 
 const GRADE_OPTIONS = [
   "Đại học",
@@ -150,6 +184,10 @@ function parseTextExamContent(rawText: string): {
   let currentOptions: ParsedOption[] = [];
   let questionCounter = 0;
 
+  // Reading passage state
+  let currentPassageText: string | null = null;
+  let remainingPassageQuestions = 0;
+
   function finalizeQuestion() {
     const rawPromptText = currentPromptLines
       .join("\n")
@@ -157,6 +195,17 @@ function parseTextExamContent(rawText: string): {
       .trim();
 
     if (rawPromptText) {
+      // Check if this is a reading passage marker [READ-n]
+      const readMatch = rawPromptText.match(/^\s*\[READ-(\d+)\]/i);
+      if (readMatch) {
+        remainingPassageQuestions = parseInt(readMatch[1], 10);
+        currentPassageText = rawPromptText.replace(/^\s*\[READ-\d+\]\s*/i, "").trim();
+        // Clear buffer and do NOT push a question since this is just the passage
+        currentPromptLines = [];
+        currentOptions = [];
+        return;
+      }
+
       questionCounter++;
 
       let prompt = rawPromptText;
@@ -169,8 +218,6 @@ function parseTextExamContent(rawText: string): {
         const parsedFillQuestion = parseFillQuestionPrompt(rawPromptText);
         prompt = parsedFillQuestion.prompt;
         acceptedAnswers = parsedFillQuestion.acceptedAnswers;
-      } else if (/^\s*\[READ-\d+\]/i.test(rawPromptText)) {
-        typeText = "Đọc hiểu";
       } else {
         const correctCount = currentOptions.filter((o) => o.isCorrect).length;
 
@@ -179,6 +226,18 @@ function parseTextExamContent(rawText: string): {
         } else if (correctCount === 0 && currentOptions.length > 0) {
           typeText = "Chưa chọn đáp án đúng";
         }
+      }
+
+      // Prepend the passage if this question is a child question
+      if (currentPassageText && remainingPassageQuestions > 0) {
+        remainingPassageQuestions--;
+        typeText = "Đọc hiểu";
+        prompt = `<div class="reading-passage mb-4 p-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-[8px] text-[13px] text-[#334155] leading-relaxed font-normal">
+  <strong>[Đoạn văn đọc hiểu]</strong><br />
+  ${currentPassageText.replace(/\n/g, "<br />")}
+</div>
+
+${prompt}`;
       }
 
       questions.push({

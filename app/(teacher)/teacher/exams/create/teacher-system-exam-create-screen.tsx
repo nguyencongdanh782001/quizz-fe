@@ -60,6 +60,75 @@ function ensureExamImage<T extends ExamPayloadWithImage>(payload: T): T {
   };
 }
 
+function getNestedRecord(
+  value: unknown,
+  key: string,
+): Record<string, unknown> | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const nestedValue = (value as Record<string, unknown>)[key];
+
+  return nestedValue && typeof nestedValue === "object"
+    ? (nestedValue as Record<string, unknown>)
+    : null;
+}
+
+function getCreatedExamId(result: unknown): string | null {
+  if (!result || typeof result !== "object") {
+    return null;
+  }
+
+  const root = result as Record<string, unknown>;
+  const data = getNestedRecord(root, "data");
+  const exam = getNestedRecord(root, "exam");
+  const dataExam = data ? getNestedRecord(data, "exam") : null;
+  const candidates = [root.id, exam?.id, data?.id, dataExam?.id];
+
+  for (const candidate of candidates) {
+    if (
+      (typeof candidate === "string" && candidate.trim()) ||
+      typeof candidate === "number"
+    ) {
+      return String(candidate);
+    }
+  }
+
+  return null;
+}
+
+function getRequestErrorMessage(error: unknown, fallback: string): string {
+  if (!error || typeof error !== "object") {
+    return fallback;
+  }
+
+  const root = error as Record<string, unknown>;
+  const response = getNestedRecord(root, "response");
+  const responseData = response ? getNestedRecord(response, "data") : null;
+  const detail = responseData?.detail;
+
+  if (typeof detail === "string" && detail.trim()) {
+    return detail;
+  }
+
+  if (typeof root.message === "string" && root.message.trim()) {
+    return root.message;
+  }
+
+  return fallback;
+}
+
+function createDraftValues(
+  values: TeacherExamFormValues,
+): TeacherExamFormValues {
+  return {
+    ...values,
+    is_published: false,
+    is_active: false,
+  };
+}
+
 function ExamEditorLoadingState() {
   return (
     <div className="space-y-8">
@@ -121,6 +190,8 @@ export function TeacherSystemExamCreateScreen({
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [draftExamId, setDraftExamId] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] =
     useState(initialImportOpen);
@@ -138,8 +209,8 @@ export function TeacherSystemExamCreateScreen({
       ? mapTeacherExamDetailToFormValues(detailQuery.data)
       : createInitialTeacherExamFormValues();
   const isSubmitting = isEditMode
-    ? updateMutation.isPending
-    : isCreating || isImporting;
+    ? updateMutation.isPending || isSavingDraft
+    : isCreating || isImporting || isSavingDraft;
 
   useEffect(() => {
     return () => {
@@ -171,14 +242,16 @@ export function TeacherSystemExamCreateScreen({
     setSubmitError(null);
     setToast(null);
 
+    const targetExamId = normalizedEditId ?? draftExamId;
+
     try {
-      if (isEditMode && normalizedEditId) {
+      if (targetExamId) {
         const payload = ensureExamImage(
           mapTeacherExamFormToUpdatePayload(values),
         );
 
         await updateMutation.mutateAsync({
-          examId: normalizedEditId,
+          examId: targetExamId,
           payload,
         });
       } else {
@@ -205,25 +278,103 @@ export function TeacherSystemExamCreateScreen({
       }, 1200);
     } catch (error) {
       console.error(
-        isEditMode
+        targetExamId
           ? "Failed to update system exam"
           : "Failed to create system exam",
         error,
       );
 
-      const message = isEditMode
+      const fallbackMessage = targetExamId
         ? APP_MESSAGES.UPDATE_EXAM_FAILED
         : APP_MESSAGES.CREATE_EXAM_FAILED;
+      const message = getRequestErrorMessage(error, fallbackMessage);
 
       setSubmitError(message);
       openToast({
-        title: message,
-        description: APP_MESSAGES.NETWORK_ERROR,
+        title: fallbackMessage,
+        description: message,
         variant: "error",
       });
       scrollTeacherContentToTop();
     } finally {
       setIsCreating(false);
+    }
+  }
+
+  async function handleSaveDraft(values: TeacherExamFormValues): Promise<void> {
+    if (isSavingDraft) {
+      return;
+    }
+
+    const trimmedTitle = values.title.trim();
+    const trimmedGrade = values.grade.trim();
+
+    if (!trimmedTitle) {
+      throw new Error("Vui lòng nhập tên đề thi trước khi lưu nháp.");
+    }
+
+    if (!trimmedGrade) {
+      throw new Error("Vui lòng chọn trình độ trước khi lưu nháp.");
+    }
+
+    setSubmitError(null);
+    setToast(null);
+    setIsSavingDraft(true);
+
+    const draftValues = createDraftValues(values);
+    const targetExamId = normalizedEditId ?? draftExamId;
+
+    try {
+      if (targetExamId) {
+        const payload = ensureExamImage(
+          mapTeacherExamFormToUpdatePayload(draftValues),
+        );
+
+        await updateMutation.mutateAsync({
+          examId: targetExamId,
+          payload,
+        });
+      } else {
+        const payload = ensureExamImage(
+          mapTeacherExamFormToPayload(draftValues),
+        );
+        const result = await createSystemExam(payload);
+        const createdExamId = getCreatedExamId(result);
+
+        if (createdExamId) {
+          setDraftExamId(createdExamId);
+        } else {
+          console.warn(
+            "Bản nháp đã được tạo nhưng API không trả về exam id. " +
+              "Lần lưu tiếp theo có thể tạo thêm một bản nháp mới.",
+          );
+        }
+      }
+
+      openToast({
+        title: "Đã lưu bản nháp",
+        description:
+          "Đề thi đã được lưu và sẽ xuất hiện trong mục Quản lý đề thi.",
+        variant: "success",
+      });
+    } catch (error) {
+      console.error("Failed to save system exam draft", error);
+
+      const message = getRequestErrorMessage(
+        error,
+        "Không thể lưu bản nháp. Vui lòng thử lại.",
+      );
+
+      setSubmitError(message);
+      openToast({
+        title: "Không thể lưu bản nháp",
+        description: message,
+        variant: "error",
+      });
+
+      throw new Error(message);
+    } finally {
+      setIsSavingDraft(false);
     }
   }
 
@@ -309,8 +460,10 @@ export function TeacherSystemExamCreateScreen({
           <ExamForm
             initialValues={initialValues}
             onSubmit={handleSubmit}
+            onSaveDraft={handleSaveDraft}
             cancelHref="/teacher/exams"
             isSubmitting={isSubmitting}
+            isSavingDraft={isSavingDraft}
             submitLabel={
               isEditMode
                 ? EXAM_FLOW_MESSAGES.buttons.update

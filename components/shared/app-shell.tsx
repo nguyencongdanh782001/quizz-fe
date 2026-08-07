@@ -13,6 +13,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/queries/useNotifications";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -415,6 +417,7 @@ interface NotificationItem {
   time: string;
   unread: boolean;
   type: "assignment" | "result" | "system" | "class";
+  link_to?: string;
 }
 
 const READ_NOTIFICATIONS_KEY = "quizzvn_read_notification_ids";
@@ -460,90 +463,88 @@ function storeDeletedIds(deletedIds: string[]) {
 
 function NotificationDropdown({ role }: { role: AppRole }) {
   const [filter, setFilter] = useState<"all" | "unread">("all");
-  const [readIds, setReadIds] = useState<string[]>([]);
-  const [deletedIds, setDeletedIds] = useState<string[]>([]);
   const [isMounted, setIsMounted] = useState(false);
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const {
+    notifications,
+    markRead,
+    markAllRead,
+    deleteNotif,
+    deleteAll,
+  } = useNotifications();
 
   useEffect(() => {
     setIsMounted(true);
-    setReadIds(getStoredReadIds());
-    setDeletedIds(getStoredDeletedIds());
   }, []);
 
-  const rawNotifications: NotificationItem[] = useMemo(
-    () =>
-      role === "teacher"
-        ? [
-            {
-              id: "1",
-              title: "Học sinh nộp bài thi",
-              description:
-                "Bùi Nhân vừa nộp bài thi 'Đề kiểm tra Giữa kỳ I - Toán 12'.",
-              time: "10 phút trước",
-              unread: true,
-              type: "assignment" as const,
-            },
-            {
-              id: "2",
-              title: "Cập nhật hệ thống QuizzVN",
-              description:
-                "Tính năng tạo đề bằng AI từ file PDF đã nâng cấp tốc độ xử lý.",
-              time: "1 giờ trước",
-              unread: true,
-              type: "system" as const,
-            },
-            {
-              id: "3",
-              title: "Học sinh tham gia lớp",
-              description:
-                "5 học sinh mới vừa gia nhập lớp '12A1 - Chuyên Toán'.",
-              time: "Hôm qua",
-              unread: false,
-              type: "class" as const,
-            },
-          ]
-        : [
-            {
-              id: "1",
-              title: "Đề thi mới được giao",
-              description:
-                "Thầy Giáo vừa giao đề thi mới 'Kiểm tra 1 tiết Lý 12'.",
-              time: "15 phút trước",
-              unread: true,
-              type: "assignment" as const,
-            },
-            {
-              id: "2",
-              title: "Kết quả thi mới",
-              description:
-                "Bạn vừa đạt 9.5/10 điểm bài thi 'Ôn tập Tiếng Anh'.",
-              time: "2 giờ trước",
-              unread: true,
-              type: "result" as const,
-            },
-            {
-              id: "3",
-              title: "Thông báo lớp học",
-              description:
-                "Lịch thi lại môn Hóa học sẽ bắt đầu lúc 8h00 ngày mai.",
-              time: "Hôm qua",
-              unread: false,
-              type: "class" as const,
-            },
-          ],
-    [role],
-  );
+  // Set up WebSocket connection for real-time notifications
+  useEffect(() => {
+    if (typeof window === "undefined") return;
 
-  const notifications = useMemo(
-    () =>
-      rawNotifications
-        .filter((item) => !deletedIds.includes(item.id))
-        .map((item) => ({
-          ...item,
-          unread: readIds.includes(item.id) ? false : item.unread,
-        })),
-    [rawNotifications, readIds, deletedIds],
-  );
+    const getWebSocketUrl = () => {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      let wsHost = "localhost:8000";
+      try {
+        const url = new URL(apiUrl);
+        wsHost = url.host;
+      } catch {
+        if (apiUrl.startsWith("http")) {
+          wsHost = apiUrl.replace(/^https?:\/\//, "");
+        }
+      }
+      return `${wsProtocol}//${wsHost}/chat/ws`;
+    };
+
+    let socket: WebSocket | null = null;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+
+    const connectWS = () => {
+      const wsUrl = getWebSocketUrl();
+      socket = new WebSocket(wsUrl);
+
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "notification_created") {
+            // Play sound notification
+            try {
+              const audio = new Audio("/notification.mp3");
+              void audio.play();
+            } catch {
+              // Ignore audio play errors
+            }
+            // Invalidate React Query cache to fetch new notifications list
+            void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+          }
+        } catch (err) {
+          console.error("Failed to handle WebSocket message", err);
+        }
+      };
+
+      socket.onclose = () => {
+        // Reconnect after 3 seconds
+        reconnectTimeout = setTimeout(connectWS, 3000);
+      };
+
+      socket.onerror = () => {
+        socket?.close();
+      };
+    };
+
+    connectWS();
+
+    return () => {
+      if (socket) {
+        socket.onclose = null;
+        socket.close();
+      }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+    };
+  }, [queryClient]);
 
   const unreadCount = useMemo(
     () => (isMounted ? notifications.filter((n) => n.unread).length : 0),
@@ -555,31 +556,23 @@ function NotificationDropdown({ role }: { role: AppRole }) {
     [filter, notifications],
   );
 
-  function markAllAsRead() {
-    const allIds = notifications.map((n) => n.id);
-    const newReadIds = Array.from(new Set([...readIds, ...allIds]));
-    setReadIds(newReadIds);
-    storeReadIds(newReadIds);
+  function handleNotificationClick(item: NotificationItem) {
+    markRead(item.id);
+    if (item.link_to) {
+      router.push(item.link_to);
+    }
   }
 
-  function toggleItemRead(id: string) {
-    if (readIds.includes(id)) return;
-    const newReadIds = [...readIds, id];
-    setReadIds(newReadIds);
-    storeReadIds(newReadIds);
+  function handleMarkAllAsRead() {
+    markAllRead();
   }
 
-  function deleteAllNotifications() {
-    const allIds = notifications.map((n) => n.id);
-    const newDeletedIds = Array.from(new Set([...deletedIds, ...allIds]));
-    setDeletedIds(newDeletedIds);
-    storeDeletedIds(newDeletedIds);
+  function handleDeleteAllNotifications() {
+    deleteAll();
   }
 
-  function deleteSingleNotification(id: string) {
-    const newDeletedIds = Array.from(new Set([...deletedIds, id]));
-    setDeletedIds(newDeletedIds);
-    storeDeletedIds(newDeletedIds);
+  function handleDeleteSingleNotification(id: string) {
+    deleteNotif(id);
   }
 
   return (
@@ -614,7 +607,7 @@ function NotificationDropdown({ role }: { role: AppRole }) {
           {unreadCount > 0 ? (
             <button
               type="button"
-              onClick={markAllAsRead}
+              onClick={handleMarkAllAsRead}
               className="text-xs font-semibold text-[#4F46E5] transition-colors hover:text-[#3730A3]"
             >
               Đánh dấu đã đọc
@@ -622,7 +615,7 @@ function NotificationDropdown({ role }: { role: AppRole }) {
           ) : notifications.length > 0 ? (
             <button
               type="button"
-              onClick={deleteAllNotifications}
+              onClick={handleDeleteAllNotifications}
               className="flex items-center gap-1 text-xs font-semibold text-[#EF4444] transition-colors hover:text-[#DC2626]"
               title="Xóa tất cả thông báo"
             >
@@ -662,7 +655,7 @@ function NotificationDropdown({ role }: { role: AppRole }) {
             filteredNotifications.map((item) => (
               <div
                 key={item.id}
-                onClick={() => toggleItemRead(item.id)}
+                onClick={() => handleNotificationClick(item)}
                 className={`group relative flex cursor-pointer items-start gap-3 p-3.5 transition-colors hover:bg-[#F8FAFC] ${
                   item.unread ? "bg-[#EEF2FF]/40" : ""
                 }`}
@@ -712,7 +705,7 @@ function NotificationDropdown({ role }: { role: AppRole }) {
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    deleteSingleNotification(item.id);
+                    handleDeleteSingleNotification(item.id);
                   }}
                   className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-[4px] text-[#94A3B8] opacity-60 transition-all hover:bg-rose-50 hover:text-[#EF4444] group-hover:opacity-100"
                   title="Xóa thông báo"
