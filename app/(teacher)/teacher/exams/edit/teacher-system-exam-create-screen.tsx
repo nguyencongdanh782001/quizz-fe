@@ -115,13 +115,16 @@ export function TeacherSystemExamCreateScreen({
     enabled: isEditMode,
   });
   const updateMutation = useUpdateTeacherExam();
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+
   const initialValues =
     isEditMode && detailQuery.data
       ? mapTeacherExamDetailToFormValues(detailQuery.data)
       : createInitialTeacherExamFormValues();
+
   const isSubmitting = isEditMode
-    ? updateMutation.isPending
-    : isCreating || isImporting;
+    ? updateMutation.isPending || isSavingDraft
+    : isCreating || isImporting || isSavingDraft;
 
   useEffect(() => {
     return () => {
@@ -130,6 +133,66 @@ export function TeacherSystemExamCreateScreen({
       }
     };
   }, []);
+
+  async function handleSaveDraft(values: TeacherExamFormValues): Promise<void> {
+    if (isSavingDraft) {
+      return;
+    }
+
+    const trimmedTitle = values.title.trim();
+    const trimmedGrade = values.grade.trim();
+
+    if (!trimmedTitle) {
+      throw new Error("Vui lòng nhập tên đề thi trước khi lưu nháp.");
+    }
+
+    if (!trimmedGrade) {
+      throw new Error("Vui lòng chọn trình độ trước khi lưu nháp.");
+    }
+
+    setSubmitError(null);
+    setToast(null);
+    setIsSavingDraft(true);
+
+    const draftValues = {
+      ...values,
+      is_published: false,
+      is_active: false,
+    };
+
+    try {
+      if (isEditMode && normalizedEditId) {
+        await updateMutation.mutateAsync({
+          examId: normalizedEditId,
+          payload: mapTeacherExamFormToUpdatePayload(draftValues),
+        });
+      } else {
+        await createSystemExam(mapTeacherExamFormToPayload(draftValues));
+      }
+
+      openToast({
+        title: "Đã lưu bản nháp",
+        description:
+          "Đề thi đã được lưu và sẽ xuất hiện trong mục Quản lý đề thi.",
+        variant: "success",
+      });
+    } catch (error) {
+      console.error("Failed to save system exam draft", error);
+
+      const message = "Không thể lưu bản nháp. Vui lòng thử lại.";
+
+      setSubmitError(message);
+      openToast({
+        title: "Không thể lưu bản nháp",
+        description: message,
+        variant: "error",
+      });
+
+      throw new Error(message);
+    } finally {
+      setIsSavingDraft(false);
+    }
+  }
 
   function openToast(nextToast: Omit<ScreenToastState, "open">) {
     setToast({
@@ -248,8 +311,10 @@ export function TeacherSystemExamCreateScreen({
           <ExamForm
             initialValues={initialValues}
             onSubmit={handleSubmit}
+            onSaveDraft={handleSaveDraft}
             cancelHref="/teacher/exams"
             isSubmitting={isSubmitting}
+            isSavingDraft={isSavingDraft}
             submitLabel={
               isEditMode
                 ? EXAM_FLOW_MESSAGES.buttons.update
