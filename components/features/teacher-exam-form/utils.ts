@@ -483,7 +483,9 @@ export function mapTeacherExamDetailToFormValues(
     description: exam.description ?? "",
     grade: exam.grade ?? "",
     image_url: exam.image_url ?? "",
-    scope: exam.scope ?? DEFAULT_TEACHER_EXAM_SCOPE,
+    scope: exam.is_published
+      ? (exam.is_active ? "public" : "unlisted")
+      : "private",
     classroom_id: exam.classroom_id ?? null,
     duration_minutes: exam.duration_minutes,
     start_time: formatApiIsoToInput(exam.start_time),
@@ -506,7 +508,7 @@ function buildExamPayload(
     description: normalizeText(values.description),
     grade: normalizeText(values.grade),
     image_url: normalizeText(values.image_url),
-    scope: values.scope || undefined,
+    scope: values.classroom_id ? "class" : "system",
     classroom_id: values.classroom_id ?? undefined,
     duration_minutes: values.duration_minutes,
     start_time: startTime || undefined,

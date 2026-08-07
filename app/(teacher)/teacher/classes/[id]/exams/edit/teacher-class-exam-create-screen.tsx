@@ -362,10 +362,16 @@ export function TeacherClassExamCreateScreen({
     setSubmitError(null);
     setToast(null);
 
+    const finalValues = {
+      ...values,
+      is_published: values.scope === "public" || values.scope === "unlisted",
+      is_active: values.scope === "public" || values.scope === "private",
+    };
+
     try {
       const message = isEditMode
-        ? await updateMutation.mutateAsync(values)
-        : await createMutation.mutateAsync(values);
+        ? await updateMutation.mutateAsync(finalValues)
+        : await createMutation.mutateAsync(finalValues);
 
       if (redirectTimeoutRef.current !== null) {
         window.clearTimeout(redirectTimeoutRef.current);
