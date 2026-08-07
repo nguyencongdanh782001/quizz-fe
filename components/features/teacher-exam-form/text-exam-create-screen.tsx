@@ -30,6 +30,7 @@ interface ParsedOption {
 interface ParsedQuestion {
   id: number;
   sectionTitle?: string;
+  passage?: string;
   prompt: string;
   typeText: string;
   options: ParsedOption[];
@@ -142,6 +143,31 @@ const TOPIC_OPTIONS = [
   "Khác",
 ];
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function buildStoredQuestionPrompt(question: ParsedQuestion): string {
+  if (!question.passage) {
+    return question.prompt;
+  }
+
+  const passageHtml = escapeHtml(question.passage).replace(/\n/g, "<br />");
+  const questionHtml = escapeHtml(question.prompt).replace(/\n/g, "<br />");
+
+  return `<div class="reading-passage mb-4 p-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-[8px] text-[13px] text-[#334155] leading-relaxed font-normal">
+  <strong>[Đoạn văn đọc hiểu]</strong><br />
+  ${passageHtml}
+</div>
+
+${questionHtml}`;
+}
+
 function parseFillQuestionPrompt(rawPrompt: string): {
   prompt: string;
   acceptedAnswers: string[];
@@ -199,7 +225,9 @@ function parseTextExamContent(rawText: string): {
       const readMatch = rawPromptText.match(/^\s*\[READ-(\d+)\]/i);
       if (readMatch) {
         remainingPassageQuestions = parseInt(readMatch[1], 10);
-        currentPassageText = rawPromptText.replace(/^\s*\[READ-\d+\]\s*/i, "").trim();
+        currentPassageText = rawPromptText
+          .replace(/^\s*\[READ-\d+\]\s*/i, "")
+          .trim();
         // Clear buffer and do NOT push a question since this is just the passage
         currentPromptLines = [];
         currentOptions = [];
@@ -209,6 +237,7 @@ function parseTextExamContent(rawText: string): {
       questionCounter++;
 
       let prompt = rawPromptText;
+      let passage: string | undefined;
       let typeText = "Một đáp án";
       let acceptedAnswers: string[] = [];
 
@@ -228,21 +257,18 @@ function parseTextExamContent(rawText: string): {
         }
       }
 
-      // Prepend the passage if this question is a child question
+      // Gắn đoạn đọc vào trường riêng để phần xem trước render bằng JSX,
+      // tránh hiển thị nguyên chuỗi <div class=...> ra màn hình.
       if (currentPassageText && remainingPassageQuestions > 0) {
         remainingPassageQuestions--;
         typeText = "Đọc hiểu";
-        prompt = `<div class="reading-passage mb-4 p-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-[8px] text-[13px] text-[#334155] leading-relaxed font-normal">
-  <strong>[Đoạn văn đọc hiểu]</strong><br />
-  ${currentPassageText.replace(/\n/g, "<br />")}
-</div>
-
-${prompt}`;
+        passage = currentPassageText.trim();
       }
 
       questions.push({
         id: questionCounter,
         sectionTitle: currentSection || undefined,
+        passage,
         prompt,
         typeText,
         options: [...currentOptions],
@@ -614,7 +640,7 @@ export function TextExamCreateScreen() {
           const acceptedAnswers = isFillInBlank ? q.acceptedAnswers : [];
 
           return {
-            prompt: q.prompt,
+            prompt: buildStoredQuestionPrompt(q),
             question_type: questionType,
             points: getTeacherExamQuestionPoints(idx, questions.length),
             order_index: idx + 1,
@@ -876,6 +902,17 @@ export function TextExamCreateScreen() {
                       Câu {activeQuestion.id} ({activeQuestion.typeText})
                     </span>
                   </div>
+
+                  {activeQuestion.passage ? (
+                    <div className="rounded-[6px] border border-[#E2E8F0] bg-white p-3 text-xs font-normal leading-relaxed text-[#334155]">
+                      <p className="font-bold text-[#1E293B]">
+                        [Đoạn văn đọc hiểu]
+                      </p>
+                      <p className="mt-2 whitespace-pre-wrap">
+                        {activeQuestion.passage}
+                      </p>
+                    </div>
+                  ) : null}
 
                   <p className="whitespace-pre-wrap text-xs font-bold leading-relaxed text-[#1E293B]">
                     {activeQuestion.prompt}
