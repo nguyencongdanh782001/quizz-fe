@@ -178,6 +178,15 @@ export default function StudentHomePage() {
   // Recent Activities Data
   const recentActivitiesData = recentActivitiesQuery.data ?? [];
 
+  // Find maximum values to scale the bars proportionally and avoid overflow
+  const maxTests = useMemo(() => {
+    return Math.max(...chartData.map((item) => item.tests_completed ?? 0), 1);
+  }, [chartData]);
+
+  const maxMinutes = useMemo(() => {
+    return Math.max(...chartData.map((item) => item.study_minutes ?? 0), 1);
+  }, [chartData]);
+
   return (
     <div className="space-y-5 pb-6">
       {/* Row 1: Metrics & Tiếp tục học */}
@@ -379,21 +388,21 @@ export default function StudentHomePage() {
                       onMouseLeave={() => setHoveredBarIndex(null)}
                       className="relative flex flex-1 cursor-pointer flex-col items-center gap-1.5 h-full justify-end"
                     >
-                      {/* Show tooltip ONLY when hovered OR when data > 0 */}
-                      {isHovered && (testsCount > 0 || minutesCount > 0) && (
-                        <div className="absolute -top-10 z-10 rounded-[6px] bg-[#1E293B] px-2.5 py-1.5 text-center text-[10px] text-white shadow-md">
+                      {/* Show tooltip on hover */}
+                      {isHovered && (
+                        <div className="absolute -top-12 z-10 rounded-[6px] bg-[#1E293B] px-2.5 py-1.5 text-center text-[10px] text-white shadow-md min-w-[70px]">
                           <p className="font-bold">{testsCount} bài</p>
                           <p className="opacity-90">{minutesCount} phút</p>
                         </div>
                       )}
-                      <div className="flex w-full items-end justify-center gap-1">
+                      <div className="flex w-full items-end justify-center gap-1 h-32">
                         <div
                           className={cn(
                             "w-2.5 rounded-t-md transition-all duration-300",
                             testsCount > 0 ? "bg-[#6366F1]" : "bg-[#CBD5E1]",
                           )}
                           style={{
-                            height: `${Math.max(testsCount * 18, 4)}px`,
+                            height: testsCount > 0 ? `${Math.max((testsCount / maxTests) * 100, 8)}%` : "4px",
                           }}
                         />
                         <div
@@ -402,7 +411,7 @@ export default function StudentHomePage() {
                             minutesCount > 0 ? "bg-[#A5B4FC]" : "bg-[#E2E8F0]",
                           )}
                           style={{
-                            height: `${Math.max(minutesCount * 1.8, 4)}px`,
+                            height: minutesCount > 0 ? `${Math.max((minutesCount / maxMinutes) * 100, 8)}%` : "4px",
                           }}
                         />
                       </div>
