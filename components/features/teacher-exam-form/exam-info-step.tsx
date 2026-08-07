@@ -720,23 +720,18 @@ export function ExamInfoStep() {
               Phạm vi chia sẻ <span className="text-rose-500">*</span>
             </label>
             <select
-              value={
-                values.is_published
-                  ? "public"
-                  : values.is_active
-                    ? "private"
-                    : "unlisted"
-              }
+              value={values.scope}
               onChange={(e) => {
                 const scopeVal = e.target.value;
+                setFieldValue("scope", scopeVal);
                 if (scopeVal === "public") {
                   setFieldValue("is_published", true);
                   setFieldValue("is_active", true);
                 } else if (scopeVal === "private") {
                   setFieldValue("is_published", false);
                   setFieldValue("is_active", true);
-                } else {
-                  setFieldValue("is_published", false);
+                } else if (scopeVal === "unlisted") {
+                  setFieldValue("is_published", true);
                   setFieldValue("is_active", false);
                 }
               }}

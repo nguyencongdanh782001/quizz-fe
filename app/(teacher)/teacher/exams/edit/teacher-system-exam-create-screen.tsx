@@ -205,15 +205,21 @@ export function TeacherSystemExamCreateScreen({
     setSubmitError(null);
     setToast(null);
 
+    const finalValues = {
+      ...values,
+      is_published: values.scope === "public" || values.scope === "unlisted",
+      is_active: values.scope === "public" || values.scope === "private",
+    };
+
     try {
       if (isEditMode && normalizedEditId) {
         await updateMutation.mutateAsync({
           examId: normalizedEditId,
-          payload: mapTeacherExamFormToUpdatePayload(values),
+          payload: mapTeacherExamFormToUpdatePayload(finalValues),
         });
       } else {
         setIsCreating(true);
-        await createSystemExam(mapTeacherExamFormToPayload(values));
+        await createSystemExam(mapTeacherExamFormToPayload(finalValues));
       }
 
       if (redirectTimeoutRef.current !== null) {

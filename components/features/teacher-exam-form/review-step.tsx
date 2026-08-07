@@ -332,30 +332,23 @@ export function ReviewStep({
             <div className="mt-1 flex items-center justify-between border-t border-[#DDE2EB] pt-1 text-xs">
               <span className="font-medium text-[#64748B]">Trạng thái</span>
               <div className="flex flex-wrap items-center justify-end gap-1">
-                <span
-                  className={cn(
-                    "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold",
-                    values.is_published
-                      ? "bg-emerald-50 text-emerald-700"
-                      : "bg-amber-50 text-amber-700",
-                  )}
-                >
-                  {values.is_published
-                    ? EXAM_FLOW_MESSAGES.states.public
-                    : EXAM_FLOW_MESSAGES.states.private}
-                </span>
-                <span
-                  className={cn(
-                    "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold",
-                    values.is_active
-                      ? "bg-[#EEF2FF] text-[#3F63F3]"
-                      : "bg-[#F1F5F9] text-[#64748B]",
-                  )}
-                >
-                  {values.is_active
-                    ? EXAM_FLOW_MESSAGES.states.active
-                    : EXAM_FLOW_MESSAGES.states.hidden}
-                </span>
+                {!values.is_published && !values.is_active ? (
+                  <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                    Bản nháp
+                  </span>
+                ) : values.scope === "public" ? (
+                  <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                    Công khai
+                  </span>
+                ) : values.scope === "private" ? (
+                  <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                    Riêng tư
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-full bg-[#EEF2FF] px-2 py-0.5 text-[10px] font-bold text-[#3F63F3]">
+                    Không công khai
+                  </span>
+                )}
               </div>
             </div>
           </div>

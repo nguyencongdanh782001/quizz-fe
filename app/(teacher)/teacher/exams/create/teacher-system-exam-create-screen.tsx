@@ -243,11 +243,16 @@ export function TeacherSystemExamCreateScreen({
     setToast(null);
 
     const targetExamId = normalizedEditId ?? draftExamId;
+    const finalValues = {
+      ...values,
+      is_published: values.scope === "public" || values.scope === "unlisted",
+      is_active: values.scope === "public" || values.scope === "private",
+    };
 
     try {
       if (targetExamId) {
         const payload = ensureExamImage(
-          mapTeacherExamFormToUpdatePayload(values),
+          mapTeacherExamFormToUpdatePayload(finalValues),
         );
 
         await updateMutation.mutateAsync({
@@ -257,7 +262,7 @@ export function TeacherSystemExamCreateScreen({
       } else {
         setIsCreating(true);
 
-        const payload = ensureExamImage(mapTeacherExamFormToPayload(values));
+        const payload = ensureExamImage(mapTeacherExamFormToPayload(finalValues));
 
         await createSystemExam(payload);
       }

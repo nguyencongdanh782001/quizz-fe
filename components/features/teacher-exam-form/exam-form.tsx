@@ -394,16 +394,23 @@ function ExamFormBody({
                   Trạng thái
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                    {values.is_published
-                      ? EXAM_FLOW_MESSAGES.states.public
-                      : EXAM_FLOW_MESSAGES.states.private}
-                  </span>
-                  <span className="inline-flex items-center rounded-full bg-secondary/12 px-2.5 py-1 text-xs font-semibold text-secondary">
-                    {values.is_active
-                      ? EXAM_FLOW_MESSAGES.states.active
-                      : EXAM_FLOW_MESSAGES.states.hidden}
-                  </span>
+                  {!values.is_published && !values.is_active ? (
+                    <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 border border-amber-200">
+                      Bản nháp
+                    </span>
+                  ) : values.scope === "public" ? (
+                    <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                      Công khai
+                    </span>
+                  ) : values.scope === "private" ? (
+                    <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 border border-amber-200">
+                      Riêng tư
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-full bg-[#EEF2FF] px-2.5 py-1 text-xs font-semibold text-[#3F63F3] border border-blue-200">
+                      Không công khai
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
