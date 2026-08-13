@@ -296,7 +296,7 @@ export function AppShell({ role, children }: AppShellProps) {
           </form>
 
           <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
-            <NotificationDropdown role={role} />
+            <NotificationDropdown />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -461,9 +461,30 @@ function storeDeletedIds(deletedIds: string[]) {
   }
 }
 
-function NotificationDropdown({ role }: { role: AppRole }) {
-  const [filter, setFilter] = useState<"all" | "unread">("all");
+function NotificationDropdown() {
   const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return (
+      <button
+        type="button"
+        className="relative flex size-9 items-center justify-center rounded-[8px] border-0 bg-transparent text-[#475569] hover:bg-transparent hover:text-[#1E293B] outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 ring-0 ring-transparent focus:ring-transparent select-none shadow-none"
+        aria-label="Thông báo"
+      >
+        <Bell className="size-5" />
+      </button>
+    );
+  }
+
+  return <MountedNotificationDropdown />;
+}
+
+function MountedNotificationDropdown() {
+  const [filter, setFilter] = useState<"all" | "unread">("all");
   const router = useRouter();
   const queryClient = useQueryClient();
   const {
@@ -473,10 +494,6 @@ function NotificationDropdown({ role }: { role: AppRole }) {
     deleteNotif,
     deleteAll,
   } = useNotifications();
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   // Set up WebSocket connection for real-time notifications
   useEffect(() => {
@@ -547,8 +564,8 @@ function NotificationDropdown({ role }: { role: AppRole }) {
   }, [queryClient]);
 
   const unreadCount = useMemo(
-    () => (isMounted ? notifications.filter((n) => n.unread).length : 0),
-    [isMounted, notifications],
+    () => notifications.filter((n) => n.unread).length,
+    [notifications],
   );
 
   const filteredNotifications = useMemo(

@@ -31,7 +31,6 @@ import {
 interface ExamCardProps {
   exam: TeacherExam;
   isDeleting: boolean;
-  onCopyLink: (exam: TeacherExam) => void;
   onDeleteRequest: (exam: TeacherExam) => void;
   onToggleVisibility: (response: ToggleVisibilityResponse) => void;
   onToggleError: (message: string) => void;
@@ -107,7 +106,6 @@ function ExamMetaItem({
 export function ExamCard({
   exam,
   isDeleting,
-  onCopyLink,
   onDeleteRequest,
   onToggleVisibility,
   onToggleError,
@@ -143,7 +141,6 @@ export function ExamCard({
             exam={exam}
             isDeleting={isDeleting}
             onViewDetail={onViewDetail}
-            onCopyLink={onCopyLink}
             onDeleteRequest={onDeleteRequest}
             onToggleVisibility={onToggleVisibility}
             onToggleError={onToggleError}
@@ -230,7 +227,6 @@ export function ExamCard({
             exam={exam}
             isDeleting={isDeleting}
             onViewDetail={onViewDetail}
-            onCopyLink={onCopyLink}
             onDeleteRequest={onDeleteRequest}
             onToggleVisibility={onToggleVisibility}
             onToggleError={onToggleError}

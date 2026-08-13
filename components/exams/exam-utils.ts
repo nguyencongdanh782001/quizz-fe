@@ -98,14 +98,6 @@ export function getExamScopeLabel(scope: string | null | undefined): string {
   return getTeacherExamScopeLabel(scope);
 }
 
-export function buildStudentExamLink(examId: number): string {
-  if (typeof window === "undefined") {
-    return `/student/exam/${examId}`;
-  }
-
-  return `${window.location.origin}/student/exam/${examId}`;
-}
-
 export function matchesClientFilters(
   exam: TeacherExam,
   filters: TeacherExamFilterFormValues,

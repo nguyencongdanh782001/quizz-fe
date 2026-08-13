@@ -3,7 +3,9 @@ import type {
   StudentExamDetailResponse,
   StudentAttemptAnswerPayloadItem,
   StudentExamAttemptSchema,
+  StudentExamAttemptDetailSchema,
   StudentExamQuestionSchema,
+  StudentAttemptSavedAnswerSchema,
   StudentSubmittedAnswerSchema,
   StudentSubmitAttemptResultSchema,
   StudentSystemExamSchema,
@@ -331,6 +333,13 @@ export interface StudentExamAttemptData {
   submittedAt: string | null;
 }
 
+export interface StudentExamAttemptDetailData extends StudentExamAttemptData {
+  answers: StudentAnswersByQuestion;
+  expiresAt: string | null;
+  serverNow: string | null;
+  receivedAtMs: number;
+}
+
 export interface StudentSubmittedAnswerData {
   questionId: string;
   questionType: QuestionType;
@@ -376,6 +385,68 @@ function mapStudentExamAttempt(
     answeredCount: attempt.answered_count,
     startedAt: attempt.started_at,
     submittedAt: attempt.submitted_at,
+  };
+}
+
+function mapAttemptSavedAnswers(
+  answers: StudentAttemptSavedAnswerSchema[] | null | undefined,
+  questions: Question[] = [],
+): StudentAnswersByQuestion {
+  const questionById = new Map(
+    questions.map((question) => [question.id, question]),
+  );
+  const groupedAnswers: StudentAnswersByQuestion = {};
+
+  for (const answer of answers ?? []) {
+    const questionId = String(answer.question_id);
+    const question = questionById.get(questionId);
+    const answerText = answer.answer_text ?? answer.submitted_answer_text ?? "";
+    const selectedIds = [
+      ...(answer.selected_option_ids ?? []).map(String),
+      ...(answer.selected_option_id !== null &&
+      answer.selected_option_id !== undefined
+        ? [String(answer.selected_option_id)]
+        : []),
+    ].filter(Boolean);
+
+    if (question?.type === "text" || answerText) {
+      groupedAnswers[questionId] = {
+        question_id: questionId,
+        text_answer: answerText,
+      };
+      continue;
+    }
+
+    if (question?.type === "multiple") {
+      const previous = groupedAnswers[questionId]?.checkbox_answer ?? [];
+      groupedAnswers[questionId] = {
+        question_id: questionId,
+        checkbox_answer: Array.from(new Set([...previous, ...selectedIds])),
+      };
+      continue;
+    }
+
+    if (selectedIds[0]) {
+      groupedAnswers[questionId] = {
+        question_id: questionId,
+        radio_answer: selectedIds[0],
+      };
+    }
+  }
+
+  return groupedAnswers;
+}
+
+function mapStudentExamAttemptDetail(
+  attempt: StudentExamAttemptDetailSchema,
+  questions: Question[] = [],
+): StudentExamAttemptDetailData {
+  return {
+    ...mapStudentExamAttempt(attempt),
+    answers: mapAttemptSavedAnswers(attempt.answers, questions),
+    expiresAt: attempt.expires_at ?? null,
+    serverNow: attempt.server_now ?? null,
+    receivedAtMs: Date.now(),
   };
 }
 
@@ -655,6 +726,34 @@ export async function startStudentExamAttempt(
 ): Promise<StudentExamAttemptData> {
   const response = await studentApi.student.exams.startAttempt(examId);
   return mapStudentExamAttempt(response.data.attempt);
+}
+
+export async function getStudentActiveExamAttempt(
+  examId: string,
+  questions: Question[] = [],
+): Promise<StudentExamAttemptDetailData | null> {
+  try {
+    const response = await studentApi.student.exams.activeAttempt(examId);
+    return response.data.attempt
+      ? mapStudentExamAttemptDetail(response.data.attempt, questions)
+      : null;
+  } catch (error) {
+    console.warn(`Failed to fetch active attempt for exam ${examId}`, error);
+    return null;
+  }
+}
+
+export async function getStudentAttempt(
+  attemptId: string,
+  questions: Question[] = [],
+): Promise<StudentExamAttemptDetailData | null> {
+  try {
+    const response = await studentApi.student.attempts.detail(attemptId);
+    return mapStudentExamAttemptDetail(response.data.attempt, questions);
+  } catch (error) {
+    console.error(`Failed to fetch student attempt ${attemptId}`, error);
+    return null;
+  }
 }
 
 function buildAttemptAnswerPayload(

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { useBreadcrumbLabel } from "@/components/shared/breadcrumb-labels";
+import { RichTextRenderer } from "@/components/shared/rich-text-renderer";
 import { Button } from "@/components/ui/button";
 import { getApiErrorMessage } from "@/lib/api/error-message";
 import { getTeacherClassById } from "@/lib/teacher-classes";
@@ -194,9 +195,10 @@ function AnswerPanel({
       <p className="text-xs font-semibold uppercase tracking-[0.14em] opacity-70">
         {title}
       </p>
-      <p className="mt-2 whitespace-pre-wrap break-words text-sm font-medium leading-6">
-        {value}
-      </p>
+      <RichTextRenderer
+        html={value}
+        className="mt-2 whitespace-pre-wrap break-words text-sm font-medium leading-6"
+      />
       <ImagePreview imageUrl={imageUrl} label={title} />
     </div>
   );
@@ -244,9 +246,10 @@ function AnswerCard({
             </span>
           </div>
 
-          <h2 className="text-base font-semibold leading-7 text-on-surface">
-            {answer.prompt}
-          </h2>
+          <RichTextRenderer
+            html={answer.prompt}
+            className="text-base font-semibold leading-7 text-on-surface"
+          />
           <ImagePreview
             imageUrl={answer.questionImageUrl}
             label={`Hình ảnh câu ${index + 1}`}
@@ -281,9 +284,10 @@ function AnswerCard({
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Giải thích
           </p>
-          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-on-surface">
-            {answer.explanation}
-          </p>
+          <RichTextRenderer
+            html={answer.explanation}
+            className="mt-2 whitespace-pre-wrap text-sm leading-6 text-on-surface"
+          />
         </div>
       ) : null}
     </article>

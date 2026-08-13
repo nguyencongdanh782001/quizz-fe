@@ -19,6 +19,7 @@ import {
   getExamClassroomLabel,
   getExamScopeLabel,
 } from "@/components/exams/exam-flow-messages";
+import { RichTextRenderer as RichTextPreview } from "@/components/shared/rich-text-renderer";
 import {
   formatTeacherExamPoints,
   getTeacherExamQuestionPoints,
@@ -28,7 +29,6 @@ import {
   isEssayQuestionType,
   normalizeAcceptedAnswers,
   normalizeTeacherExamQuestionType,
-  sanitizeRichTextHtml,
 } from "./utils";
 import { ReviewImagePreview } from "./review-image-preview";
 
@@ -55,37 +55,6 @@ function formatReviewDateTime(value: string): string {
   const formatted = formatExamDateTime(value);
 
   return formatted || "Thời gian không hợp lệ";
-}
-
-function RichTextPreview({
-  html,
-  fallback,
-  className,
-}: {
-  html: string;
-  fallback: string;
-  className?: string;
-}) {
-  const sanitizedHtml = sanitizeRichTextHtml(html);
-
-  if (!sanitizedHtml) {
-    return <p className={cn("text-[#94A3B8]", className)}>{fallback}</p>;
-  }
-
-  return (
-    <div
-      className={cn(
-        "text-sm leading-6 text-[#1E293B]",
-        "[&_a]:text-blue-600 [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-slate-300 [&_blockquote]:pl-3 [&_blockquote]:italic",
-        "[&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-semibold [&_h4]:text-base [&_h4]:font-semibold",
-        "[&_img]:max-w-full [&_img]:rounded [&_ol]:list-decimal [&_ol]:pl-5 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-slate-900 [&_pre]:p-3 [&_pre]:font-mono [&_pre]:text-white",
-        "[&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-slate-300 [&_td]:p-2 [&_th]:border [&_th]:border-slate-300 [&_th]:p-2",
-        "[&_ul]:list-disc [&_ul]:pl-5 [&_.math-formula]:rounded [&_.math-formula]:bg-blue-50 [&_.math-formula]:px-1.5 [&_.math-formula]:py-0.5 [&_.math-formula]:font-mono [&_.math-formula]:text-blue-700",
-        className,
-      )}
-      dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
-    />
-  );
 }
 
 export function ReviewStep({

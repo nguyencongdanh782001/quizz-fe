@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope, Public_Sans } from "next/font/google";
 import { AppProviders } from "./providers";
+import "katex/dist/katex.min.css";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -16,8 +17,8 @@ const publicSans = Public_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "QuizzVn — Cổng Giải Đề Trực Tuyến",
-  description: "Nền tảng thi trực tuyến hàng đầu Việt Nam",
+  title: "QuizzVn — Hệ thống đánh giá & thi trắc nghiệm online",
+  description: "Hệ thống đánh giá & thi trắc nghiệm online",
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon.ico",

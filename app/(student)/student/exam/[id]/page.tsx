@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { use, useEffect, useState } from "react";
 import {
+  getStudentActiveExamAttempt,
   getStudentExamDetail,
   startStudentExamAttempt,
   StudentExamDetailData,
@@ -66,7 +67,20 @@ export default function ExamDetailPage({
           return;
         }
 
-        setExamDetail(detail);
+        const activeAttempt = await getStudentActiveExamAttempt(
+          id,
+          detail.questions,
+        );
+
+        if (!isMounted) {
+          return;
+        }
+
+        setExamDetail({
+          ...detail,
+          inProgressAttemptId:
+            activeAttempt?.id ?? detail.inProgressAttemptId,
+        });
       } finally {
         if (isMounted) {
           setIsLoadingExam(false);
@@ -127,6 +141,13 @@ export default function ExamDetailPage({
     setStartError(null);
 
     try {
+      if (inProgressAttemptId) {
+        router.push(
+          `/student/exam/${exam.id}/take?attemptId=${inProgressAttemptId}`,
+        );
+        return;
+      }
+
       const attempt = await startStudentExamAttempt(id);
       router.push(`/student/exam/${exam.id}/take?attemptId=${attempt.id}`);
     } catch (error) {

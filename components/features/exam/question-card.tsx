@@ -5,6 +5,7 @@ import { Flag, CheckCircle } from "lucide-react";
 import type { Question, StudentAnswer } from "@/types/exam.types";
 import { AnswerOption } from "./answer-option";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextRenderer } from "@/components/shared/rich-text-renderer";
 import {
   getSelectedOptionIds,
   getTextAnswerValue,
@@ -120,9 +121,10 @@ export function QuestionCard({
           <span className="text-xs font-medium text-muted-foreground">
             Câu hỏi {index + 1} / {total}
           </span>
-          <h2 className="font-display font-semibold text-on-surface text-base md:text-lg leading-relaxed mt-1">
-            {question.text}
-          </h2>
+          <RichTextRenderer
+            html={question.text}
+            className="mt-1 font-display text-base font-semibold leading-relaxed text-on-surface md:text-lg"
+          />
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {question.type === "multiple" && (

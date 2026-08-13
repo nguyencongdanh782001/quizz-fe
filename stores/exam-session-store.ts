@@ -25,8 +25,19 @@ interface ExamSessionState {
   attemptId: string;
 }
 
+interface StartExamOptions {
+  attemptId?: string;
+  answers?: StudentAnswersByQuestion;
+  startedAt?: string | null;
+  currentIndex?: number;
+}
+
 interface ExamSessionActions {
-  startExam: (exam: Exam, questions: Question[]) => void;
+  startExam: (
+    exam: Exam,
+    questions: Question[],
+    options?: StartExamOptions,
+  ) => void;
   setAnswer: (question: Question, optionIds: string[]) => void;
   setTextAnswer: (questionId: string, value: string) => void;
   goToQuestion: (index: number) => void;
@@ -113,16 +124,16 @@ export const useExamSessionStore = create<ExamSessionState & ExamSessionActions>
       submittedAt: null,
       attemptId: '',
 
-      startExam: (exam, questions) => {
+      startExam: (exam, questions, options) => {
         set({
           exam,
           questions,
           phase: 'in-progress',
-          currentIndex: 0,
-          answers: {},
-          startedAt: new Date().toISOString(),
+          currentIndex: options?.currentIndex ?? 0,
+          answers: options?.answers ?? {},
+          startedAt: options?.startedAt ?? new Date().toISOString(),
           submittedAt: null,
-          attemptId: `attempt-${Date.now()}`,
+          attemptId: options?.attemptId ?? `attempt-${Date.now()}`,
         });
         setExamSessionCookie();
       },
