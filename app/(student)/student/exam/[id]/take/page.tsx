@@ -9,11 +9,14 @@ import { useExamTimer } from "@/hooks/use-exam-timer";
 import { useNow } from "@/hooks/use-now";
 import { getExamAvailabilityStatus } from "@/lib/exam-availability";
 import {
+  getStudentActiveExamAttempt,
+  getStudentAttempt,
   getStudentExamDetail,
   writeCachedStudentAttemptResult,
   saveStudentAttemptAnswerBatch,
   saveStudentAttemptAnswers,
   submitStudentAttempt,
+  StudentExamAttemptDetailData,
   StudentExamDetailData,
 } from "@/lib/student-system-exams";
 import { useBreadcrumbLabel } from "@/components/shared/breadcrumb-labels";
@@ -32,15 +35,54 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+function parseTimeMs(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const time = new Date(value).getTime();
+  return Number.isFinite(time) ? time : null;
+}
+
+function getAttemptTimerSeconds(
+  durationMinutes: number,
+  attempt: StudentExamAttemptDetailData | null,
+): number {
+  const durationSeconds = Math.max(durationMinutes * 60, 0);
+
+  if (!attempt) {
+    return durationSeconds;
+  }
+
+  const expiresAtMs = parseTimeMs(attempt.expiresAt);
+
+  if (expiresAtMs) {
+    const serverNowMs = parseTimeMs(attempt.serverNow);
+    const elapsedSinceFetchMs = Date.now() - attempt.receivedAtMs;
+    const referenceNowMs = serverNowMs
+      ? serverNowMs + elapsedSinceFetchMs
+      : Date.now();
+
+    return Math.max(0, Math.ceil((expiresAtMs - referenceNowMs) / 1000));
+  }
+
+  const startedAtMs = parseTimeMs(attempt.startedAt);
+
+  if (!startedAtMs) {
+    return durationSeconds;
+  }
+
+  const elapsedSeconds = Math.floor((Date.now() - startedAtMs) / 1000);
+  return Math.max(0, durationSeconds - elapsedSeconds);
+}
+
 function ExamTakeContent({
   id,
   examDetail,
+  attemptDetail,
 }: {
   id: string;
   examDetail: StudentExamDetailData;
+  attemptDetail: StudentExamAttemptDetailData | null;
 }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const {
     phase,
     currentIndex,
@@ -61,35 +103,43 @@ function ExamTakeContent({
   const [answerErrors, setAnswerErrors] = useState<Record<string, string>>({});
   const exam = examDetail.exam;
   const questions = examDetail.questions;
-  const activeAttemptId =
-    searchParams.get("attemptId") ?? examDetail.inProgressAttemptId;
+  const activeAttemptId = attemptDetail?.id ?? examDetail.inProgressAttemptId;
+  const timerInitialSeconds = useMemo(
+    () => getAttemptTimerSeconds(exam.duration, attemptDetail),
+    [attemptDetail, exam.duration],
+  );
 
   useEffect(() => {
     const state = useExamSessionStore.getState();
+    const attemptAnswers = attemptDetail?.answers ?? {};
+    const hasAttemptAnswers = Object.keys(attemptAnswers).length > 0;
+    const stateMatchesExam = state.exam?.id === exam.id;
+    const stateMatchesAttempt =
+      !activeAttemptId || state.attemptId === activeAttemptId;
 
-    if (state.exam?.id && state.exam.id !== exam.id) {
+    if (
+      !stateMatchesExam ||
+      !stateMatchesAttempt ||
+      state.phase === "not-started"
+    ) {
       resetSession();
-      startExam(exam, questions);
+      startExam(exam, questions, {
+        attemptId: activeAttemptId ?? undefined,
+        answers: attemptAnswers,
+        startedAt: attemptDetail?.startedAt ?? null,
+      });
       return;
     }
 
-    if (state.startedAt) {
-      // Both sides use the bare-ISO = wall-clock convention, so the delta
-      // is correct under any browser TZ — never shift by 7h.
-      const elapsed = (Date.now() - new Date(state.startedAt).getTime()) / 1000;
-      const maxAge = (exam.duration + 5) * 60;
-
-      if (elapsed > maxAge) {
-        resetSession();
-        startExam(exam, questions);
-        return;
-      }
+    if (hasAttemptAnswers && Object.keys(state.answers).length === 0) {
+      startExam(exam, questions, {
+        attemptId: activeAttemptId ?? undefined,
+        answers: attemptAnswers,
+        startedAt: attemptDetail?.startedAt ?? null,
+        currentIndex: state.currentIndex,
+      });
     }
-
-    if (state.phase === "not-started") {
-      startExam(exam, questions);
-    }
-  }, [exam, questions, resetSession, startExam]);
+  }, [activeAttemptId, attemptDetail, exam, questions, resetSession, startExam]);
 
   const currentQuestion = questions[currentIndex];
   const answeredIds = useMemo(
@@ -280,8 +330,13 @@ function ExamTakeContent({
     }
   }, [validateRequiredTextAnswers]);
 
-  const handleSubmit = useCallback(async () => {
-    if (!validateRequiredTextAnswers()) {
+  const handleSubmit = useCallback(async (options?: {
+    validateRequiredTextAnswers?: boolean;
+  }) => {
+    const shouldValidateTextAnswers =
+      options?.validateRequiredTextAnswers ?? true;
+
+    if (shouldValidateTextAnswers && !validateRequiredTextAnswers()) {
       return;
     }
 
@@ -331,10 +386,10 @@ function ExamTakeContent({
   ]);
 
   const { timeLeft } = useExamTimer(
-    exam?.duration ? exam.duration * 60 : 0,
+    timerInitialSeconds,
     useCallback(() => {
       if (phase === "in-progress") {
-        void handleSubmit();
+        void handleSubmit({ validateRequiredTextAnswers: false });
       }
     }, [handleSubmit, phase]),
   );
@@ -352,12 +407,12 @@ function ExamTakeContent({
 
     const msUntilEnd = endTime.getTime() - Date.now();
     if (msUntilEnd <= 0) {
-      void handleSubmit();
+      void handleSubmit({ validateRequiredTextAnswers: false });
       return;
     }
 
     submitTimerRef.current = setTimeout(() => {
-      void handleSubmit();
+      void handleSubmit({ validateRequiredTextAnswers: false });
     }, msUntilEnd);
 
     return () => {
@@ -494,7 +549,7 @@ function ExamTakeContent({
                 Quay lại
               </button>
               <button
-                onClick={handleSubmit}
+                onClick={() => void handleSubmit()}
                 disabled={isSubmitting || isSavingAnswer}
                 className={cn(
                   "cursor-pointer flex-1 py-2.5 rounded-[6px] text-sm font-semibold",
@@ -518,9 +573,14 @@ export default function ExamTakePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const routeAttemptId = searchParams.get("attemptId");
   const [examDetail, setExamDetail] = useState<StudentExamDetailData | null>(
     null,
   );
+  const [attemptDetail, setAttemptDetail] =
+    useState<StudentExamAttemptDetailData | null>(null);
   const [isLoadingExam, setIsLoadingExam] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const examBreadcrumbHref = `/student/exam/${id}`;
@@ -537,6 +597,7 @@ export default function ExamTakePage({
       setIsLoadingExam(true);
       setLoadError(null);
       setExamDetail(null);
+      setAttemptDetail(null);
 
       try {
         const detail = await getStudentExamDetail(id);
@@ -550,7 +611,32 @@ export default function ExamTakePage({
           return;
         }
 
-        setExamDetail(detail);
+        const activeAttempt =
+          (routeAttemptId
+            ? await getStudentAttempt(routeAttemptId, detail.questions)
+            : null) ??
+          (await getStudentActiveExamAttempt(id, detail.questions));
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (
+          activeAttempt?.submittedAt ||
+          (activeAttempt && activeAttempt.status !== "in_progress")
+        ) {
+          router.replace(
+            `/student/exam/${id}/result?attemptId=${activeAttempt.id}`,
+          );
+          return;
+        }
+
+        setAttemptDetail(activeAttempt);
+        setExamDetail({
+          ...detail,
+          inProgressAttemptId:
+            activeAttempt?.id ?? detail.inProgressAttemptId,
+        });
       } finally {
         if (isMounted) {
           setIsLoadingExam(false);
@@ -563,7 +649,7 @@ export default function ExamTakePage({
     return () => {
       isMounted = false;
     };
-  }, [id]);
+  }, [id, routeAttemptId, router]);
 
   const now = useNow();
   const availability = examDetail
@@ -610,5 +696,12 @@ export default function ExamTakePage({
     );
   }
 
-  return <ExamTakeContent id={id} examDetail={examDetail} />;
+  return (
+    <ExamTakeContent
+      key={`${id}-${attemptDetail?.id ?? "new"}`}
+      id={id}
+      examDetail={examDetail}
+      attemptDetail={attemptDetail}
+    />
+  );
 }

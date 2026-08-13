@@ -1,7 +1,9 @@
 import { client } from "../client";
 import type {
   StudentAttemptResultResponse,
+  StudentActiveExamAttemptResponse,
   StudentClassListResponse,
+  StudentExamAttemptDetailResponse,
   StudentExamDetailResponse,
   StudentJoinClassRequest,
   StudentJoinClassResponse,
@@ -79,6 +81,10 @@ export const api = {
         client.post<StudentStartExamAttemptResponse>(
           `/student/exams/${examId}/attempts`,
         ),
+      activeAttempt: (examId: string | number) =>
+        client.get<StudentActiveExamAttemptResponse>(
+          `/student/exams/${examId}/attempts/active`,
+        ),
       explore: (
         params?: ExamListParams & {
           search?: string;
@@ -109,6 +115,10 @@ export const api = {
       result: (attemptId: string | number) =>
         client.get<StudentAttemptResultResponse>(
           `/student/attempts/${attemptId}/result`,
+        ),
+      detail: (attemptId: string | number) =>
+        client.get<StudentExamAttemptDetailResponse>(
+          `/student/attempts/${attemptId}`,
         ),
     },
   },

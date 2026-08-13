@@ -22,6 +22,7 @@ import {
   writeCachedStudentAttemptResult,
 } from "@/lib/student-system-exams";
 import { useBreadcrumbLabel } from "@/components/shared/breadcrumb-labels";
+import { RichTextRenderer } from "@/components/shared/rich-text-renderer";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -319,12 +320,22 @@ function ResultPageContent({ examId }: { examId: string }) {
                       <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-on-surface">
-                        Câu {i + 1}: {answer.prompt}
-                      </p>
+                      <div className="text-sm font-medium text-on-surface">
+                        <span>Câu {i + 1}: </span>
+                        <RichTextRenderer
+                          html={answer.prompt}
+                          className="inline text-sm font-medium leading-6 text-on-surface"
+                        />
+                      </div>
                       <div className="mt-1 space-y-1 text-xs text-muted-foreground">
                         {answer.selectedOptionText && (
-                          <p>Đã chọn: {answer.selectedOptionText}</p>
+                          <div className="flex flex-wrap items-start gap-1">
+                            <span>Đã chọn:</span>
+                            <RichTextRenderer
+                              html={answer.selectedOptionText}
+                              className="inline text-xs leading-5 text-muted-foreground"
+                            />
+                          </div>
                         )}
                         {answer.submittedAnswerText && (
                           <div className="mt-2 rounded-[6px] border border-outline/10 bg-surface/70 p-3">
@@ -337,7 +348,13 @@ function ResultPageContent({ examId }: { examId: string }) {
                           </div>
                         )}
                         {answer.correctOptionText && (
-                          <p>Đáp án đúng: {answer.correctOptionText}</p>
+                          <div className="flex flex-wrap items-start gap-1">
+                            <span>Đáp án đúng:</span>
+                            <RichTextRenderer
+                              html={answer.correctOptionText}
+                              className="inline text-xs leading-5 text-muted-foreground"
+                            />
+                          </div>
                         )}
                         {answer.acceptedAnswers.length > 0 && (
                           <p>

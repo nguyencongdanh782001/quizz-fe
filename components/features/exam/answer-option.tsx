@@ -2,6 +2,7 @@
 
 import { Check } from "lucide-react";
 import { AnswerOption as AnswerOptionType } from "@/types/exam.types";
+import { RichTextRenderer } from "@/components/shared/rich-text-renderer";
 import { cn } from "@/lib/utils";
 
 const optionLetters = ["A", "B", "C", "D", "E", "F"];
@@ -49,9 +50,10 @@ export function AnswerOption({
           optionLetters[index]
         )}
       </div>
-      <span className="text-sm leading-relaxed flex-1 pt-0.5">
-        {option.text}
-      </span>
+      <RichTextRenderer
+        html={option.text}
+        className="min-w-0 flex-1 pt-0.5 text-sm leading-relaxed"
+      />
     </button>
   );
 }

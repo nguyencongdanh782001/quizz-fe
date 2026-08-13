@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Copy, Eye, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Eye, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,7 +18,6 @@ interface ExamContextMenuProps {
   exam: TeacherExam;
   isDeleting: boolean;
   onViewDetail: (exam: TeacherExam) => void;
-  onCopyLink: (exam: TeacherExam) => void;
   onDeleteRequest: (exam: TeacherExam) => void;
   onToggleVisibility: (response: ToggleVisibilityResponse) => void;
   onToggleError: (message: string) => void;
@@ -28,7 +27,6 @@ export function ExamContextMenu({
   exam,
   isDeleting,
   onViewDetail,
-  onCopyLink,
   onDeleteRequest,
   onToggleVisibility,
   onToggleError,
@@ -39,7 +37,7 @@ export function ExamContextMenu({
         <Button
           variant="ghost"
           size="icon"
-          className="rounded-full text-muted-foreground hover:text-on-surface"
+          className="rounded-full text-muted-foreground shadow-none ring-0 hover:bg-surface-container hover:text-on-surface focus:border-transparent focus:outline-none focus:ring-0 focus-visible:border-transparent focus-visible:ring-0 data-[state=open]:bg-surface-container"
           aria-label="Thao tác"
         >
           <MoreVertical className="size-4" />
@@ -71,13 +69,6 @@ export function ExamContextMenu({
           onSuccess={onToggleVisibility}
           onError={onToggleError}
         />
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem onSelect={() => onCopyLink(exam)}>
-          <Copy className="size-4" />
-          Sao chép liên kết
-        </DropdownMenuItem>
 
         <DropdownMenuSeparator />
 

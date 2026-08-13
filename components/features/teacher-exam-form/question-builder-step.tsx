@@ -1,19 +1,40 @@
 "use client";
 
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ReactNode,
+} from "react";
 import { useFormikContext } from "formik";
 import {
+  Bold,
   CheckCircle2,
   ChevronDown,
   CircleAlert,
+  Code2,
   FileText,
+  ImageIcon,
+  Italic,
+  LinkIcon,
+  List,
+  ListOrdered,
   LoaderCircle,
   Plus,
+  Quote,
   Save,
+  Sigma,
+  Subscript,
+  Superscript,
+  Table,
   Trash2,
+  Underline,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { client } from "@/lib/api/client";
+import { renderMathToHtml } from "@/lib/math-render";
 import { cn } from "@/lib/utils";
 import type { TeacherExamFormValues, TeacherExamQuestionType } from "./types";
 import { QuestionDeleteDialog } from "./question-delete-dialog";
@@ -50,7 +71,7 @@ interface RichTextEditorProps {
 }
 
 interface ToolbarButtonProps {
-  label: string;
+  label: ReactNode;
   title: string;
   className?: string;
   active?: boolean;
@@ -93,11 +114,12 @@ function ToolbarButton({
     <button
       type="button"
       title={title}
+      aria-label={title}
       aria-pressed={active}
       onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
       className={cn(
-        "rounded px-1.5 py-0.5 text-[#1E293B] transition-colors hover:bg-[#E2E8F0]",
+        "inline-flex size-6 items-center justify-center rounded text-[#1E293B] transition-colors hover:bg-[#E2E8F0]",
         active && "bg-[#DBEAFE] text-[#1D4ED8] ring-1 ring-[#93C5FD]",
         className,
       )}
@@ -184,6 +206,64 @@ function RichTextEditor({
     }
   }
 
+  function getCurrentEditorRange(): Range | null {
+    const editor = editorRef.current;
+    const selection = window.getSelection();
+
+    if (!editor || !selection || selection.rangeCount === 0) {
+      return null;
+    }
+
+    const range = selection.getRangeAt(0);
+
+    return editor.contains(range.commonAncestorContainer)
+      ? range.cloneRange()
+      : null;
+  }
+
+  function getSavedEditorRange(): Range | null {
+    const editor = editorRef.current;
+    const savedRange = savedRangeRef.current;
+
+    if (
+      !editor ||
+      !savedRange ||
+      !editor.contains(savedRange.startContainer) ||
+      !editor.contains(savedRange.endContainer)
+    ) {
+      return null;
+    }
+
+    return savedRange.cloneRange();
+  }
+
+  function getFallbackEditorRange(): Range | null {
+    const editor = editorRef.current;
+
+    if (!editor) {
+      return null;
+    }
+
+    const range = document.createRange();
+
+    range.selectNodeContents(editor);
+    range.collapse(false);
+
+    return range;
+  }
+
+  function setSelectionRange(range: Range) {
+    const selection = window.getSelection();
+
+    if (!selection) {
+      return;
+    }
+
+    selection.removeAllRanges();
+    selection.addRange(range);
+    savedRangeRef.current = range.cloneRange();
+  }
+
   function restoreSelection() {
     const editor = editorRef.current;
 
@@ -246,6 +326,20 @@ function RichTextEditor({
     savedRangeRef.current = nextRange.cloneRange();
   }
 
+  function setCaretAfterInsertedNode(node: Node) {
+    const parent = node.parentNode;
+
+    if (!parent) {
+      return;
+    }
+
+    const nextRange = document.createRange();
+
+    nextRange.setStartAfter(node);
+    nextRange.collapse(true);
+    setSelectionRange(nextRange);
+  }
+
   function executeCommand(command: string, commandValue?: string) {
     setPendingScript(null);
     restoreSelection();
@@ -255,7 +349,33 @@ function RichTextEditor({
   }
 
   function insertHtml(html: string) {
-    executeCommand("insertHTML", html);
+    const editor = editorRef.current;
+    const range =
+      getCurrentEditorRange() ?? getSavedEditorRange() ?? getFallbackEditorRange();
+
+    if (!editor || !range) {
+      return;
+    }
+
+    setPendingScript(null);
+    editor.focus();
+
+    const template = document.createElement("template");
+    template.innerHTML = html;
+
+    const fragment = template.content;
+    const lastNode = fragment.lastChild;
+
+    range.deleteContents();
+    range.insertNode(fragment);
+
+    if (lastNode) {
+      setCaretAfterInsertedNode(lastNode);
+    } else {
+      setSelectionRange(range);
+    }
+
+    emitChange();
   }
 
   function handleBlockFormat(nextFormat: string) {
@@ -405,7 +525,9 @@ function RichTextEditor({
   function openInsertDialog(type: InsertDialogType) {
     saveSelection();
     setPendingScript(null);
-    setDialogValue("");
+    setDialogValue(
+      type === "formula" ? window.getSelection()?.toString() ?? "" : "",
+    );
     setTableRows("2");
     setTableColumns("2");
     setInsertDialog(type);
@@ -490,14 +612,15 @@ function RichTextEditor({
       }
 
       /*
-       * Công thức được lưu cùng HTML của câu hỏi. Không cần API riêng.
-       * data-formula giúp renderer phía học sinh nhận biết để render bằng
-       * KaTeX/MathJax khi dự án tích hợp thư viện đó.
+       * Lưu TeX gốc trong data-formula để các màn preview và làm bài có thể
+       * render lại bằng KaTeX ngay cả khi HTML bên trong bị làm sạch.
        */
+      const mathHtml = renderMathToHtml(formula);
+
       insertHtml(
         `<span data-formula="${escapeHtml(
           formula,
-        )}" class="math-formula">${escapeHtml(formula)}</span>&nbsp;`,
+        )}" class="math-formula" contenteditable="false">${mathHtml}</span>&nbsp;`,
       );
       closeInsertDialog();
     }
@@ -536,19 +659,19 @@ function RichTextEditor({
         <div className="mx-0.5 h-4 w-px bg-[#CBD5E1]" />
 
         <ToolbarButton
-          label="B"
+          label={<Bold className="size-3.5" />}
           title="In đậm"
           className="font-bold"
           onClick={() => executeCommand("bold")}
         />
         <ToolbarButton
-          label="I"
+          label={<Italic className="size-3.5" />}
           title="In nghiêng"
           className="italic"
           onClick={() => executeCommand("italic")}
         />
         <ToolbarButton
-          label="U"
+          label={<Underline className="size-3.5" />}
           title="Gạch chân"
           className="underline"
           onClick={() => executeCommand("underline")}
@@ -571,13 +694,13 @@ function RichTextEditor({
         </label>
 
         <ToolbarButton
-          label="x₂"
+          label={<Subscript className="size-3.5" />}
           title="Chỉ số dưới — bôi đen để áp dụng hoặc bấm rồi nhập ký tự tiếp theo"
           active={pendingScript === "sub"}
           onClick={() => handleScript("sub")}
         />
         <ToolbarButton
-          label="x²"
+          label={<Superscript className="size-3.5" />}
           title="Chỉ số trên — bôi đen để áp dụng hoặc bấm rồi nhập ký tự tiếp theo"
           active={pendingScript === "sup"}
           onClick={() => handleScript("sup")}
@@ -586,12 +709,12 @@ function RichTextEditor({
         <div className="mx-0.5 h-4 w-px bg-[#CBD5E1]" />
 
         <ToolbarButton
-          label="“"
+          label={<Quote className="size-3.5" />}
           title="Trích dẫn"
           onClick={() => executeCommand("formatBlock", "<blockquote>")}
         />
         <ToolbarButton
-          label="</>"
+          label={<Code2 className="size-3.5" />}
           title="Khối mã nguồn"
           className="font-mono text-[11px]"
           onClick={() => executeCommand("formatBlock", "<pre>")}
@@ -600,12 +723,12 @@ function RichTextEditor({
         <div className="mx-0.5 h-4 w-px bg-[#CBD5E1]" />
 
         <ToolbarButton
-          label="•≡"
+          label={<List className="size-3.5" />}
           title="Danh sách chấm"
           onClick={() => executeCommand("insertUnorderedList")}
         />
         <ToolbarButton
-          label="1.≡"
+          label={<ListOrdered className="size-3.5" />}
           title="Danh sách số"
           onClick={() => executeCommand("insertOrderedList")}
         />
@@ -613,24 +736,30 @@ function RichTextEditor({
         <div className="mx-0.5 h-4 w-px bg-[#CBD5E1]" />
 
         <ToolbarButton
-          label="🔗"
+          label={<LinkIcon className="size-3.5" />}
           title="Chèn liên kết"
           onClick={() => openInsertDialog("link")}
         />
         <ToolbarButton
-          label={isUploadingImage ? "…" : "🖼️"}
+          label={
+            isUploadingImage ? (
+              <LoaderCircle className="size-3.5 animate-spin" />
+            ) : (
+              <ImageIcon className="size-3.5" />
+            )
+          }
           title={
             isUploadingImage ? "Đang tải hình ảnh lên" : "Chọn hình ảnh từ máy"
           }
           onClick={openImagePicker}
         />
         <ToolbarButton
-          label="▦"
+          label={<Table className="size-3.5" />}
           title="Chèn bảng"
           onClick={() => openInsertDialog("table")}
         />
         <ToolbarButton
-          label="fx"
+          label={<Sigma className="size-3.5" />}
           title="Chèn công thức"
           className="font-serif font-bold italic text-blue-600"
           onClick={() => openInsertDialog("formula")}
@@ -728,7 +857,7 @@ function RichTextEditor({
           "[&_h3]:text-lg [&_h3]:font-semibold [&_h4]:text-base [&_h4]:font-semibold [&_img]:max-w-full [&_img]:rounded",
           "[&_ol]:list-decimal [&_ol]:pl-5 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-slate-900 [&_pre]:p-3 [&_pre]:font-mono [&_pre]:text-white",
           "[&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-slate-300 [&_td]:p-2 [&_th]:border [&_th]:border-slate-300 [&_th]:p-2",
-          "[&_ul]:list-disc [&_ul]:pl-5 [&_.math-formula]:rounded [&_.math-formula]:bg-blue-50 [&_.math-formula]:px-1.5 [&_.math-formula]:py-0.5 [&_.math-formula]:font-mono [&_.math-formula]:text-blue-700",
+          "[&_ul]:list-disc [&_ul]:pl-5 [&_.math-formula]:inline-block [&_.math-formula]:rounded [&_.math-formula]:px-1 [&_.math-formula]:py-0.5 [&_.math-formula]:align-middle [&_.math-formula]:text-inherit [&_.math-formula_.katex]:text-inherit focus:[&_.math-formula]:bg-slate-100",
           minHeightClassName,
         )}
       />
@@ -758,7 +887,7 @@ function RichTextEditor({
                 onClick={closeInsertDialog}
                 className="rounded px-2 py-1 text-sm text-[#64748B] hover:bg-[#F1F5F9]"
               >
-                ×
+                <X className="size-4" />
               </button>
             </div>
 
@@ -819,8 +948,8 @@ function RichTextEditor({
 
             {insertDialog === "formula" ? (
               <p className="mt-2 text-[11px] leading-5 text-[#64748B]">
-                Công thức được lưu trong HTML. Để hiển thị toán học đẹp ở màn
-                hình học sinh, renderer nên tích hợp KaTeX hoặc MathJax.
+                Nhập công thức theo cú pháp LaTeX. Ví dụ: x^2, x_1,
+                \frac{"{a}"}{"{b}"}, \sqrt{"{x}"}, \vec{"{v}"}, \Delta t.
               </p>
             ) : null}
 
@@ -937,6 +1066,7 @@ export function QuestionBuilderStep({
     Math.max(0, values.questions.length - 1),
   );
   const activeQuestion = values.questions[safeIndex];
+  const isDraftExam = !values.is_published && !values.is_active;
 
   useEffect(() => {
     const root = rootRef.current;
@@ -1142,14 +1272,18 @@ export function QuestionBuilderStep({
       setSelectedIndex(updatedQuestions.length - 1);
 
       showSaveNotice(
-        `Đã lưu nháp câu ${savedQuestionNumber}, đang tạo câu ${nextQuestionNumber}`,
+        isDraftExam
+          ? `Đã lưu nháp câu ${savedQuestionNumber}, đang tạo câu ${nextQuestionNumber}`
+          : `Đã lưu câu ${savedQuestionNumber}, đang tạo câu ${nextQuestionNumber}`,
         "success",
       );
     } catch (error) {
       const message =
         error instanceof Error && error.message.trim()
           ? error.message
-          : "Không thể lưu bản nháp. Vui lòng thử lại.";
+          : isDraftExam
+            ? "Không thể lưu bản nháp. Vui lòng thử lại."
+            : "Không thể lưu câu hỏi. Vui lòng thử lại.";
 
       showSaveNotice(message, "error");
     }
@@ -1701,19 +1835,21 @@ export function QuestionBuilderStep({
                 Lưu câu hỏi
               </button>
 
-              <button
-                type="button"
-                onClick={() => void handleSaveDraft()}
-                disabled={isSavingDraft}
-                className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-[6px] border border-[#CBD5E1] bg-white px-5 text-xs font-bold text-[#334155] shadow-sm transition-colors hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isSavingDraft ? (
-                  <LoaderCircle className="size-3.5 animate-spin" />
-                ) : (
-                  <Save className="size-3.5" />
-                )}
-                {isSavingDraft ? "Đang lưu..." : "Lưu nháp"}
-              </button>
+              {isDraftExam ? (
+                <button
+                  type="button"
+                  onClick={() => void handleSaveDraft()}
+                  disabled={isSavingDraft}
+                  className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-[6px] border border-[#CBD5E1] bg-white px-5 text-xs font-bold text-[#334155] shadow-sm transition-colors hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSavingDraft ? (
+                    <LoaderCircle className="size-3.5 animate-spin" />
+                  ) : (
+                    <Save className="size-3.5" />
+                  )}
+                  {isSavingDraft ? "Đang lưu..." : "Lưu nháp"}
+                </button>
+              ) : null}
 
               <button
                 type="button"
@@ -1724,7 +1860,11 @@ export function QuestionBuilderStep({
                 {isSavingDraft ? (
                   <LoaderCircle className="size-3.5 animate-spin" />
                 ) : null}
-                {isSavingDraft ? "Đang lưu..." : "Lưu nháp và tiếp tục tạo mới"}
+                {isSavingDraft
+                  ? "Đang lưu..."
+                  : isDraftExam
+                    ? "Lưu nháp và tiếp tục tạo mới"
+                    : "Lưu câu hỏi và tiếp tục tạo câu mới"}
               </button>
             </div>
           </div>

@@ -905,9 +905,32 @@ export interface StudentExamAttemptSchema {
   submitted_at: string | null;
 }
 
+export interface StudentAttemptSavedAnswerSchema {
+  question_id: number;
+  selected_option_id?: number | null;
+  selected_option_ids?: number[] | null;
+  answer_text?: string | null;
+  submitted_answer_text?: string | null;
+}
+
+export interface StudentExamAttemptDetailSchema
+  extends StudentExamAttemptSchema {
+  answers?: StudentAttemptSavedAnswerSchema[] | null;
+  server_now?: string | null;
+  expires_at?: string | null;
+}
+
 export interface StudentStartExamAttemptResponse {
   message: string;
   attempt: StudentExamAttemptSchema;
+}
+
+export interface StudentActiveExamAttemptResponse {
+  attempt: StudentExamAttemptDetailSchema | null;
+}
+
+export interface StudentExamAttemptDetailResponse {
+  attempt: StudentExamAttemptDetailSchema;
 }
 
 export interface StudentAttemptAnswerPayloadItem {

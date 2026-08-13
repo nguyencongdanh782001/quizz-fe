@@ -62,7 +62,6 @@ import type { ToggleVisibilityResponse } from "@/hooks/queries/useToggleExamVisi
 import {
   clampPage,
   DEFAULT_EXAM_FILTER_VALUES,
-  buildStudentExamLink,
   formatExamDateTime,
   formatExamNumber,
   matchesClientFilters,
@@ -375,24 +374,6 @@ export function ExamList() {
     setToasts((current) => current.filter((item) => item.id !== toastId));
   }
 
-  async function handleCopyLink(exam: TeacherExam) {
-    try {
-      await navigator.clipboard.writeText(buildStudentExamLink(exam.id));
-      addToast({
-        title: "Đã sao chép liên kết",
-        description: `Liên kết của "${exam.title}" đã được sao chép vào bộ nhớ tạm.`,
-        variant: "success",
-      });
-    } catch {
-      addToast({
-        title: "Không thể sao chép liên kết",
-        description:
-          "Trình duyệt đã chặn quyền truy cập bộ nhớ tạm. Vui lòng thử lại.",
-        variant: "error",
-      });
-    }
-  }
-
   function handleToggleVisibility(response: ToggleVisibilityResponse) {
     setSelectedExam((current) =>
       current ? mergeTeacherExamPublishUpdate(current, response.exam) : current,
@@ -681,7 +662,6 @@ export function ExamList() {
                                 exam={exam}
                                 isDeleting={deletingExamId === exam.id}
                                 onViewDetail={setSelectedExam}
-                                onCopyLink={handleCopyLink}
                                 onDeleteRequest={handleDeleteRequest}
                                 onToggleVisibility={handleToggleVisibility}
                                 onToggleError={handleToggleError}
